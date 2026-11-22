@@ -474,7 +474,7 @@ InitMobyInstance = 0x00263488;
 MB_InitAnimLayerBuffer = 0x00264220;
 FastLog2__Fi = 0x00220F08;
 sound_KillChannel__Fi = 0x002A1348;
-MB_UpdateAnimLayer__FP12MobyInstanceP9AnimLayer = 0x00263F70;
+MB_UpdateAnimLayer = 0x00263F70;
 MB_StartAnimLayer__FP12MobyInstanceP9AnimLayerccii = 0x002641C0;
 
 MobyAnimProc__FPUcT0 = 0x0026A6C0;
@@ -490,3 +490,5 @@ ShadowDrawStencil__Fv = 0x0029B948;
 FastScaleVec4__FfP4Vec4T1 = 0x00221240;
 FastVec3Scale__FfP4Vec4T1 = 0x00221210;
 MobyComputeJointMtxs__FP12MobyInstanceiP4Mtx4 = 0x00267FC0;
+
+MB_BlendJointFrames__FP9AnimLayer = 0x00267770;

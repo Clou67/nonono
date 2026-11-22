@@ -427,7 +427,67 @@ void MB_FreeAnimLayer(MobyInstance *moby, AnimLayer **layerPtr)
     *layerPtr = 0;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", MB_UpdateAnimLayer);
+void MB_BlendJointFrames(AnimLayer *layer);
+void MB_InitAnimLayerBuffer(AnimLayer *layer, int seq, int frame, MobySeqFrame *seqFrame);
+
+void MB_UpdateAnimLayer(MobyInstance *moby, AnimLayer *layer) {
+    float speed;
+    float t, f, len;
+    int curFromBuf;
+
+    layer->stepped = 0;
+    speed = layer->speed;
+
+    if (speed != 0.0f && layer->frameScale != 0.0f) {
+        t = layer->blend + speed * layer->frameScale;
+        layer->blend = t;
+
+        if (speed > 0.0f) {
+            if (t > 0.99f && t < 1.01f) {
+                layer->blend = 1.0f;
+            }
+
+            if (layer->blend >= 1.0f) {
+                curFromBuf = layer->curFromBuffer;
+                do {
+                    layer->prevFromBuffer = curFromBuf;
+                    layer->stepped |= 1;
+                    layer->prevFrame = layer->curFrame;
+                    if ((unsigned char)curFromBuf != 0) {
+                        layer->prevFrameData = layer->curFrameData;
+                    }
+
+                    layer->prevSeq = layer->curSeq;
+                    layer->curFrame++;
+
+                    if (layer->curFrame >= layer->pClass->animations[layer->curSeq]->frameCount) {
+                        layer->curFrame = 0;
+                        layer->stepped |= 2;
+                    }
+
+                    f = (layer->blend - 1.0f) / layer->frameScale;
+                    layer->blend = f;
+
+                    len = layer->pClass->animations[layer->prevSeq]->frames[layer->prevFrame]->length;
+                    layer->frameScale = len;
+                    layer->blend = f * len;
+                } while (layer->blend >= 1.0f);
+            }
+        }
+    }
+
+    if (layer->prevFromBuffer != 0)
+        MB_InitAnimLayerBuffer(layer, layer->prevSeq, layer->prevFrame, (MobySeqFrame *)layer->prevFrameData);
+    else
+        layer->prevFrameData = layer->pClass->animations[layer->prevSeq]->frames[layer->prevFrame];
+
+    if (layer->curFromBuffer != 0)
+        MB_InitAnimLayerBuffer(layer, layer->curSeq, layer->curFrame, (MobySeqFrame *)layer->curFrameData);
+    else
+        layer->curFrameData = layer->pClass->animations[layer->curSeq]->frames[layer->curFrame];
+
+    MB_BlendJointFrames(layer);
+}
 
 void MB_StartAnimLayer(MobyInstance* pMoby, AnimLayer* layer, signed char seq, signed char frame, int frames, int update) 
 {
