@@ -79,6 +79,7 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
 
     FastMemSet(moby, 0, 0x100);
     classIndex = MobyClassLookup[oClass];
+
     moby->alpha = 0x80;
     moby->mClass = classIndex;
     moby->damage = 0xFF;
@@ -87,10 +88,12 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
     moby->lodTransition = 0xFF;
     moby->oClass = oClass;
     moby->lights = (((unsigned long long)0x8080 << 0x10) | 0x8000) << 0x17;
+
     index = ((char *)moby - (char *)MobyInstances) >> 8;
     moby->occlIndex = 0x7F80;
     moby->handle = index << 0x10;
     moby->index = index;
+
     moby->trigsCnt = 0;
     moby->soundDesired = 0xFF;
     moby->gridMinX = 0x7F;
@@ -98,9 +101,11 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
     moby->soundChannel = 0xFF;
     moby->gridMinY = 0x7F;
     moby->gridMaxY = 0x80;
+
     moby->pUpdate = MobyClassUpdate[moby->mClass];
     if (moby->pUpdate == 0)
         moby->modeBits |= NO_UPDATE;
+
     mobyClass = MobyClasses[moby->mClass];
     if (mobyClass != 0) {
         moby->pClass = mobyClass;
@@ -110,10 +115,12 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
         moby->scale = mobyClass->scale;
         moby->animIScale = 1.0f;
         moby->animSpeed = 1.0f;
+
         if (mobyClass->glowRgba != 0) {
             moby->modeBits |= HAS_GLOW;
             moby->glowRgba = mobyClass->glowRgba;
         }
+
         if (moby->pClass->shadowCount != 0) {
             moby->shadow = 0x18;
             moby->modeBits |= DRAW_SHADOW;
@@ -121,22 +128,29 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
             moby->shadowRange = 0;
             moby->shadowIndex = 0;
         }
+
         if (moby->pClass->metalCount != 0)
             moby->metal = 0x18;
+
         if (moby->pClass->animations[0] == 0)
             return;
+
         UpdateMobyFrameData(moby);
         if (moby->pClass->animations[0]->frameCount >= 2)
             moby->modeBits &= ~NO_UPDATE;
+
         if (moby->pClass->sequenceCount == 1) {
             if (moby->pClass->animations[0]->frameCount < 2) {
                 moby->animIScale = 0.0f;
+
                 if (moby->pClass->animations[0]->sound < 0)
                     moby->modeBits |= UNK_40;
             }
         }
+
         return;
     }
+
     moby->pClass = 0;
     moby->modeBits |= DISABLED | NO_POST_UPDATE;
     moby->collision = 0;
