@@ -718,7 +718,53 @@ void DmaMobyTextures(void)
     start->vif1 = 0;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", PatchMobyGifs);
+typedef struct {
+    unsigned int mip_tex;
+    unsigned char pad_04[0x2C];
+    unsigned int base_tex;
+    unsigned char pad_34[0xC];
+} MobyDraw;
+
+struct MobyGifUsage {
+    unsigned char stash[12];
+    MobyDraw *draws;
+};
+
+extern int MobyClassRectify[];
+extern GsTextureLoc MobyGsLocStash[256];
+
+#define GS_TEXTURE_ADDRESS_MASK 0xFFFFC000
+
+void PatchMobyGifs(void) {
+    int *rectify;
+    MobyGifUsage *entry;
+    MobyDraw *draw;
+    GsTextureLoc *location;
+    unsigned char *stash;
+
+    for (rectify = MobyClassRectify; *rectify >= 0; rectify++) {
+        entry = (MobyGifUsage *)MobyClasses[*rectify]->gifUsage;
+
+        for (;; entry++) {
+            draw = (MobyDraw *)((int)entry->draws & 0x7FFFFFFF);
+
+            for (stash = entry->stash; *stash != 0xFF; stash++) {
+                location = &MobyGsLocStash[*stash];
+
+                if (location->base != 0)
+                    draw->base_tex = (draw->base_tex & GS_TEXTURE_ADDRESS_MASK) | location->base;
+
+                if (location->mip != 0)
+                    (draw + 1)->mip_tex = ((draw + 1)->mip_tex & GS_TEXTURE_ADDRESS_MASK) | location->mip;
+
+                draw++;
+            }
+
+            if ((int)entry->draws < 0)
+                break;
+        }
+    }
+}
 
 void MB_UpdateLightAngle(void)
 {
