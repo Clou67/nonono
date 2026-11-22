@@ -167,7 +167,85 @@ float MB_BlendAnimFrame(MobyInstance *moby)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", func_00263A18);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", MB_GetCollPrimWorld);
+void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastTransformVec4(Vec4 *out, Vec4 *in, Mtx4 *matrix);
+void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastEulerToMtx1(Mtx4 *out, Vec4 *euler);
+void FastScaleVec4(float scale, Vec4 *out, Vec4 *in);
+void FastVec3Scale(float scale, Vec4 *out, Vec4 *in);
+float FastVec3Length2(Vec4 *vector);
+void MobyComputeJointMtxs(MobyInstance *moby, int count, Mtx4 *out);
+#define SPAD_JOINTS ((Vec4 *)0x70000000)
+
+int MB_GetCollPrimWorld(MobyInstance* pMoby, int idx, unsigned int* pType, Vec4* pCenter, float* pRadius, float* pLength) {
+    CollPrim* primitive = (CollPrim*)pMoby->collision;
+    float scale;
+    Mtx4 rot;
+
+    if (primitive == 0) {
+        return 0;
+    }
+
+    /* skip the 0x10-byte MobyCollHeader, then index 32-byte prims */
+    primitive = (CollPrim*)((unsigned char*)primitive + 0x10) + idx;
+    *pType = primitive->collType;
+    scale = pMoby->scale * 0.0009765625f;   /* 1/1024 */
+
+    FastEulerToMtx1(&rot, &pMoby->rotation);
+
+    if (*pType < 2 || *pType == COLLPRIM_PILL) {
+        CopyVec4Inline(pCenter, &primitive->offset);
+        FastVec3Scale(scale, pCenter, pCenter);
+        FastTransformVec4(pCenter, pCenter, &rot);
+        FastVec3Add(pCenter, pCenter, &pMoby->pos);
+        *pRadius = pCenter->w * scale;
+
+        if (*pType < 2) {
+            *pLength = 0.0f;
+        } else {
+            *pLength = primitive->length * scale;
+        }
+        return 1;
+    }
+
+    if (*pType == COLLPRIM_JOINT) {
+        if (pMoby->pCollPrims->primSetB != 0) {
+            MobyComputeJointMtxs(pMoby, pMoby->pCollPrims->primSetB, 0);
+        }
+        CopyVec4Inline(pCenter, &SPAD_JOINTS[primitive->joint]);
+        FastVec3Scale(scale, pCenter, pCenter);
+        FastTransformVec4(pCenter, pCenter, &rot);
+        FastVec3Add(pCenter, pCenter, &pMoby->pos);
+        *pRadius = primitive->radius * scale;
+        *pLength = 0.0f;
+        return 1;
+    }
+
+    if (*pType == COLLPRIM_CAPSULE) {
+        Vec4 a, b;
+
+        if (pMoby->pCollPrims->primSetB != 0) {
+            MobyComputeJointMtxs(pMoby, pMoby->pCollPrims->primSetB, 0);
+        }
+        JointPair *joints = (JointPair *)&primitive->joint;
+        FastScaleVec4(scale, &a, &SPAD_JOINTS[joints->a]);
+        FastScaleVec4(scale, &b, &SPAD_JOINTS[joints->b]);
+
+        if (a.z < b.z) {
+            CopyVec4Inline(pCenter, &a);
+        } else {
+            CopyVec4Inline(pCenter, &b);
+        }
+        FastTransformVec4(pCenter, pCenter, &rot);
+        FastVec3Add(pCenter, pCenter, &pMoby->pos);
+        *pRadius = primitive->radius * scale;
+
+        FastSubVec3(&b, &b, &a);
+        *pLength = FastVec3Length2(&b);
+        return 1;
+    }
+    return 0;
+}
 
 void FastMtx3Transpose(Mtx4 *, Mtx4 *);
 void FastSubVec3(Vec4 *, Vec4 *, Vec4 *);

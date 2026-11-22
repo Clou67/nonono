@@ -485,3 +485,7 @@ SetMobyTexColors__Fv = 0x0026A650;
 BuildMobyTextureDma__FUi = 0x0026A3A0;
 DrawShadow__FPi = 0x0029B750;
 ShadowDrawStencil__Fv = 0x0029B948;
+
+FastScaleVec4__FfP4Vec4T1 = 0x00221240;
+FastVec3Scale__FfP4Vec4T1 = 0x00221210;
+MobyComputeJointMtxs__FP12MobyInstanceiP4Mtx4 = 0x00267FC0;

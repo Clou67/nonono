@@ -23,6 +23,10 @@ struct BSphere {
     float rad;
 };
 
+enum { COLLPRIM_JOINT = 2, COLLPRIM_PILL = 3, COLLPRIM_CAPSULE = 4 };
+
+struct JointPair { short a; short b; };
+
 struct CollPrim {
     unsigned char collType;
     unsigned char _pad01;
@@ -42,7 +46,9 @@ struct CollPrim {
 
 
 struct MobyCollPrims {
-    char unk00[8];
+    short primSetA;
+    short primSetB;
+    int unk04;
     int count;
 };
 
