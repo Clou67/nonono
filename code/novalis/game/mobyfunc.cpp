@@ -231,7 +231,7 @@ int MB_FindNearestAnimTrigger(MobySeq *sequence, float time)
     return -1;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", func_00263918);
+TEXT_PADDING(0x27BD0050, 0x00000000);
 
 float MB_BlendAnimFrame(MobyInstance *moby)
 {
@@ -255,7 +255,7 @@ float MB_BlendAnimFrame(MobyInstance *moby)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", func_00263A18);
+TEXT_PADDING(0x27BD0010, 0x00000000, 0x27BD0010, 0x00000000);
 
 void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
 void FastTransformVec4(Vec4 *out, Vec4 *in, Mtx4 *matrix);
