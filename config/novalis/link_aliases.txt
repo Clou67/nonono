@@ -470,10 +470,11 @@ CameraControls = 0x00169590;
 
 MB_ComputeSelectedJointPos__FP12MobyInstanceiPiP4Vec4 = 0x00268C28;
 UpdateMobyGrids__FP12MobyInstanceUi = 0x00265900;
-InitMobyInstance__FP12MobyInstancei = 0x00263488;
+InitMobyInstance = 0x00263488;
+MB_InitAnimLayerBuffer = 0x00264220;
 FastLog2__Fi = 0x00220F08;
 sound_KillChannel__Fi = 0x002A1348;
-MB_UpdateAnimLayer__FP12MobyInstanceP9AnimLayer = 0x00263F70;
+MB_UpdateAnimLayer = 0x00263F70;
 MB_StartAnimLayer__FP12MobyInstanceP9AnimLayerccii = 0x002641C0;
 
 MobyAnimProc__FPUcT0 = 0x0026A6C0;
@@ -485,3 +486,12 @@ SetMobyTexColors__Fv = 0x0026A650;
 BuildMobyTextureDma__FUi = 0x0026A3A0;
 DrawShadow__FPi = 0x0029B750;
 ShadowDrawStencil__Fv = 0x0029B948;
+
+FastScaleVec4__FfP4Vec4T1 = 0x00221240;
+FastVec3Scale__FfP4Vec4T1 = 0x00221210;
+MobyComputeJointMtxs__FP12MobyInstanceiP4Mtx4 = 0x00267FC0;
+
+PatchMobyGifs = 0x002648B0;
+MB_SetLightsFromEnvSample = 0x00264E98;
+MB_BlendJointFrames__FP9AnimLayer = 0x00267770;
+SetMobyLights__FP12MobyInstancexUxll = 0x002650B0;

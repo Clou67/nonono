@@ -626,7 +626,7 @@ void Hero_SyncBoardAnimSpeed(void)
     int boardAnimation;
 
     if (Hero.animLinkMoby && Hero.animLinkTable && Hero_GetBoardAnim(Hero.moby->animationId, &boardAnimation))
-        Hero.animLinkMoby->unk58 = Hero.animSpeed;
+        Hero.animLinkMoby->animIScale = Hero.animSpeed;
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/hero", Hero_SyncBoardAnimFrame);
