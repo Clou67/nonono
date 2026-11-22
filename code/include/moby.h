@@ -60,6 +60,7 @@ struct MobySeqFrame {
     short scaleKeys;
     short transOffset;
     short transKeys;
+    unsigned long long joints[0];
 };
 
 // The frame pointer table follows the 0x1C-byte RaC1 sequence header.
@@ -167,14 +168,14 @@ struct MobyInstance {
     BSphere bSphere;
     Vec4 pos;
     unsigned char state;
-    signed char group;
+    unsigned char group;
     unsigned char mClass;
-    signed char alpha;
+    unsigned char alpha;
     MobyClass *pClass;
     void *pChain;
     float scale;
-    char updateDistance;
-    char enabled;
+    unsigned char updateDistance;
+    unsigned char enabled;
     short drawDistance;
     unsigned short modeBits;
     unsigned short occlIndex;
@@ -191,22 +192,25 @@ struct MobyInstance {
     unsigned char updateId;
     unsigned char animationId;
     float animationBlend;
-    float unk58;
-    float frameSpeed;
+    float animIScale;
+    float animSpeed;
     AnimLayer *pAnimationLayers;
     Manipulator *pManipulators;
     void *pPreviousAnimationData;
     void *pCurrentAnimationData;
-    char unk70[4];
+    unsigned char unk70;
+    unsigned char unk71;
+    unsigned char lodTransition;
+    unsigned char metal;
     void *pUpdate;
     void *pVar;
     unsigned char soundDesired;
     unsigned char soundChannel;
-    char trigsCnt;
-    char shadow;
+    unsigned char trigsCnt;
+    unsigned char shadow;
     int colorManipulator;
-    float zMin;
-    float zMax;
+    float shadowPlane;
+    float shadowRange;
     char unk8C[4];
     unsigned int glowRgba;
     union {
@@ -215,19 +219,27 @@ struct MobyInstance {
     };
     float *collisionMesh;
     int collQueryStamp;
-    unsigned int collCount;
-    signed char damage;
+    union {
+        unsigned int collCount;
+        struct {
+            unsigned char gridMinX;
+            unsigned char gridMinY;
+            unsigned char gridMaxX;
+            unsigned char gridMaxY;
+        };
+    };
+    unsigned char damage;
     unsigned char previousAnimationId;
     unsigned short oClass;
     int handle;
     unsigned int index;
-    char levelFlagIdx;
-    char unkB1;
+    unsigned char levelFlagIdx;
+    unsigned char unkB1;
     unsigned short uid;
     char unkB4[4];
     MobyInstance *unkB8;
-    char setByGroup;
-    char unkBD;
+    unsigned char setByGroup;
+    unsigned char shadowIndex;
     char unkBE[2];
     Mtx4 transform;
 };

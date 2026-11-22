@@ -7,11 +7,14 @@
 #include "sce.h"
 #include "sound.h"
 #include "mathfunc_inline.h"
+#include "initlevel.h"
 
 extern int worldUpdateTime;
 extern MobyInstance *MobyInstancePermEnd;
 extern MobyInstance *MobyInstanceEnd;
+extern MobyInstance *MobyInstances;
 extern int numSpawnableMobys;
+void UpdateMobyFrameData(MobyInstance *moby);
 
 void UpdateNumSpawnableMobys(void)
 {
@@ -33,6 +36,9 @@ void UpdateNumSpawnableMobys(void)
 
 extern unsigned char *mobyVars;
 extern const char createMobyFailureMessage[] __attribute__((section(".data")));
+
+extern MobyClass *MobyClasses[];
+extern void *MobyClassUpdate[];
 
 void InitMobyInstance(MobyInstance *moby, int oClass);
 
@@ -65,7 +71,76 @@ MobyInstance *CreateMoby(int oClass)
     return 0;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", InitMobyInstance);
+void InitMobyInstance(MobyInstance *moby, int oClass)
+{
+    int index;
+    MobyClass *mobyClass;
+    unsigned char classIndex;
+
+    FastMemSet(moby, 0, 0x100);
+    classIndex = MobyClassLookup[oClass];
+    moby->alpha = 0x80;
+    moby->mClass = classIndex;
+    moby->damage = 0xFF;
+    moby->group = 0xFF;
+    moby->unk71 = 0xFF;
+    moby->lodTransition = 0xFF;
+    moby->oClass = oClass;
+    moby->lights = (((unsigned long long)0x8080 << 0x10) | 0x8000) << 0x17;
+    index = ((char *)moby - (char *)MobyInstances) >> 8;
+    moby->occlIndex = 0x7F80;
+    moby->handle = index << 0x10;
+    moby->index = index;
+    moby->trigsCnt = 0;
+    moby->soundDesired = 0xFF;
+    moby->gridMinX = 0x7F;
+    moby->gridMaxX = 0x80;
+    moby->soundChannel = 0xFF;
+    moby->gridMinY = 0x7F;
+    moby->gridMaxY = 0x80;
+    moby->pUpdate = MobyClassUpdate[moby->mClass];
+    if (moby->pUpdate == 0)
+        moby->modeBits |= NO_UPDATE;
+    mobyClass = MobyClasses[moby->mClass];
+    if (mobyClass != 0) {
+        moby->pClass = mobyClass;
+        moby->lodTransition = mobyClass->lodTransition;
+        moby->modeBits |= mobyClass->modeBits;
+        moby->collision = (unsigned short *)mobyClass->collision;
+        moby->scale = mobyClass->scale;
+        moby->animIScale = 1.0f;
+        moby->animSpeed = 1.0f;
+        if (mobyClass->glowRgba != 0) {
+            moby->modeBits |= HAS_GLOW;
+            moby->glowRgba = mobyClass->glowRgba;
+        }
+        if (moby->pClass->shadowCount != 0) {
+            moby->shadow = 0x18;
+            moby->modeBits |= DRAW_SHADOW;
+            moby->shadowPlane = 0;
+            moby->shadowRange = 0;
+            moby->shadowIndex = 0;
+        }
+        if (moby->pClass->metalCount != 0)
+            moby->metal = 0x18;
+        if (moby->pClass->animations[0] == 0)
+            return;
+        UpdateMobyFrameData(moby);
+        if (moby->pClass->animations[0]->frameCount >= 2)
+            moby->modeBits &= ~NO_UPDATE;
+        if (moby->pClass->sequenceCount == 1) {
+            if (moby->pClass->animations[0]->frameCount < 2) {
+                moby->animIScale = 0.0f;
+                if (moby->pClass->animations[0]->sound < 0)
+                    moby->modeBits |= UNK_40;
+            }
+        }
+        return;
+    }
+    moby->pClass = 0;
+    moby->modeBits |= DISABLED | NO_POST_UPDATE;
+    moby->collision = 0;
+}
 
 
 void UpdateMobyGrids(MobyInstance *moby, unsigned int bounds);
@@ -356,7 +431,53 @@ void MB_StartAnimLayer(MobyInstance* pMoby, AnimLayer* layer, signed char seq, s
 }
 
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", MB_InitAnimLayerBuffer);
+void FastMemSetZero(void *destination, int size);
+
+void MB_InitAnimLayerBuffer(AnimLayer *layer, int seq, int frame, MobySeqFrame *seqFrame)
+{
+    MobyClass *sourceClass = layer->animClass;
+    MobyClass *destinationClass = layer->pClass;
+    int sourceJointCount = sourceClass->jointCount;
+    int destinationJointCount = destinationClass->jointCount;
+    MobySeqFrame *source = sourceClass->animations[seq]->frames[frame];
+
+    FastMemSetZero(seqFrame, ((destinationJointCount + 3) * 8) & 0xFF0);
+
+    int numKeys = destinationJointCount + source->scaleKeys;
+    numKeys += source->transKeys;
+    seqFrame->jointBytes = destinationJointCount * 8;
+    {
+        void *restSource = &((unsigned long long *)source)[sourceJointCount + 2];
+
+        seqFrame->qwords = (numKeys + 1) >> 1;
+        unsigned short scaleKeys = source->scaleKeys;
+        seqFrame->scaleKeys = scaleKeys;
+        seqFrame->transOffset = (scaleKeys + destinationJointCount) * 8;
+        seqFrame->transKeys = source->transKeys;
+
+        int restBytes = source->qwords * 16 - sourceJointCount * 8;
+        if (restBytes != 0)
+            FastMemCopy32(&((unsigned long long *)seqFrame)[destinationJointCount + 2], restSource, restBytes);
+    }
+
+    unsigned char *jointMap = (unsigned char *)layer->animClass->animationJoints + 4;
+    unsigned long long *sourceJoints = source->joints;
+    if (sourceJointCount != 0) {
+        int remaining = sourceJointCount;
+        do {
+            remaining--;
+            ((unsigned long long *)seqFrame)[*jointMap + 2] = *sourceJoints;
+            jointMap++;
+            sourceJoints++;
+        } while (remaining != 0);
+    }
+
+    unsigned long long *lastQword = (unsigned long long *)((char *)seqFrame + seqFrame->qwords * 16);
+    if (*lastQword == 0)
+        *lastQword = 1;
+
+    FlushCache(0);
+}
 
 void AttachManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator)
 {

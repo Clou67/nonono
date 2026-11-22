@@ -368,8 +368,8 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_0026EFF0)
 void MB_SetZBoundsFromPos(MobyInstance *moby, float z)
 {
     const float padding = 0.2f;
-    moby->zMin = z - padding;
-    moby->zMax = z + padding;
+    moby->shadowPlane = z - padding;
+    moby->shadowRange = z + padding;
 }
 
 struct CollisionOutput {
@@ -396,13 +396,13 @@ void MB_SetZBoundsFromGround(MobyInstance *moby)
     start.z += clearance;
 
     if (CollLine(&start, &ground, COLLISION_PROBE_FLAGS | COLL_LINE_GROUND_QUERY, 0, 0)) {
-        moby->zMin = CollOutput.position.z - padding;
-        moby->zMax = CollOutput.position.z + padding;
+        moby->shadowPlane = CollOutput.position.z - padding;
+        moby->shadowRange = CollOutput.position.z + padding;
     }
 
     else {
-        moby->zMin = 0.0f;
-        moby->zMax = 0.0f;
+        moby->shadowPlane = 0.0f;
+        moby->shadowRange = 0.0f;
     }
 }
 
@@ -982,7 +982,7 @@ int MB_MayaFrameTrigger(MobyInstance *moby, float frame)
 {
     float current = MB_BlendAnimFrame(moby);
     float offset = MB_RoundToDecimals(current - frame, 4);
-    float step = MB_RoundToDecimals(moby->unk58 * moby->frameSpeed, 4);
+    float step = MB_RoundToDecimals(moby->animIScale * moby->animSpeed, 4);
 
     if (frame <= current) {
         if (offset < step)

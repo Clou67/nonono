@@ -470,7 +470,8 @@ CameraControls = 0x00169590;
 
 MB_ComputeSelectedJointPos__FP12MobyInstanceiPiP4Vec4 = 0x00268C28;
 UpdateMobyGrids__FP12MobyInstanceUi = 0x00265900;
-InitMobyInstance__FP12MobyInstancei = 0x00263488;
+InitMobyInstance = 0x00263488;
+MB_InitAnimLayerBuffer = 0x00264220;
 FastLog2__Fi = 0x00220F08;
 sound_KillChannel__Fi = 0x002A1348;
 MB_UpdateAnimLayer__FP12MobyInstanceP9AnimLayer = 0x00263F70;
