@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "sce.h"
 #include "sound.h"
+#include "music.h"
 #include "mathfunc_inline.h"
 #include "initlevel.h"
 
@@ -948,7 +949,73 @@ void DrawMobys(void)
     DrawMobysCleanup();
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyfunc", MB_SetLightsFromEnvSample);
+void SetMobyLights(MobyInstance *moby, long long dirIdx, unsigned long long colorIdx, long a, long b);
+
+typedef struct EnvSample {
+    Vec4 pos;
+    int  colorR;
+    int  colorG;
+    int  colorB;
+    int  lights;
+    int  reverbDepth;
+    unsigned char   reverbType;
+    unsigned char   reverbDelay;
+    unsigned char   reverbFeedback;
+    unsigned char   hasReverb;
+    int  musicTrack;
+    int  unk2C;
+} EnvSample;
+
+extern int EnvSampleCnt;        // 0x160014
+extern EnvSample* EnvSamples;   // 0x160040
+extern SoundAudioState audioState;
+extern MusicTransition musicTransition;
+
+extern const char envSampleMissingMessage[] __attribute__((section(".data")));
+void MB_SetVarsFromEnvSample(MobyInstance *moby) {
+    Vec4 diff;
+    float distSq;
+    float bestDistSq = 999999.0f;
+    int bestIdx = -1;
+    int i;
+
+    for (i = 0; i < EnvSampleCnt; i++) {
+        FastSubVec3(&diff, &moby->pos, &EnvSamples[i].pos);
+        distSq = FastVec3Length2(&diff);
+
+        if (distSq <= 8.0f && distSq < bestDistSq) {
+            bestDistSq = distSq;
+            bestIdx = i;
+        }
+    }
+
+    if (bestIdx == -1) {
+        printf_stub(envSampleMissingMessage);
+        return;
+    }
+
+    SetMobyLights(moby, moby->colorManipulator = (EnvSamples[bestIdx].colorB << 16)
+                                               + (EnvSamples[bestIdx].colorG << 8)
+                                               +  EnvSamples[bestIdx].colorR, 0, 0, 0);
+
+    *(int *)&moby->lights = EnvSamples[bestIdx].lights;
+
+    if (EnvSamples[bestIdx].hasReverb != 0) {
+        audioState.reverb_depth = EnvSamples[bestIdx].reverbDepth;
+        audioState.reverb_type = EnvSamples[bestIdx].reverbType;
+        audioState.reverb_delay = EnvSamples[bestIdx].reverbDelay;
+        audioState.reverb_feedback = EnvSamples[bestIdx].reverbFeedback;
+        audioState.reverb_commands |= 7;
+    }
+
+    if (EnvSamples[bestIdx].musicTrack >= 0) {
+        if (musicTransition.primary_bank == 0) {
+            if ((*(int *)&musicTransition.unk20[0] & 0xFFFFFF) == 0xFF0000) {
+                musicTransition.primary_track = (unsigned short)EnvSamples[bestIdx].musicTrack;
+            }
+        }
+    }
+}
 
 extern int Level;
 extern unsigned char occlCharTable[][16];

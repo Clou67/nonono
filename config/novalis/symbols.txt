@@ -882,7 +882,7 @@ DrawMobysSetup__Fv = 0x00264C30; // type:func size:0xB8
 DrawMobyListProc__FP12MobyInstancei = 0x00264CE8; // type:func size:0x80
 DrawMobysCleanup__Fv = 0x00264D68; // type:func size:0xAC
 DrawMobys__Fv = 0x00264E18; // type:func size:0x80
-MB_SetLightsFromEnvSample = 0x00264E98; // type:func size:0x1E4
+MB_SetVarsFromEnvSample__FP12MobyInstance = 0x00264E98; // type:func size:0x1E4
 SetLevelFlag__Fi = 0x00265080; // type:func size:0x2C
 SetMobyLights = 0x002650B0; // type:func size:0x20
 SetColorOfMoby_Part = 0x002650D0; // type:func size:0x30
@@ -2274,3 +2274,7 @@ mobyTextureMarker = 0x0015FF90;
 MobyShadowCnt = 0x0015FFFC;
 ShadowScratchPad = 0x001ACC00;
 mobyShadowProfileMarker = 0x0015FF80;
+
+EnvSampleCnt = 0x00160014;
+EnvSamples = 0x00160040;
+envSampleMissingMessage = 0x00209F38;

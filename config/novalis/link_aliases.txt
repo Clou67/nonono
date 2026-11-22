@@ -491,6 +491,7 @@ FastScaleVec4__FfP4Vec4T1 = 0x00221240;
 FastVec3Scale__FfP4Vec4T1 = 0x00221210;
 MobyComputeJointMtxs__FP12MobyInstanceiP4Mtx4 = 0x00267FC0;
 
-MB_BlendJointFrames__FP9AnimLayer = 0x00267770;
-
 PatchMobyGifs = 0x002648B0;
+MB_SetLightsFromEnvSample = 0x00264E98;
+MB_BlendJointFrames__FP9AnimLayer = 0x00267770;
+SetMobyLights__FP12MobyInstancexUxll = 0x002650B0;
