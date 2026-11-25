@@ -95,7 +95,7 @@ void DrawGalaxyMap(int left, int right, int top, int bottom)
 
         if (LevelVisited[level] != 0) {
             availability = MAP_LEVEL_VISITED;
-        } else if (LevelUnlocked[level] == 0) {
+        } else if (g_SeenPlanets[level] == 0) {
             availability = MAP_LEVEL_LOCKED;
         } else {
             availability = MAP_LEVEL_UNLOCKED;
