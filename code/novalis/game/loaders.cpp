@@ -135,7 +135,23 @@ void ParseWeaponSceneChunk(int chunk)
     SceneLoad.buffer = MemSlots.vu1_chain[1] + vu1_bufSize;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadSpaceScene);
+void LoadSpaceScene(int scene, int fadeFrames)
+{
+    if (!videoModePal)
+        music_LoadFile(SceneLoad.buffer, bootAssets.spaceScenes[scene].offset, bootAssets.spaceScenes[scene].length);
+
+    else
+        music_LoadFile(SceneLoad.buffer, bootAssets.palSpaceScenes[scene].offset, bootAssets.palSpaceScenes[scene].length);
+
+    if (fadeFrames) {
+        music_Sync(0);
+        FadeToBlack(fadeFrames);
+    }
+
+    music_Sync(1);
+
+    SetSceneChunks();
+}
 
 void ParseSpaceSceneChunk(int chunk)
 {
