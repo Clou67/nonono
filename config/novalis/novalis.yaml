@@ -70,6 +70,7 @@ segments:
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
+    - [0x1d00, .sdata, game/loaders]  # ship texture defs, hud bank labels, occlusion chars, byte grid
     - [0x1db0, .sdata, game/main]  # ClearMem warning, system misc timer label
     - [0x1dc8, lit4]
     - [0x2028, .sdata, game/memcard]  # g_loaderr, entry path and delete formats

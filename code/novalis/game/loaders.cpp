@@ -384,6 +384,34 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadLevelFiles)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", InitLevelFromWad);
 
+// loaders.cpp's small data, in retail order. Defined after the functions above so they reach it
+// with lui, as retail does.
+
+// Texture definitions and texture remap of the spaceship pack's two moby classes (ParseMobyPack).
+short ShipTexDefA[8] = { 0, 0, 0x100, 0x100, 4, 0, 0, 0 };
+short ShipTexDefB[8] = { 0, 0, 0x80, 0x80, 1, 0, 0, 0 };
+unsigned char ShipTexRefs[16] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+};
+
+// Stand-ins for LoadHudBanks' and InitLevelFromWad's string literals until those are decompiled.
+char LoadersTimerLabel[] = "loaders.cpp";
+char HudBankLabel0[] = "hud bank 0";
+char HudBankLabel2[] = "hud bank 2";
+char HudBankLabel3[] = "hud bank 3";
+char HudBankLabel4[] = "hud bank 4";
+char MemoryMapNewline[] = "\n";
+
+// The current level's occlusion character table, copied in by InitLevelFromWad.
+unsigned char LevelOcclChars[16] = { 0 };
+
+int byteGridStride = 0;
+int byteGridRows = 0;
+float byteGridMin = 0;
+float byteGridMax = 0;
+unsigned char *byteGridData = 0;
+
 // Starts streaming a chunk of the current npc scene from the disc into the scene buffer.
 int PreLoadNpcChunk(int chunk)
 {
