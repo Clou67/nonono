@@ -107,7 +107,7 @@ void startLevel(void)
     int per;
     float angle;
 
-    // Clear the per-level state: with FastMemSetZero when it is quadword aligned, else a byte at a time.
+    // Clear the level's .bss (StartLevelClearStart..End): with FastMemSetZero when it is quadword aligned, else a byte at a time.
     if (((StartLevelClearEnd - StartLevelClearStart) & 15) == 0 && ((unsigned int)StartLevelClearStart & 15) == 0) {
         FastMemSetZero(StartLevelClearStart, StartLevelClearEnd - StartLevelClearStart);
     } else {
@@ -118,7 +118,7 @@ void startLevel(void)
     }
     Stash_InitOnce();
     FramesSinceStateChange = 0;
-    gameMode = 6;
+    gameMode = GAME_MODE_SPACE;
     one = 1;
     InitLevel();
     musicTransition.primary_track = 0;
@@ -173,45 +173,45 @@ void startLevel(void)
 
         mode = gameMode;
         switch (mode) {
-        case -1:
+        case GAME_MODE_DEBUG:
             UpdatePad();
             UpdateDebugSelections();
             DrawDebugMenu();
             break;
-        case 0:
+        case GAME_MODE_NORMAL:
             UpdatePad();
             UpdateGameplay();
             SetupDefaultDraw();
             break;
-        case 1:
+        case GAME_MODE_MOVIE:
             UpdateCinematic();
             break;
-        case 2:
+        case GAME_MODE_SCENE:
             UpdatePad();
             UpdateInLevelMovie();
             ((void (*)(void))SetupDefaultDrawMovie)(); // retail passes no argument
             break;
-        case 3:
+        case GAME_MODE_PAUSE:
             UpdatePad();
             UpdatePause();
             CallDrawOverlayIfNoCutscene();
             break;
-        case 4:
+        case GAME_MODE_FREEZE:
             UpdatePad();
             UpdateModeFreeze();
             SetupDefaultDrawFreeze();
             break;
-        case 5:
+        case GAME_MODE_VENDOR:
             UpdatePad();
             vendor_PreUpdate();
             vendor_PostUpdate();
             break;
-        case 6:
+        case GAME_MODE_SPACE:
             UpdatePad();
             UpdateSpace();
             space_DefaultDraw();
             break;
-        case 7:
+        case GAME_MODE_CREDITS:
             UpdatePad();
             UpdateCredits();
             DrawFrameEnd();
@@ -251,12 +251,12 @@ void startLevel(void)
         printf_stub3("system misc", 0x10);
         VU1_syncChain(1);
         FrameLoad = FastIntToFloat(*T0_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
-        if (gameMode == 0 && Debug.profile) {
+        if (gameMode == GAME_MODE_NORMAL && Debug.profile) {
             STUB_00218990();
         }
 
         if (!Hero.outOfBounds) {
-            if (gameMode == 0 || gameMode == 2) {
+            if (gameMode == GAME_MODE_NORMAL || gameMode == GAME_MODE_SCENE) {
                 int limit = 9600;
 
                 if (videoModePal) {
@@ -264,10 +264,10 @@ void startLevel(void)
                 }
                 // The frame overran its budget: run one more update to catch up.
                 if (limit < (int)*T0_COUNT) {
-                    if (gameMode == 0) {
+                    if (gameMode == GAME_MODE_NORMAL) {
                         UpdatePad();
                         UpdateGameplay();
-                    } else if (gameMode == 2 && !g_SceneRecording[0]) {
+                    } else if (gameMode == GAME_MODE_SCENE && !g_SceneRecording[0]) {
                         UpdatePad();
                         UpdateInLevelMovie();
                     }
@@ -286,7 +286,7 @@ void startLevel(void)
         ResetGsRegistersPr();
 
         // Fell out of the level: reload it in place.
-        if (gameMode == 0 && Hero.outOfBounds) {
+        if (gameMode == GAME_MODE_NORMAL && Hero.outOfBounds) {
             reloadLevel = 1;
             reloadMode = 1;
         }
@@ -297,7 +297,7 @@ void startLevel(void)
             sound_StopAllSounds();
             music_Stop();
             InitLevelFromWad(0, reloadMode);
-            gameMode = 0;
+            gameMode = GAME_MODE_NORMAL;
             music_StartTrack(musicTransition.primary_track, 1, 0x400);
             hud_InitBanks();
         }
