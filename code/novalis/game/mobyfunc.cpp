@@ -718,18 +718,6 @@ void DmaMobyTextures(void)
     start->vif1 = 0;
 }
 
-typedef struct {
-    unsigned int mip_tex;
-    unsigned char pad_04[0x2C];
-    unsigned int base_tex;
-    unsigned char pad_34[0xC];
-} MobyDraw;
-
-struct MobyGifUsage {
-    unsigned char stash[12];
-    MobyDraw *draws;
-};
-
 extern int MobyClassRectify[];
 extern GsTextureLoc MobyGsLocStash[256];
 

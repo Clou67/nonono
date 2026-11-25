@@ -6,6 +6,8 @@
 #include "wad.h"
 #include "draw.h"
 #include "hud.h"
+#include "initlevel.h"
+#include "mathfunc_inline.h"
 
 void LoadByteGrid(int *grid)
 {
@@ -67,7 +69,121 @@ void ParseMobySeq(MobyClass *mobyClass, int animation)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMobyClass);
+void SetUpVisGif(int *gif, short *texDef, int mipDist, int filter, int clampU, int clampV, int index);
+void SetUpVisGifViewer(int *gif, int mipDist, int filter, int clampU, int clampV, int index);
+
+#define MOBY_GIF_STASH_END 0xFF
+
+// Turns every offset in a loaded moby class into a pointer and sets up its texture gifs,
+// remapping the class's texture indices through texRefs.
+void ParseMobyClass(MobyClass *mobyClass, short *texDefs, char *texRefs, int oClass)
+{
+    char *base = (char *)mobyClass;
+    int packetCount = mobyClass->packetCount0 + mobyClass->packetCount1 + mobyClass->metalCount;
+    unsigned char *texLookup;
+    MobyPacket *packet;
+    int index;
+    int sequenceIndex;
+    int packetIndex;
+
+    if (mobyClass->packets) {
+        mobyClass->packets = (MobyPacket *)(base + (int)mobyClass->packets);
+        MobyPacket *relocated = mobyClass->packets;
+
+        if (packetCount) {
+            int remaining = packetCount;
+            do {
+                remaining--;
+                relocated->gifs = (MobyGifDef *)((char *)relocated->gifs + (int)base);
+                relocated->data = (char *)relocated->data + (int)base;
+                relocated++;
+            } while (remaining);
+        }
+    }
+
+    if (mobyClass->collision)
+        mobyClass->collision = (MobyCollPrims *)(base + (int)mobyClass->collision);
+
+    if (mobyClass->skeleton)
+        mobyClass->skeleton = base + (int)mobyClass->skeleton;
+
+    if (mobyClass->commonTranslations)
+        mobyClass->commonTranslations = (Vec4 *)(base + (int)mobyClass->commonTranslations);
+
+    if (mobyClass->animationJoints) {
+        int jointCount;
+
+        mobyClass->animationJoints = (MobyAnimationJoints *)(base + (int)mobyClass->animationJoints);
+        jointCount = mobyClass->animationJoints->count;
+        // Word 0 of the table is the joint count; the joint pointers follow it.
+        for (index = 0; index < jointCount; index++)
+            ((int *)mobyClass->animationJoints)[index + 1] += (int)base;
+    }
+
+    if (mobyClass->gifUsage) {
+        MobyGifUsage *usage;
+
+        mobyClass->gifUsage = (MobyGifUsage *)(base + (int)mobyClass->gifUsage);
+        for (usage = mobyClass->gifUsage;; usage++) {
+            unsigned char *stash = usage->stash;
+
+            usage->draws = (MobyDraw *)((char *)usage->draws + (int)base);
+            if (*stash != MOBY_GIF_STASH_END) {
+                do {
+                    *stash = texRefs[*stash];
+                    stash++;
+                } while (*stash != MOBY_GIF_STASH_END);
+            }
+
+            if ((int)usage->draws < 0)
+                break;
+        }
+    }
+
+    if (mobyClass->soundDefs)
+        mobyClass->soundDefs = (SoundDef *)(base + (int)mobyClass->soundDefs);
+
+    for (sequenceIndex = 0; sequenceIndex < mobyClass->sequenceCount; sequenceIndex++) {
+        if (mobyClass->animations[sequenceIndex]) {
+            MobySeq *sequence = (MobySeq *)(base + (int)mobyClass->animations[sequenceIndex]);
+            int frame;
+
+            mobyClass->animations[sequenceIndex] = sequence;
+            if (sequence->triggers)
+                sequence->triggers = (short *)(base + (int)sequence->triggers);
+
+            for (frame = 0; frame < sequence->frameCount; frame++)
+                sequence->frames[frame] = (MobySeqFrame *)(base + (int)sequence->frames[frame]);
+        }
+    }
+
+    texLookup = (unsigned char *)&MobyTexLookup[(unsigned char)MobyClassLookup[oClass] * 16];
+    CopyVec4Inline((Vec4 *)texLookup, (Vec4 *)texRefs);
+
+    packet = mobyClass->packets;
+    for (packetIndex = 0; packetIndex < packetCount; packetIndex++, packet++) {
+        int gifQuads = packet->counts >> 16;
+        int end = packet->counts & 0xFFFF;
+        MobyGifDef *gif;
+        int quad;
+
+        packet->counts = end;
+        gif = (MobyGifDef *)((char *)packet->gifs + (end - gifQuads) * 16);
+        for (quad = 0; quad < gifQuads; quad += 4) {
+            int texIndex = gif->texIndex;
+
+            if (texIndex >= 0)
+                texIndex = texLookup[texIndex];
+
+            if (texDefs)
+                SetUpVisGif((int *)gif, texDefs + texIndex * 8, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
+            else
+                SetUpVisGifViewer((int *)gif, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
+
+            gif++;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMoby);
 

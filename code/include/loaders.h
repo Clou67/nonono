@@ -69,6 +69,8 @@ void WadDecompress(void *source, void *destination);
 
 void STUB_RET_255950(void *data, int count);
 
+void ParseMobyClass(MobyClass *mobyClass, short *texDefs, char *texRefs, int oClass);
+
 void ParseMobySeq(MobyClass *mobyClass, int animation);
 
 void ParseWeaponSceneChunk(int chunk);

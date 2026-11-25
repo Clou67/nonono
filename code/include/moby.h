@@ -75,8 +75,39 @@ struct MobySeq {
     MobySeqFrame *frames[1];      // 0x1C, frameCount entries
 };
 
-struct MobyPacket;
-struct MobyGifUsage;
+// One GS texture setup of a moby packet (0x40 bytes); the loader fills it in from the
+// class's texture definitions.
+struct MobyGifDef {
+    int mipDist;        // 0x00
+    int filter;         // 0x04
+    int unk_08[2];
+    int clampU;         // 0x10
+    int clampV;         // 0x14
+    int unk_18[2];
+    int texIndex;       // 0x20, -1 for none
+    int unk_24[7];
+};
+
+// A packet group: high half of counts is the number of gif quadwords, low half the packet end.
+struct MobyPacket {
+    MobyGifDef *gifs;   // 0x00
+    int counts;         // 0x04
+    void *data;         // 0x08
+    int unk_0C;
+};
+
+struct MobyDraw {
+    unsigned int mip_tex;
+    unsigned char pad_04[0x2C];
+    unsigned int base_tex;
+    unsigned char pad_34[0xC];
+};
+
+// Texture slots used by a run of draws; the last entry has the top bit of draws set.
+struct MobyGifUsage {
+    unsigned char stash[12];
+    MobyDraw *draws;
+};
 struct SoundDef;
 
 // The animation pointer table follows the 0x48-byte RaC1 class header.
@@ -91,7 +122,7 @@ struct MobyClassCallbacks {
 };
 
 struct MobyAnimationJoints {
-    unsigned int unk_0;
+    int count;
     unsigned char *joints[1];
 };
 
