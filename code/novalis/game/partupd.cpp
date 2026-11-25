@@ -44,7 +44,20 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_006);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_007);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_008);
+void UpdatePart_008(PartInstance *part)
+{
+    PartTimedScale *scale = &part->timedScale;
+
+    if (FastDecTimer(scale->timer)) {
+        DeletePart(part);
+        return;
+    }
+
+    part->scale += scale->scaleStep;
+
+    if (FastScaleRoundInt(6) > scale->timer)
+        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->timer * 0x7F) / FastScaleRoundInt(6)) << 24);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_008);
 
