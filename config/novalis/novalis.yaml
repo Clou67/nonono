@@ -64,6 +64,8 @@ segments:
     align: 4
     subsegments:
     - [0x1000, lit4]
+    - [0x13f0, .sdata, game/draw]  # draw state and DefaultDraw timer labels
+    - [0x1568, lit4]
     - [0x15a8, .sdata, game/freeze]  # layout values
     - [0x1604, data]
     - [0x1668, lit4]
@@ -73,6 +75,8 @@ segments:
     - [0x202c, lit4]
     - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators
     - [0x2250, lit4]
+    - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep
+    - [0x2344, lit4]
     - [0x2570, .rodata, game/shrubfunc]  # shrub texs, shrub draw labels
     - [0x2590, lit4]
     - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index
@@ -105,6 +109,8 @@ segments:
     - [0x8580, data]
     - [0x1b990, .data, game/help]  # Help, HelpPairs, not_found
     - [0x1bc50, data]
+    - [0xaa970, .rodata, game/actuator]  # jump table
+    - [0xaa990, data]
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]

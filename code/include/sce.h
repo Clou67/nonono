@@ -249,6 +249,9 @@ int sceCdReadClock(sceCdCLOCK *clock);
 int sceScfGetLocalTimefromRTC(sceCdCLOCK *clock);
 void FlushCache(int operation);
 int sceSifSetDma(SifDmaTransfer *transfer, int count);
+void *sceSifAllocIopHeap(unsigned int size);
+int sceSifFreeIopHeap(void *address);
+int sceSifLoadModuleBuffer(void *address, int argLength, const char *args);
 int sceSifDmaStat(int id);
 int DIntr(void);
 int EIntr(void);
@@ -304,5 +307,8 @@ int _StartThread(int thread, void *argument);
 int AddIntcHandler(int cause, int (*handler)(int), int next);
 int EnableIntc(int cause);
 }
+
+// EE timer 0 count register (eeregs.h).
+#define T0_COUNT ((volatile unsigned int *)(0x10000800))
 
 #endif

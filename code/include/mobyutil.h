@@ -5,7 +5,63 @@ enum { MOBY_GROUP_INDEX_MASK = 0x7FFF };
 
 #include "moby.h"
 
+struct MobyPath;
+struct Manipulator;
+
+// Trail of translucent copies that follow a moby.
+struct MotionBlur {
+    Vec4 posHistory[8];        // 0x000
+    Vec4 rotHistory[8];        // 0x080
+    int alpha[4];              // 0x100
+    int delay[4];              // 0x110
+    MobyInstance *copies[4];   // 0x120
+    short head;                // 0x130
+    short filled;              // 0x132
+    MobyInstance *pMoby;       // 0x134
+    int count;                 // 0x138
+    int active;                // 0x13C
+};
+
+// Movement tuning shared by the scripted movers (names from Deadlocked's MoveVars).
+struct MoveVars {
+    int collRadius;       // 0x00
+    float kneeHeight;     // 0x04
+    float maxStepDown;    // 0x08
+    float maxStepUp;      // 0x0C
+    float realSpeed;      // 0x10
+    float turnSpeed;      // 0x14
+    float vertVel;        // 0x18
+    float accel;          // 0x1C
+    float deccel;         // 0x20
+    float maxSpeed;       // 0x24
+    float heading;        // 0x28
+    float distThresh;     // 0x2C
+    float zDepth;         // 0x30
+    char unk_34[4];
+    int flags;            // 0x38
+    float turnAccel;      // 0x3C
+    float turnDeccel;     // 0x40
+    float turnLimit;      // 0x44
+    int moveTimer;        // 0x48
+    float moveHeading;    // 0x4C
+};
+
 int MB_RequestHelpMessage(int selector, int messageId);
+
+void DeleteMoby(MobyInstance *moby);
+void AttachManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator);
+void DetachManipulator(MobyInstance *moby, Manipulator *manipulator);
+void MB_ToastMessageByIndex(int level);
+extern MobyInstance *MobyInstances;
+
+void CreateMotionBlur(MobyInstance *pMoby, MotionBlur *blur);
+void DeleteMotionBlur(MotionBlur *blur);
+void MB_ToastMessage(int message, int time);
+void MB_ToggleManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator, float scale);
+float MB_WrapRot(float angle);
+int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment, float *fraction, int wrap, float limit, float step, float tolerance);
+void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group);
+void MB_InitMoveVars(MoveVars *vars);
 
 void MB_UnlockLevel(int level);
 void MB_UnlockItem(int item, char equip);

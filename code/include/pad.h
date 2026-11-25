@@ -21,6 +21,8 @@
 
 // Reverses the left and right of the sticks and the d-pad.
 #define CHEAT_MIRROR_MODE 4
+// Big head mode (the manipulator scale is applied while set).
+#define CHEAT_BIG_HEAD 7
 #define CHEAT_COUNT 12
 
 // Frames of button and stick history kept in the rings.

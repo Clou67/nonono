@@ -5,13 +5,15 @@
 
 // The view the frame is drawn from (DL's ViewContext).
 struct ViewContext {
+    // The first row is the GIF tag for the fog far intensity, the five after it hold the GS register
+    // values; the four rows after those are the texture and gradient GIF tags.
     int headerBase[6][4];
-    unsigned long headerTex[2];
-    unsigned long headerTexNoFog[2];
-    unsigned long headerGr[2];
-    unsigned long headerGrNoFog[2];
-    float D;
-    float F;
+    int headerTex[4];
+    int headerTexNoFog[4];
+    int headerGr[4];
+    int headerGrNoFog[4];
+    float nearClip;
+    float farClip;
     float xclipratio;
     float yclipratio;
     float xratio;
@@ -26,7 +28,6 @@ struct ViewContext {
     Vec4 hvdf;
     Vec4 unSquish;
     Vec4 guard;
-    Vec4 iguard;
     Vec4 sphereCheckA;
     Vec4 sphereCheckB;
     Vec4 sphereCheckC;
@@ -56,5 +57,52 @@ struct ViewContext {
 };
 
 extern ViewContext VC;
+
+// Constants for the tfrag VU1 program that follow the view.
+struct TfragVuConsts {
+    char unk0[0x10];
+    int fog0;
+    int fogFarIntensity;
+    int fogNearIntensity;
+    char unk1C[0x44];
+    Vec4 hvdf;
+    Vec4 hmgScale;
+    Vec4 ihmgScale;
+    char unk90[0x10];
+    int guardX;
+    int guardY;
+};
+
+// Fog constants for the shrub VU1 programs (float bit patterns).
+struct ShrubFogConsts {
+    char unk0[0x28];
+    int fog0;
+    int max;
+    int fogFarIntensity;
+    int fogNearIntensity;
+};
+
+// The near shrub constants also carry the view's screen scale and offset.
+struct ShrubNearConsts {
+    char unk0[0x28];
+    int fog0;
+    int max;
+    int fogFarIntensity;
+    int fogNearIntensity;
+    char unk38[0x8];
+    Vec4 ihmgScale;
+    Vec4 hvdf;
+};
+
+// Copies of the view that the renderers and VU1 programs read; UpdateViewContext keeps them up.
+extern Vec4 FastFrustum[8];
+extern float part_constants[4];
+extern Vec4 ViewConstsA[3];
+extern TfragVuConsts tfrag_setup_consts;
+extern ShrubFogConsts shrub_setup_consts;
+extern ShrubNearConsts shrub_near_setup_consts;
+extern float stripvif_head[16];
+extern float watertile_blockvif_head[16];
+extern float RenderConsts1;
 
 #endif

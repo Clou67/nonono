@@ -2,6 +2,8 @@
 #include "hero.h"
 #include "fastfunc.h"
 #include "part.h"
+#include "mobyutil.h"
+#include "mathfunc_inline.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", ResetParticles);
 
@@ -25,13 +27,39 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_005)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_005);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_006);
+void UpdatePart_006(PartInstance *part)
+{
+    PartTimedScale *scale = &part->timedScale;
+
+    if (FastDecTimer(scale->timer)) {
+        DeletePart(part);
+        return;
+    }
+
+    part->scale += scale->scaleStep;
+
+    if (FastScaleRoundInt(6) > scale->timer)
+        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->timer * 0x7F) / FastScaleRoundInt(6)) << 24);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_006);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_007);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_008);
+void UpdatePart_008(PartInstance *part)
+{
+    PartTimedScale *scale = &part->timedScale;
+
+    if (FastDecTimer(scale->timer)) {
+        DeletePart(part);
+        return;
+    }
+
+    part->scale += scale->scaleStep;
+
+    if (FastScaleRoundInt(6) > scale->timer)
+        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->timer * 0x7F) / FastScaleRoundInt(6)) << 24);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_008);
 
@@ -118,7 +146,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_027)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_027);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_028);
+void UpdatePart_028(PartInstance *part)
+{
+    PartTimedFade *fade = &part->timedFade;
+
+    FastVec3Add(&part->pos, &part->pos, &fade->velocity);
+
+    part->rgba = (part->rgba & 0xFFFFFF) + (((fade->alpha * fade->timer) / fade->duration) << 24);
+
+    if (FastDecTimer(fade->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_028);
 
@@ -197,13 +235,59 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_046);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_047);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_047);
+PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
+{
+    PartInstance *part = CreatePart(0x2F);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_048);
+    if (part != 0) {
+        CopyVec4Inline(&part->pos, position);
+
+        part->rgba = ((MB_randInt(8) + 0x28) << 0x18) | 0x808080;
+        part->draw_dist = FastFloatToInt(2.0f) + 0x20;
+
+        part->gs_alpha = 0x48;
+        part->type = 0;
+        part->tex = *PartTextures[0x2F];
+        part->scale = scale;
+
+        CopyVec4Inline(&part->motion20.origin, velocity);
+        part->rot = MB_randInt(0x100);
+    }
+
+    return part;
+}
+
+void UpdatePart_048(PartInstance *part)
+{
+    PartSpinMotion *motion = &part->spinMotion;
+    int rgba;
+
+    FastVec3Scale(&motion->velocity, &motion->velocity, 0.975f);
+    FastVec3Add(&part->pos, &part->pos, &motion->velocity);
+
+    part->scale += 14700.0f;
+    part->rot += motion->rotationStep;
+    rgba = part->rgba + 0xFE000000;
+    part->rgba = rgba;
+
+    if (rgba < 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286E18);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_049);
+void UpdatePart_049(PartInstance *part)
+{
+    PartTweenSpin *spin = &part->tweenSpin;
+
+    part->rot += spin->rotationStep;
+    FastVec3Add(&part->pos, &part->pos, &spin->velocity);
+
+    part->rgba = FastTweenColor(spin->colorA, spin->colorB, FastAbsF(FastIntToFloat(part->timer) * spin->rate - 1.0f));
+
+    if (FastDecTimer(part->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_050);
 
@@ -215,7 +299,19 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_052)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_052);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_053);
+void UpdatePart_053(PartInstance *part)
+{
+    if (FastDecTimer(part->timer))
+        DeletePart(part);
+
+    else {
+        PartScaleFade *fade = &part->scaleFade;
+        float fraction = FastIntToFloat(part->timer) * fade->rate;
+
+        part->rgba = FastTweenColor(fade->endColor, fade->startColor, fraction);
+        part->scale = ((fade->startScale - fade->endScale) * fraction + fade->endScale) * 210000.0f;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_053);
 
@@ -229,7 +325,31 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_055);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_056);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_056);
+PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
+{
+    PartInstance *part = CreatePart(0x38);
+    int shade;
+
+    if (part != 0) {
+        int greenAlpha;
+
+        CopyVec4Inline(&part->pos, position);
+
+        shade = (MB_randInt(0x10) * 2) + 0x60;
+        greenAlpha = (shade << 8) | 0x40000000;
+        part->rgba = (shade << 0x10) | greenAlpha | shade;
+        part->draw_dist = FastFloatToInt(4.0f) + 0x20;
+        part->gs_alpha = 0x48;
+        part->type = 0;
+        part->tex = *PartTextures[0x38];
+        part->scale = scale;
+
+        CopyVec4Inline(&part->motion20.origin, velocity);
+        part->rot = MB_randInt(0x100);
+    }
+
+    return part;
+}
 
 void UpdatePart_057(PartInstance *part)
 {
@@ -275,7 +395,32 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_062)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_062);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_063);
+void UpdatePart_063(PartInstance *part)
+{
+    PartFollowFade *fade = &part->followFade;
+    int rgba;
+    int alpha;
+
+    if (fade->mode == 1)
+        return;
+
+    if (fade->mode == 2) {
+        part->pos.x = fade->pMoby->pos.x + fade->offset.x;
+        part->pos.y = fade->pMoby->pos.y + fade->offset.y;
+        part->pos.z = fade->pMoby->pos.z + fade->offset.z;
+    }
+
+    rgba = part->rgba;
+    alpha = rgba >> 24;
+    alpha -= fade->fadeStep;
+
+    if (alpha <= 0) {
+        DeletePart(part);
+        return;
+    }
+
+    part->rgba = (rgba & 0xFFFFFF) | (alpha << 24);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00288D50);
 
@@ -293,7 +438,27 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_066)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_066);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_067);
+void UpdatePart_067(PartInstance *part)
+{
+    PartFadingMotion *motion = &part->fadingMotion;
+    int timer;
+
+    FastVec3Add(&part->pos, &part->pos, &motion->velocity);
+
+    part->scale += motion->scaleStep;
+    part->rot += 1;
+
+    timer = (unsigned short)part->timer - 1;
+    part->timer = timer;
+
+    if ((short)timer == 0) {
+        part->rgba += 0xFF000000;
+        part->timer = 2;
+    }
+
+    if ((part->rgba & 0xFF000000) == 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_067);
 
@@ -341,11 +506,40 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AAE0);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_076);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_077);
+int PartFadeAlphaStep = 19;
+
+void UpdatePart_077(PartInstance *part)
+{
+    DecAlpha(&part->rgba, PartFadeAlphaStep);
+
+    if (FastDecTimer(part->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AC50);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_078);
+typedef int Vec4Quad __attribute__((mode(TI)));
+
+void UpdatePart_078(PartInstance *part)
+{
+    Vec4 origin;
+    float duration;
+    float fraction;
+
+    *(Vec4Quad *)&origin = *(Vec4Quad *)&part->motion20.origin;
+
+    duration = origin.w;
+    origin.w = 0.0f;
+
+    fraction = FastIntToFloat(part->timer) / duration;
+    part->rgba = (FastFloatToInt(fraction * 38.0f) << 24) | 0x808080;
+    part->rot = FastFloatToInt(fraction * 33.0f);
+
+    FastVec3Add(&part->pos, &part->pos, &origin);
+
+    if (FastDecTimer(part->timer))
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_078);
 

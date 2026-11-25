@@ -11,6 +11,8 @@ int FastScaleRoundInt(int value);
 int FastAbsI(int value);
 int FastTweenColor(int from, int to, float fraction);
 int FastFloatToInt(float value);
+// Splits value into whole and fractional parts; returns the fraction.
+float FastFrac(float *whole, float value);
 float FastIntToFloat(int value);
 float FastAngleCosF(float angle);
 float FastAngleSinF(float angle);
@@ -23,6 +25,9 @@ int FastVec3AddSubLen(Vec4 *sphere, BSphere *bounds);
 void FastScaleVec4(Vec4 *out, Vec4 *in, float scale);
 // Counts a timer down to zero; returns nonzero once it has run out.
 int FastDecTimer(int &timer);
+int FastDecTimer(short &timer);
+float FastAbsF(float value);
+void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 float FastVec3Length(float *vec);
 void FastMemCopy32(void *destination, void *source, int size);
 // Writes the scaled xyz of in to out.
