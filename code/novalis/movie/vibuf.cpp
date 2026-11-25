@@ -153,8 +153,7 @@ int viBufAddDMA(ViBuf *buffer)
     int added = 0;
     WaitSema(buffer->sema);
     if (!buffer->isActive) {
-        ErrMessage("DMA ADD not active
-");
+        ErrMessage("DMA ADD not active\n");
         return 0;
     }
 
