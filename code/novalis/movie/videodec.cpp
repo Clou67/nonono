@@ -160,8 +160,7 @@ int decBs0(VideoDec *decoder)
     while (!sceMpegIsEnd(&decoder->mpeg)) {
         if (videoDecGetState(decoder) == VIDEO_DECODER_ABORTED) {
             result = -1;
-            printf_stub("decode thread: aborted
-");
+            printf_stub("decode thread: aborted\n");
             break;
         }
 
