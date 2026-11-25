@@ -325,7 +325,31 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_055);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_056);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_056);
+PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
+{
+    PartInstance *part = CreatePart(0x38);
+    int shade;
+
+    if (part != 0) {
+        int greenAlpha;
+
+        CopyVec4Inline(&part->pos, position);
+
+        shade = (MB_randInt(0x10) * 2) + 0x60;
+        greenAlpha = (shade << 8) | 0x40000000;
+        part->rgba = (shade << 0x10) | greenAlpha | shade;
+        part->draw_dist = FastFloatToInt(4.0f) + 0x20;
+        part->gs_alpha = 0x48;
+        part->type = 0;
+        part->tex = *PartTextures[0x38];
+        part->scale = scale;
+
+        CopyVec4Inline(&part->motion20.origin, velocity);
+        part->rot = MB_randInt(0x100);
+    }
+
+    return part;
+}
 
 void UpdatePart_057(PartInstance *part)
 {
