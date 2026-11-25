@@ -349,7 +349,32 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_062)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_062);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_063);
+void UpdatePart_063(PartInstance *part)
+{
+    PartFollowFade *fade = &part->followFade;
+    int rgba;
+    int alpha;
+
+    if (fade->mode == 1)
+        return;
+
+    if (fade->mode == 2) {
+        part->pos.x = fade->pMoby->pos.x + fade->offset.x;
+        part->pos.y = fade->pMoby->pos.y + fade->offset.y;
+        part->pos.z = fade->pMoby->pos.z + fade->offset.z;
+    }
+
+    rgba = part->rgba;
+    alpha = rgba >> 24;
+    alpha -= fade->fadeStep;
+
+    if (alpha <= 0) {
+        DeletePart(part);
+        return;
+    }
+
+    part->rgba = (rgba & 0xFFFFFF) | (alpha << 24);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00288D50);
 
