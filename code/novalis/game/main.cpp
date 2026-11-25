@@ -41,8 +41,8 @@ struct DebugSettings {
     int actuator;
 };
 
-extern char StartLevelClearStart[];
-extern char StartLevelClearEnd[];
+extern char bss_start[];
+extern char bss_end[];
 extern LevelRecord LevelRecords[];
 extern unsigned char g_MiscLevelFlags[] __attribute__((section(".data")));
 extern PauseMenuState PauseMenu;
@@ -107,13 +107,13 @@ void startLevel(void)
     int per;
     float angle;
 
-    // Clear the level's .bss (StartLevelClearStart..End): with FastMemSetZero when it is quadword aligned, else a byte at a time.
-    if (((StartLevelClearEnd - StartLevelClearStart) & 15) == 0 && ((unsigned int)StartLevelClearStart & 15) == 0) {
-        FastMemSetZero(StartLevelClearStart, StartLevelClearEnd - StartLevelClearStart);
+    // Clear the level's .bss (bss_start..End): with FastMemSetZero when it is quadword aligned, else a byte at a time.
+    if (((bss_end - bss_start) & 15) == 0 && ((unsigned int)bss_start & 15) == 0) {
+        FastMemSetZero(bss_start, bss_end - bss_start);
     } else {
         printf_stub("crap\n");
-        for (i = 0; i < StartLevelClearEnd - StartLevelClearStart; i++) {
-            StartLevelClearStart[i] = 0;
+        for (i = 0; i < bss_end - bss_start; i++) {
+            bss_start[i] = 0;
         }
     }
     Stash_InitOnce();

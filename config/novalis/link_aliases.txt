@@ -542,5 +542,5 @@ space_DefaultDraw__Fv = 0x002A57F0;
 space_StartLevelArrival__Fv = 0x002A29C0;
 vendor_PostUpdate__Fv = 0x002B4020;
 vendor_PreUpdate__Fv = 0x002B03B8;
-StartLevelClearStart = 0x00162280;
-StartLevelClearEnd = 0x00166430;
+bss_start = 0x00162280;
+bss_end = 0x00166430;
