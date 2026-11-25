@@ -282,6 +282,13 @@ void SetLevelFlag(int flag);
 
 extern int StashedMobyClassDists[];
 
+// Loaded moby classes by mClass, the next free mClass and each mClass's oClass.
+extern MobyClass *MobyClasses[];
+extern int MobyClassIndex;
+extern short MobyOClasses[];
+
+void SetupMobyFunctions(int oClass);
+
 void InitMobyClassDists(void);
 
 void StashMobyClassDists(void);

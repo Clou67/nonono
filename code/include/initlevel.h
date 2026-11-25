@@ -10,7 +10,7 @@ extern int LevelVendorItems[];
 extern char CollJointCacheKeys[];
 extern char MobyClassLookup[0x800];
 extern char MobyTexLookup[0xE00];
-extern char MobyMipDists[0xE0];
+extern unsigned int MobyMipDists[0xE0 / 4];
 extern char TieClassLookup[0xC00];
 extern char TieTexLookup[0x800];
 extern char TieMipDists[0x80];

@@ -37,7 +37,6 @@ void UpdateNumSpawnableMobys(void)
 
 extern unsigned char *mobyVars;
 
-extern MobyClass *MobyClasses[];
 extern void *MobyClassUpdate[];
 
 void InitMobyInstance(MobyInstance *moby, int oClass);

@@ -2,6 +2,7 @@
 #include "vuchain.h"
 #include "moby.h"
 #include "loaders.h"
+#include "initlevel.h"
 #include "music.h"
 #include "wad.h"
 #include "draw.h"
@@ -185,7 +186,26 @@ void ParseMobyClass(MobyClass *mobyClass, short *texDefs, char *texRefs, int oCl
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMoby);
+// Gives a level moby class the next mClass slot, then relocates it (a null class only gets its functions).
+void ParseMoby(char *classData, short *texDefs, char *texRefs, int oClass)
+{
+    MobyClass *mobyClass = (MobyClass *)classData;
+
+    MobyClassLookup[oClass] = MobyClassIndex;
+    MobyOClasses[MobyClassIndex] = oClass;
+    MobyClasses[MobyClassIndex] = mobyClass;
+
+    if (mobyClass == 0) {
+        SetupMobyFunctions(oClass);
+        MobyClassIndex++;
+        return;
+    }
+
+    MobyMipDists[MobyClassIndex] = mobyClass->mipDistance;
+    SetupMobyFunctions(oClass);
+    MobyClassIndex++;
+    ParseMobyClass(mobyClass, texDefs, texRefs, oClass);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseTieClass);
 
