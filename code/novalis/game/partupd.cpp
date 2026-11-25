@@ -277,7 +277,19 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_052)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_052);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_053);
+void UpdatePart_053(PartInstance *part)
+{
+    if (FastDecTimer(part->timer))
+        DeletePart(part);
+
+    else {
+        PartScaleFade *fade = &part->scaleFade;
+        float fraction = FastIntToFloat(part->timer) * fade->rate;
+
+        part->rgba = FastTweenColor(fade->endColor, fade->startColor, fraction);
+        part->scale = ((fade->startScale - fade->endScale) * fraction + fade->endScale) * 210000.0f;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_053);
 
