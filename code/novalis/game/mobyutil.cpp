@@ -170,7 +170,21 @@ int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float st
     return MB_PushOutOfWalls(moby, move, height, radius, stepHeight, flags);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_InitDefaultParams);
+void MB_InitMoveVars(MoveVars *vars)
+{
+    vars->collRadius = 0x280;
+    vars->kneeHeight = 1.0f;
+    vars->maxStepDown = 0.5f;
+    vars->maxStepUp = 0.5f;
+    vars->turnSpeed = 0.0f;
+    vars->realSpeed = 0.0f;
+    vars->vertVel = 0.0f;
+    vars->maxSpeed = 2.7f;
+    vars->deccel = 0.3f;
+    vars->accel = 0.3f;
+    vars->heading = 1.57f;
+    vars->distThresh = 0.1f;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_MoveAndCollide);
 
