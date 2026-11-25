@@ -5,6 +5,7 @@
 #include "initlevel.h"
 #include "part.h"
 #include "sky.h"
+#include "framebuf.h"
 #include "fastfunc.h"
 #include "music.h"
 #include "wad.h"
@@ -129,7 +130,74 @@ void LoadCompressedHudBank(int bank, char *destination)
     HudState.header->bankData[bank] = 0;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", SetUpVisGif);
+// Writes a class texture's TEX1, CLAMP, TEX0 and MIPTBP1 register words into a GIF packet
+// (one per qword). Negative indices are the special textures, as in SetUpVisGifViewer.
+void SetUpVisGif(unsigned long *gifRegs, short *texDef, int mipDist, int filter, int clampU, int clampV, int index)
+{
+    int texWidth = texDef[TEXDEF_WIDTH] >> 6;
+    int mipWidth = texDef[TEXDEF_WIDTH] >> 7;
+
+    if (texWidth <= 0)
+        texWidth = 1;
+
+    if (mipWidth <= 0)
+        mipWidth = 1;
+
+    int uLog = FastLog2(texDef[TEXDEF_WIDTH]);
+    int vLog = FastLog2(texDef[TEXDEF_HEIGHT]);
+    int gsBlock = GSmemBase >> 8;
+    int mip2Block = texDef[TEXDEF_MIP2] + gsBlock;
+    int clutBlock = texDef[TEXDEF_CLUT] + gsBlock;
+    int mip1Block = texDef[TEXDEF_MIP1] + gsBlock;
+    int mipCount = texDef[TEXDEF_MIP_COUNT];
+
+    if (index >= 0) {
+        unsigned long filterBits = ((unsigned long)filter << 6) | 0x20;
+        unsigned long tex1 = ((unsigned long)(mipCount - 1) << 2) | filterBits;
+
+        tex1 |= (unsigned long)mipDist << 32;
+        *gifRegs = tex1;
+        gifRegs += 2;
+        *gifRegs = clampU | ((unsigned long)clampV << 2) | ((unsigned long)index << 24);
+        gifRegs += 2;
+
+        unsigned long format = ((unsigned long)uLog << 26) | 0x1300000;
+        unsigned long tex0 = (((unsigned long)texWidth << 14) | format) | ((unsigned long)vLog << 30);
+        unsigned long tex0Clut = ((unsigned long)0x8000 << 19) | ((unsigned long)clutBlock << 37);
+        unsigned long miptbp = ((unsigned long)mipWidth << 14) | ((unsigned long)mip1Block << 20);
+        unsigned long miptbp2 = ((unsigned long)mip2Block << 40) | ((unsigned long)0x8000 << 19);
+
+        miptbp |= miptbp2;
+        tex0 |= tex0Clut;
+        tex0 |= (unsigned long)-1 << 63;
+        miptbp |= (unsigned long)0x8000 << 39;
+        *gifRegs = tex0;
+        gifRegs[2] = miptbp;
+    }
+
+    else if (index < -1) {
+        unsigned long *special = VisGifSpecialTemplate;
+
+        if (index == -3)
+            special = VisGifSpecialTemplateAlt;
+
+        *gifRegs = ((unsigned long)filter << 6) | 0x20 | ((unsigned long)mipDist << 32);
+        gifRegs += 2;
+        *gifRegs = 5;
+        gifRegs += 2;
+        *gifRegs = special[0];
+        gifRegs[2] = special[2];
+    }
+
+    else {
+        *gifRegs = ((unsigned long)filter << 6) | 0x20 | ((unsigned long)mipDist << 32);
+        gifRegs += 2;
+        *gifRegs = 5;
+        gifRegs += 2;
+        *gifRegs = ((((unsigned long)0x8000 << 29) | 0x9980) << 19) | 0x7FFB;
+        gifRegs[2] = 0;
+    }
+}
 
 // Writes a texture's TEX1 and CLAMP-style register words into a GIF packet (one per qword),
 // then two words from its row of VisGifTemplates. A negative index is a special one:
@@ -201,7 +269,6 @@ void ParseMobySeq(MobyClass *mobyClass, int animation)
     }
 }
 
-void SetUpVisGif(int *gif, short *texDef, int mipDist, int filter, int clampU, int clampV, int index);
 void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index);
 
 #define MOBY_GIF_STASH_END 0xFF
@@ -308,7 +375,7 @@ void ParseMobyClass(MobyClass *mobyClass, short *texDefs, char *texRefs, int oCl
                 texIndex = texLookup[texIndex];
 
             if (texDefs)
-                SetUpVisGif((int *)gif, texDefs + texIndex * 8, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
+                SetUpVisGif((unsigned long *)gif, texDefs + texIndex * 8, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
             else
                 SetUpVisGifViewer((unsigned long *)gif, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
 

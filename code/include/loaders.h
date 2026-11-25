@@ -83,6 +83,17 @@ extern unsigned long VisGifTemplates[];
 extern unsigned long VisGifSpecialTemplate[3];
 extern unsigned long VisGifSpecialTemplateAlt[3];
 
+// A class texture definition (8 shorts).
+enum {
+    TEXDEF_WIDTH = 2,
+    TEXDEF_HEIGHT = 3,
+    TEXDEF_MIP_COUNT = 4,
+    TEXDEF_CLUT = 5,
+    TEXDEF_MIP1 = 6,
+    TEXDEF_MIP2 = 7
+};
+
+void SetUpVisGif(unsigned long *gifRegs, short *texDef, int mipDist, int filter, int clampU, int clampV, int index);
 void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index);
 
 void LoadByteGrid(int *grid);
