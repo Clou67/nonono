@@ -853,7 +853,8 @@ int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment,
     return 1;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002731C0);
+// Retail leaves two words after the compiled tail of MB_PathFollowToPos.
+TEXT_PADDING(0x27BD0080, 0);
 
 float MB_WrapRot(float angle)
 {
