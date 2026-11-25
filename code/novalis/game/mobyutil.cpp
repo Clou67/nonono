@@ -6,6 +6,10 @@
 #include "moby.h"
 #include "hero.h"
 #include "mobyutil.h"
+#include "pad.h"
+#include "galaxymap.h"
+#include "help.h"
+#include "libc.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DropAmmo);
 
@@ -166,7 +170,21 @@ int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float st
     return MB_PushOutOfWalls(moby, move, height, radius, stepHeight, flags);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_InitDefaultParams);
+void MB_InitMoveVars(MoveVars *vars)
+{
+    vars->collRadius = 0x280;
+    vars->kneeHeight = 1.0f;
+    vars->maxStepDown = 0.5f;
+    vars->maxStepUp = 0.5f;
+    vars->turnSpeed = 0.0f;
+    vars->realSpeed = 0.0f;
+    vars->vertVel = 0.0f;
+    vars->maxSpeed = 2.7f;
+    vars->deccel = 0.3f;
+    vars->accel = 0.3f;
+    vars->heading = 1.57f;
+    vars->distThresh = 0.1f;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_MoveAndCollide);
 
@@ -719,11 +737,135 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SegmentPush
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SegmentPush);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PathFollowToPos);
+float MB_DistIgnoreSmallZ(Vec4 *first, Vec4 *second, float tolerance);
+int MB_PathMoveDist(MobyPath *path, Vec4 *position, int *segment, float *fraction, float distance, int wrap);
+int MB_PathStepIndex(MobyPath *path, int index, int step, int wrap);
+float MB_SegmentPush(Vec4 *nearest, Vec4 *point, Vec4 *start, Vec4 *end, float tolerance);
+
+int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment, float *fraction, int wrap, float limit, float step, float tolerance)
+{
+    Vec4 points[4];
+    int current = 0;
+    int pointCount;
+    int crossed;
+    float currentFraction = 0.0f;
+    float nextDist;
+    float bestFraction;
+    float dist;
+    int bestSegment;
+    float expandedLimit;
+    int start;
+    int end;
+    float prevDist;
+
+    CopyVec4Inline(&points[0], &path->points[0]);
+    CopyVec4(&points[1], point);
+
+    bestFraction = 0.0f;
+    dist = MB_DistIgnoreSmallZ(&points[0], &points[1], tolerance);
+    bestSegment = 0;
+
+    if (path->pointCount == 0) {
+        FastVecZero(nearest);
+        return 0;
+    }
+
+    expandedLimit = step + limit;
+
+    do {
+        crossed = MB_PathMoveDist(path, &points[0], &current, &currentFraction, step, wrap);
+        CopyVec4(&points[1], point);
+        nextDist = MB_DistIgnoreSmallZ(&points[0], &points[1], tolerance);
+
+        if (nextDist < dist) {
+            dist = nextDist;
+            bestSegment = current;
+            bestFraction = currentFraction;
+        }
+    } while (!crossed);
+
+    if (expandedLimit < dist)
+        return 0;
+
+    start = bestSegment;
+    currentFraction = bestFraction;
+    MB_PathMoveDist(path, &points[0], &start, &currentFraction, -step, wrap);
+
+    currentFraction = bestFraction;
+    end = bestSegment;
+    MB_PathMoveDist(path, &points[0], &end, &currentFraction, step, wrap);
+
+    end = MB_PathStepIndex(path, end, 1, wrap);
+    current = start;
+    dist = 1000000000.0f;
+
+    do {
+        CopyVec4(&points[1], &path->points[current]);
+        CopyVec4(&points[2], point);
+        nextDist = MB_DistIgnoreSmallZ(&points[1], &points[2], tolerance);
+
+        if (nextDist < dist) {
+            dist = nextDist;
+            bestSegment = current;
+        }
+
+        if (current == end)
+            break;
+
+        current = (current + 1) % path->pointCount;
+    } while (1);
+
+    prevDist = 1000000000.0f;
+
+    if (bestSegment > 0 || wrap) {
+        float segmentDist;
+        int previous;
+
+        pointCount = path->pointCount;
+        previous = pointCount - 1;
+        previous = (bestSegment + previous) % pointCount;
+        segmentDist = MB_SegmentPush(nearest, point, &path->points[previous], &path->points[bestSegment], tolerance);
+
+        *segment = previous;
+        CopyVec4(&points[1], &path->points[previous]);
+        CopyVec4(&points[2], nearest);
+
+        *fraction = MB_DistIgnoreSmallZ(&points[1], &points[2], 0.0f);
+        prevDist = segmentDist;
+    }
+
+    pointCount = path->pointCount;
+
+    if (bestSegment < pointCount - 1 || wrap) {
+        nextDist = MB_SegmentPush(&points[1], point, &path->points[bestSegment], &path->points[(bestSegment + 1) % pointCount], tolerance);
+
+        if (nextDist < prevDist) {
+            CopyVec4Inline(nearest, &points[1]);
+            *segment = bestSegment;
+
+            CopyVec4(&points[2], &path->points[bestSegment]);
+            CopyVec4(&points[3], nearest);
+
+            *fraction = MB_DistIgnoreSmallZ(&points[2], &points[3], 0.0f);
+        }
+    }
+
+    return 1;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002731C0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_WrapRot);
+float MB_WrapRot(float angle)
+{
+    float whole;
+    float wrapped = angle + 3.14159274f;
+
+    wrapped /= 6.2831855f;
+    wrapped = FastFrac(&whole, wrapped);
+    wrapped *= 6.2831855f;
+
+    return wrapped - 3.14159274f;
+}
 
 int MB_isCrate(MobyInstance *moby);
 enum { MOBY_CLASS_502 = 502 };
@@ -797,7 +939,18 @@ void ClampVec3Magnitude(Vec4 *vector, float maximum)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_AddMobyToDynamicGroup);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DeleteMobyFromDynamicGroup);
+void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group)
+{
+    int entry;
+
+    for (entry = 1; entry <= group[0]; entry++) {
+        if (&MobyInstances[group[entry]] == moby) {
+            group[entry] = group[group[0]];
+            group[0]--;
+            return;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_FindMobyByVarId);
 
@@ -943,7 +1096,24 @@ int MB_ScaledVecWrapper(Vec4 *vector, float radius)
     return FastBsphereCheck(&scaled, radius);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockLevel);
+void MB_UnlockLevel(int level)
+{
+    int unlockedCount = 0;
+    int slot;
+
+    if (LevelUnlocked[level] == 0) {
+        for (slot = 0; slot < 20; slot++) {
+            if (LevelUnlocked[slot] != 0)
+                unlockedCount++;
+        }
+
+        LevelUnlocked[level] = 1;
+        LevelUnlockOrder[unlockedCount] = level;
+
+        if (level != Level)
+            MB_ToastMessageByIndex(level);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockItem);
 
@@ -1045,13 +1215,36 @@ void MB_RotateMoby(MobyInstance *moby, float xAngle, float yAngle, float zAngle)
     MB_GetOrientationMtx(&orientation, &moby->rotation);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", CreateMotionBlur);
+void CreateMotionBlur(MobyInstance *pMoby, MotionBlur *blur)
+{
+    if (blur->active == 0) {
+        blur->pMoby = pMoby;
+        blur->head = 0;
+        blur->filled = 0;
+        blur->count = 0;
+        blur->active = 1;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", AddMotionBlurElem);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", UpdateMotionBlur);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", DeleteMotionBlur);
+void DeleteMotionBlur(MotionBlur *blur)
+{
+    int slot;
+
+    if (blur->active != 0) {
+        for (slot = 0; slot < blur->count; slot++) {
+            if (blur->copies[slot] != 0) {
+                DeleteMoby(blur->copies[slot]);
+                blur->copies[slot] = 0;
+            }
+        }
+
+        blur->active = 0;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002777C0);
 
@@ -1119,7 +1312,20 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SetPointAhe
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SpawnBonePartFx);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToggleManipulator);
+void MB_ToggleManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator, float scale)
+{
+    if (CheatsActivated[CHEAT_BIG_HEAD] != 0) {
+        if (manipulator->state == 0)
+            AttachManipulator(moby, animJoint, manipulator);
+
+        manipulator->scale.x = scale;
+        manipulator->scale.y = scale;
+        manipulator->scale.z = scale;
+    }
+
+    else if (manipulator->state != 0)
+        DetachManipulator(moby, manipulator);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_00278790);
 
@@ -1140,7 +1346,17 @@ void MB_DistributeBoltsNearHero(MobyInstance *moby)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SpawnSparksPair);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToastMessage);
+extern int ToastMsgTimer;
+extern char ToastMsgBuff[];
+
+void MB_ToastMessage(int message, int time)
+{
+    if (time == -1)
+        time = FastScaleRoundInt(0xB4);
+
+    strcpy(ToastMsgBuff, msg_string(message));
+    ToastMsgTimer = time;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToastMessageFmt);
 

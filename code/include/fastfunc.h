@@ -11,6 +11,8 @@ int FastScaleRoundInt(int value);
 int FastAbsI(int value);
 int FastTweenColor(int from, int to, float fraction);
 int FastFloatToInt(float value);
+// Splits value into whole and fractional parts; returns the fraction.
+float FastFrac(float *whole, float value);
 float FastIntToFloat(int value);
 float FastAngleCosF(float angle);
 float FastAngleSinF(float angle);

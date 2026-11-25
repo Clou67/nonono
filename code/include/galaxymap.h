@@ -21,6 +21,7 @@ struct LevelSelectText {
 extern LevelSelectText LevelSelectTexts[];
 extern LevelMapMarker LevelMapMarkers[];
 extern unsigned char LevelUnlocked[];
+extern int LevelUnlockOrder[];
 
 extern int MediumFontHeight;
 void DrawGalaxyMap(int left, int right, int top, int bottom);
