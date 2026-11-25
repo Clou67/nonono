@@ -684,3 +684,5 @@ MobyVU1Data = 0x0010FAA0;
 MobyVU0Program = 0x00100080;
 g_SubtitlesOn = 0x0015EE40;
 LightVU0Program = 0x00100AE0;
+LevelRecords = 0x00141680;
+g_MiscLevelFlags = 0x0013D390;
