@@ -413,16 +413,13 @@ VendorScrollFormat = 0x0020A510;
 
 VendorRender = 0x001CA940;
 
-VendorDudeVisible = 0x00161188;
 
 FastVec3DistLen__FP4Vec4T0 = 0x00221398;
 
 MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988;
 
 
-VendorBoltsThousandsFormat = 0x00161158;
 
-VendorBoltsFormat = 0x00161160;
 
 sound_PlayMobySound__FiiP12MobyInstance = 0x002A1618;
 

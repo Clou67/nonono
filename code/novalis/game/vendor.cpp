@@ -5,6 +5,11 @@
 #include "draw.h"
 #include "vendor.h"
 
+// vendor.cpp's small data, in retail order.
+char VendorMobyUpdateLabel[] = "moby update";
+char VendorHeroUpdateLabel[] = "hero update";
+char VendorPartUpdateLabel[] = "part update";
+
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/vendor", ProjectBoxToScreen);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/vendor", ProjectBoxToScreenInt);
@@ -56,8 +61,8 @@ void Vendor_DrawDudeMoby(void)
         DrawMobyListProc(VendorRender.dudeMoby, 1);
 }
 
-extern const char VendorBoltsThousandsFormat[];
-extern const char VendorBoltsFormat[];
+extern char VendorBoltsThousandsFormat[];
+extern char VendorBoltsFormat[];
 
 int Vendor_FormatBolts(char *text, int bolts)
 {
@@ -65,6 +70,21 @@ int Vendor_FormatBolts(char *text, int bolts)
         return sprintf(text, VendorBoltsFormat, bolts);
     return sprintf(text, VendorBoltsThousandsFormat, bolts / 1000, bolts % 1000);
 }
+
+// Bolt counts, with and without a thousands separator; also used by the item info and weapon strings.
+char VendorBoltsThousandsFormat[] = "%d,%03d";
+char VendorBoltsFormat[] = "%d";
+// Arrows around the selected item's name.
+char VendorArrowLeft[] = "<";
+char VendorArrowRight[] = ">";
+int VendorSdata161178[3] = { 0, 1, 2 };
+float VendorSdata161184 = 0.0f;
+int VendorDudeVisible = 0;
+int VendorSdata16118C = 0;
+int VendorSdata161190 = 0;
+int VendorSdata161194 = 0;
+int VendorSdata161198 = 0;
+int VendorSdata16119C = 0;
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/vendor", DrawVendorHintFrame);
 
