@@ -188,7 +188,7 @@ struct MobyVu1Header {
     unsigned char unk_02[14];
 };
 
-extern MobyVu1Header MobyVu1HeaderData;
+extern MobyVu1Header MobyVu1HeaderData __attribute__((section(".data")));
 extern unsigned char MobyVU1Data[];
 extern long MobyVU0Program[];
 

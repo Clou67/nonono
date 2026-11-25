@@ -96,7 +96,7 @@ struct ShrubNearConsts {
 
 // Copies of the view that the renderers and VU1 programs read; UpdateViewContext keeps them up.
 extern Vec4 FastFrustum[8];
-extern float part_constants[4];
+extern float part_constants[];
 extern Vec4 ViewConstsA[3];
 extern TfragVuConsts tfrag_setup_consts;
 extern ShrubFogConsts shrub_setup_consts;

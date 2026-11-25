@@ -28,8 +28,6 @@
 // Camera position is scaled by this to match the fixed point tfrag positions.
 #define TFRAG_POSITION_SCALE -1024.0f
 
-// A named .data string rather than a literal, so its carve is separate from the labels' .rodata.
-const char TfragTextureOverflowMessage[] __attribute__((section(".data"))) = "tfrag texture overflow\n";
 
 void SetTfragDists(void)
 {
@@ -81,7 +79,7 @@ void DmaTfragTextures(void)
             VU1_texFlush();
 
             if (gsEnd > TFRAG_GS_MEMORY_LIMIT)
-                printf_stub(TfragTextureOverflowMessage);
+                printf_stub("tfrag texture overflow\n");
 
             if (TfragGsMax < gsEnd)
                 TfragGsMax = gsEnd;

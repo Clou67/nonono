@@ -300,7 +300,7 @@ struct AnimLayer {
 
 
 void MB_UpdateAnimLayer(MobyInstance *moby, AnimLayer *layer);
-extern Vec4 LightDirection;
+extern Vec4 LightDirection __attribute__((section(".data")));
 void MB_GetLightDirection(MobyInstance *moby, Vec4 *out);
 void MB_UpdateLightAngle(void);
 

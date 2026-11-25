@@ -6,7 +6,8 @@ extern int LevelVendorItems[];
 
 // Per-level class tables: the index of each moby, tie and shrub class in the level's
 // class list (-1 when the level has no such class), its texture lookup and its mip distances.
-extern char CollJointCacheKeys[0x10];
+#define COLL_JOINT_CACHE_KEYS_SIZE 0x10
+extern char CollJointCacheKeys[];
 extern char MobyClassLookup[0x800];
 extern char MobyTexLookup[0xE00];
 extern char MobyMipDists[0xE0];

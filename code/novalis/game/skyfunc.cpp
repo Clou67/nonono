@@ -29,6 +29,13 @@ unsigned char *g_SkyVuBufferAddrs[2] = {
 };
 int g_SkyVuBuffer = 0;
 
+// Sky packet data that nothing reads any more; kept for the data layout.
+unsigned long SkyUnusedQword0 = 0;
+unsigned long SkyUnusedGifTag = 0x8000000401300000;
+unsigned long SkyUnusedQword1 = 0;
+unsigned int SkyUnusedColors0[4] = { 0x00386070, 0x00386070, 0x00386070, 0 };
+unsigned int SkyUnusedColors1[4] = { 0x802020F0, 0x8020F0F0, 0x80F02080, 0x8020F020 };
+
 void FastEulerToMtx2(Mtx4 *matrix, Vec4 *angles);
 void BuildGifTextureDma(void);
 void SprDmaToSpr_Start(void *source, int quadwords, void *destination);

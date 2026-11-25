@@ -1332,7 +1332,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_00278790)
 
 enum { BOLTS_SPAWN = 2 };
 
-extern Vec4 HeroPosition;
+extern Vec4 HeroPosition __attribute__((section(".data")));
 float FastVec3DistLen(Vec4 *first, Vec4 *second);
 void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int flags, int splineIndex);
 

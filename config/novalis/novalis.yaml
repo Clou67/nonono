@@ -77,19 +77,17 @@ segments:
     - [0x2250, lit4]
     - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep
     - [0x2344, lit4]
-    - [0x2570, .rodata, game/shrubfunc]  # shrub texs, shrub draw labels
+    - [0x2570, .sdata, game/shrubfunc]  # shrub texs, shrub draw labels
     - [0x2590, lit4]
-    - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index
-    - [0x25d8, lit4]
-    - [0x2610, .rodata, game/skyfunc]  # sky texture label; trailing zero fill includes Sky at 0x16051c
+    - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c
     - [0x2620, lit4]
-    - [0x3030, .rodata, game/tfragfunc]  # tfrag texs, tfrag draw labels
+    - [0x3030, .sdata, game/tfragfunc]  # tfrag texs, tfrag draw labels
     - [0x3050, lit4]
-    - [0x30a0, .rodata, game/tiefunc]  # tie texs, tie draw labels
+    - [0x30a0, .sdata, game/tiefunc]  # tie texs, tie draw labels
     - [0x30c0, lit4]
     - [0x32a0, .sdata, game/vuchain]  # VifChainFlags
     - [0x32a4, lit4]
-    - [0x3438, .rodata, movie/movie]  # movie error format
+    - [0x3438, .sdata, movie/movie]  # movie error format
     - [0x3448, lit4]
 
   # .bss is NOBITS in the section table but the single PT_LOAD covers it with zeros.
@@ -111,6 +109,7 @@ segments:
     - [0x1bc50, data]
     - [0xaa970, .rodata, game/actuator]  # jump table
     - [0xaa990, data]
+    - [0xaab60, .rodata, game/draw]  # long DefaultDraw timer labels
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]
@@ -120,10 +119,10 @@ segments:
     - [0xabfa0, data]
     - [0xac280, .rodata, game/npc]  # separators, jump table
     - [0xac2c0, data]
-    - [0xac4d0, .data, game/shrubfunc]  # texture overflow message
+    - [0xac4d0, .rodata, game/shrubfunc]  # texture overflow message
     - [0xac4e8, data]
-    - [0xac5b0, .data, game/tfragfunc]  # texture overflow message
-    - [0xac5c8, .data, game/tiefunc]  # texture overflow message
+    - [0xac5b0, .rodata, game/tfragfunc]  # texture overflow message
+    - [0xac5c8, .rodata, game/tiefunc]  # texture overflow message
     - [0xac5e0, data]
     - [0xac690, .rodata, game/vuchain]
     - [0xac718, data]

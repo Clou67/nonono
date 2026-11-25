@@ -103,7 +103,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_Pos2Polar
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_InitBlenderPolarHero);
 
-extern Vec4 camPosOffset;
+extern Vec4 camPosOffset __attribute__((section(".data")));
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 enum { CAMERA_BLEND_WITH_POSITION_OFFSET = 2 };
 
