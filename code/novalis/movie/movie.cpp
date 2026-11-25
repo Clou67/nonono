@@ -236,3 +236,10 @@ void proceedAudio(void)
 {
     audioDecSend(&moviePlayer->audio_dec);
 }
+
+// The rest of movie.cpp's small data, after its error format. Defined last so the functions above reach it
+// with lui, as retail does.
+unsigned char *movieDecoderBuffer = 0;
+MoviePlayer *moviePlayer = 0;
+int movieDecoderThread = 0;
+int MovieSdata161354 = 0;

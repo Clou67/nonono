@@ -87,8 +87,8 @@ segments:
     - [0x3228, .sdata, game/vendor]  # timer labels, bolt formats, arrows, dude state
     - [0x32a0, .sdata, game/vuchain]  # VifChainFlags
     - [0x32a4, lit4]
-    - [0x3438, .sdata, movie/movie]  # movie error format
-    - [0x3448, lit4]
+    - [0x3438, .sdata, movie/movie]  # movie error format, decoder state
+    - [0x3458, lit4]
 
   # .bss is NOBITS in the section table but the single PT_LOAD covers it with zeros.
   - name: bss

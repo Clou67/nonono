@@ -2333,3 +2333,4 @@ VendorBoltsThousandsFormat = 0x00161158; // size:0x8
 VendorBoltsFormat = 0x00161160; // size:0x3
 MemcardSdata15FF48 = 0x0015FF48; // size:0x4
 MemcardSdata15FF4C = 0x0015FF4C; // size:0x4
+MovieSdata161354 = 0x00161354; // size:0x4
