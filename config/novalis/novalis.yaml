@@ -72,8 +72,8 @@ segments:
     - [0x1754, lit4]
     - [0x2028, .sdata, game/memcard]  # g_loaderr
     - [0x202c, lit4]
-    - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators
-    - [0x2250, lit4]
+    - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators, price format
+    - [0x2260, lit4]
     - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep
     - [0x2344, lit4]
     - [0x2570, .sdata, game/shrubfunc]  # shrub texs, shrub draw labels

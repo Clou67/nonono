@@ -88,7 +88,6 @@ extern int LevelObjectStart[];
 extern MobyInstance *LevelObjectMobys[];
 extern InfobotHintEntry *InfobotHintLists[];
 extern int BoltHudHandle;
-extern char InfobotPriceFormat[];
 
 int InfobotHint_Update(MobyInstance *moby, InfobotHint *hint);
 int InfobotHint_FindEntry(MobyInstance *moby);

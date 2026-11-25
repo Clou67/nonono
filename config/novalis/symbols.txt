@@ -2191,7 +2191,6 @@ LevelObjectStart = 0x001C4938; // size:0x50
 LevelObjectMobys = 0x00179638; // size:0x4
 InfobotHintLists = 0x001B1AF8; // size:0x4
 BoltHudHandle = 0x00160130; // size:0x4
-InfobotPriceFormat = 0x00160150; // size:0x9
 PadSocketParam = 0x001B1CE0; // size:0x20
 
 LiveCheckpoint = 0x001BAA50;
