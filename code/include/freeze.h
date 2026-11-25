@@ -35,18 +35,6 @@ struct freeze_t {
 
 extern freeze_t Freeze;
 
-// Text and format strings of the freeze dialogs.
-extern char FreezeEmptyText[];
-extern char FreezeFormatPrompt[];
-extern char FreezeFormatIndented[];
-extern char FreezeFormatFirst[];
-extern char FreezeFormatSecond[];
-extern char FreezeFormatThird[];
-extern char FreezeFormatNth[];
-extern char FreezeFormatString[];
-extern char FreezeFormatTime[];
-extern char FreezeFormatNumber[];
-
 // Which occlusion the frozen scene is drawn with.
 extern int OcclMode;
 
