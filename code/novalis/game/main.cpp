@@ -216,10 +216,10 @@ void startLevel(void)
             DrawFrameEnd();
             break;
         }
-        if (gameMode == mode) {
-            FramesSinceStateChange++;
-        } else {
+        if (gameMode != mode) {
             FramesSinceStateChange = 0;
+        } else {
+            FramesSinceStateChange++;
         }
 
         if (CutscenePlaying) {
@@ -256,8 +256,13 @@ void startLevel(void)
 
         if (!Hero.outOfBounds) {
             if (gameMode == 0 || gameMode == 2) {
+                int limit = 9600;
+
+                if (videoModePal) {
+                    limit = 11520;
+                }
                 // The frame overran its budget: run one more update to catch up.
-                if ((int)*T0_COUNT > (videoModePal ? 0x2D00 : 0x2580)) {
+                if (limit < (int)*T0_COUNT) {
                     if (gameMode == 0) {
                         UpdatePad();
                         UpdateGameplay();
@@ -274,7 +279,7 @@ void startLevel(void)
                 sceGsSyncV(0);
                 gsFrame++;
                 Respawn_IncCounter();
-                FrameOverrun = 0;
+                *(float *)&FrameOverrun = 0.0f;
             }
         }
         ResetGsRegistersPr();
