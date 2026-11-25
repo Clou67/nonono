@@ -727,7 +727,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PathFollowT
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002731C0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_WrapRot);
+float MB_WrapRot(float angle)
+{
+    float whole;
+    float wrapped = angle + 3.14159274f;
+
+    wrapped /= 6.2831855f;
+    wrapped = FastFrac(&whole, wrapped);
+    wrapped *= 6.2831855f;
+
+    return wrapped - 3.14159274f;
+}
 
 int MB_isCrate(MobyInstance *moby);
 enum { MOBY_CLASS_502 = 502 };
