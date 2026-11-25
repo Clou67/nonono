@@ -2202,7 +2202,6 @@ StashState = 0x001C1720;
 StashBlocks = 0x001C1758;
 StashClient = 0x001C1728;
 
-videoErrorMessage = 0x00161360;
 
 
 FontSmallMetrics = 0x001C3970;
@@ -2334,3 +2333,4 @@ VendorBoltsFormat = 0x00161160; // size:0x3
 MemcardSdata15FF48 = 0x0015FF48; // size:0x4
 MemcardSdata15FF4C = 0x0015FF4C; // size:0x4
 MovieSdata161354 = 0x00161354; // size:0x4
+VideoSequenceEndCode = 0x00161358; // size:0x4

@@ -1,6 +1,9 @@
 #include "common.h"
 #include "movie.h"
 
+// MPEG sequence end code (as stream bytes) that videoDecFlush feeds the decoder.
+unsigned char VideoSequenceEndCode[4] = { 0x00, 0x00, 0x01, 0xB7 };
+
 enum {
     MPEG_CALLBACK_ERROR = 0,
     MPEG_CALLBACK_NO_DATA = 1,
@@ -185,12 +188,11 @@ int decBs0(VideoDec *decoder)
     return result;
 }
 
-extern const char videoErrorMessage[];
 void printf_stub(const char *format, ...);
 
 int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument)
 {
-    printf_stub(videoErrorMessage, data->message);
+    printf_stub("%s\n", data->message);
     return 1;
 }
 
