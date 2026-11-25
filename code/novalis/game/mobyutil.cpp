@@ -1146,7 +1146,20 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SetPointAhe
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SpawnBonePartFx);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToggleManipulator);
+void MB_ToggleManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator, float scale)
+{
+    if (CheatsActivated[CHEAT_BIG_HEAD] != 0) {
+        if (manipulator->state == 0)
+            AttachManipulator(moby, animJoint, manipulator);
+
+        manipulator->scale.x = scale;
+        manipulator->scale.y = scale;
+        manipulator->scale.z = scale;
+    }
+
+    else if (manipulator->state != 0)
+        DetachManipulator(moby, manipulator);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_00278790);
 
