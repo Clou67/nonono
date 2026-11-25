@@ -2,6 +2,9 @@
 #include "vuchain.h"
 #include "moby.h"
 #include "loaders.h"
+#include "music.h"
+#include "wad.h"
+#include "draw.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadByteGrid);
 
@@ -73,21 +76,34 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadLevelFiles)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", InitLevelFromWad);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", PreLoadNpcChunk);
+// Starts streaming a chunk of the current npc scene from the disc into the scene buffer.
+int PreLoadNpcChunk(int chunk)
+{
+    unsigned char *buffer = SceneLoad.buffer;
+    int sector;
+    int length;
+
+    if (videoModePal) {
+        length = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
+        sector = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
+    }
+
+    else {
+        length = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
+        sector = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
+    }
+
+    if (length > 0) {
+        music_LoadFile(buffer, sector, length);
+        music_Sync(0);
+    }
+
+    return 1;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseNpcChunk);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadWeaponCutscene);
-
-struct SceneLoadState {
-    char unk_00[0x58];
-    unsigned char *decodedChunk;
-    unsigned char *buffer;
-    unsigned char *chunks[1];
-};
-
-extern SceneLoadState SceneLoad;
-void ParseNpcChunk(void);
 
 void ParseWeaponSceneChunk(int chunk)
 {
