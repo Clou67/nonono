@@ -663,7 +663,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", UpdateLetterBox);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DrawScreenEffect);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DrawScreenOverlay);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DrawScreenInsertEffect);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetScreenClearColorPacket);
 
