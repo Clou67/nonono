@@ -199,7 +199,6 @@ segments:
     - [0x100d38, cpp, game/mcstate]
     - [0x101528, cpp, game/memcard]
     - [0x103790, asm, game/miscproc]
-    - [0x103d10, cpp, game/mesh]
     - [0x104860, cpp, game/mission]
     - [0x105400, cpp, game/mobyfunc]
     - [0x1071b0, asm, game/mobyproc]
