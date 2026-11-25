@@ -64,6 +64,8 @@ segments:
     align: 4
     subsegments:
     - [0x1000, lit4]
+    - [0x13f0, .sdata, game/draw]  # draw state and DefaultDraw timer labels
+    - [0x1568, lit4]
     - [0x15a8, .sdata, game/freeze]  # layout values
     - [0x1604, data]
     - [0x1668, lit4]

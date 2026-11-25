@@ -285,7 +285,8 @@ struct ScreenInsertEffect {
     unsigned long alphaReg;
 };
 
-extern int RenderFlags __attribute__((section(".sdata")));
+extern int RenderFlags;
+extern float g_SceneFlash;
 // Debug switches for the draw loop.
 struct DrawDebugState {
     int occlMode;
@@ -294,16 +295,13 @@ struct DrawDebugState {
 };
 
 extern DrawDebugState DrawDebug;
+extern ScreenInsertEffect ScreenColorEffectDefault;
 extern int OcclMode;
 extern int PostDrawCnt;
 extern int PostPreDrawCnt;
 extern int MobyFnListCnt;
 extern int PreDrawCnt;
 extern int mobyVu1State;
-extern int ScreenColorEffectEnabled;
-extern ScreenInsertEffect *ScreenColorEffectNow;
-extern ScreenInsertEffect g_ScreenInsertEffect __attribute__((section(".sdata")));
-extern float g_SceneFlash;
 extern unsigned char g_UnderwaterTintR;
 extern unsigned char g_UnderwaterTintG;
 extern unsigned char g_UnderwaterTintB;
@@ -354,7 +352,265 @@ void LightShrubs(void *sprStash);
 void PatchMobyGifs(void);
 void UpdateFog(void);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DefaultDraw);
+// draw.cpp's small data, in retail order. The variables DefaultDraw reads through $gp are defined
+// before it; the rest come after it, since retail reaches those with lui.
+int DrawSdata15F2F0 = 0;
+int DrawSdata15F2F4 = 0;
+int DrawSdata15F2F8 = 0;
+int DrawSdata15F2FC = 0;
+int DrawSdata15F300 = 0;
+int DrawSdata15F304 = 0;
+float DrawSdata15F308 = 0.0f;
+int ScreenColorEffectEnabled = 0;
+ScreenInsertEffect *ScreenColorEffectNow = &ScreenColorEffectDefault;
+int DrawSdata15F314 = 0;
+int ScreenColorEffectLevel = 0;
+int DrawSdata15F31C = 0;
+int DrawSdata15F320 = 0;
+int DrawSdata15F324 = 0;
+int DrawSdata15F328 = 0;
+int DrawSdata15F32C = 0;
+// Retail keeps this 16-byte struct in .sdata, which -G8 alone would not do.
+ScreenInsertEffect g_ScreenInsertEffect __attribute__((section(".sdata"))) = { 0, 0, 0 };
+
+// Draws the frame: the sky, the tfrags, ties, shrubs and mobys, the effects, the HUD and the screen
+// overlays, then lights and patches the next frame's packets while VU1 works through this one.
+void DefaultDraw(void)
+{
+    int clearColor; // never set: retail passes whatever is in $a0
+
+    if (Sky == 0 || Sky->clear_screen != 0 || !(RenderFlags & 1) || drawConfig.sky == 0 || DrawDebug.forceClear != 0) {
+        ClearDrawBufferLarge(clearColor);
+    }
+    ComposeCameraMatrix();
+    CleanAnimationCache();
+    UpdateOcclusion();
+    SetupFogColorGsReg();
+    mobyVu1State = -1;
+    printf_stub2(RenderSetupLabel, 15);
+    printf_stub3(RenderSetupLabel, 15);
+
+    if (Sky != 0 && (RenderFlags & 1)) {
+        if (drawConfig.sky) {
+            InitSky();
+        }
+        printf_stub3(SkyDrawLabel, 14);
+        printf_stub2(SkyDrawLabel, 14);
+    }
+
+    if (RenderFlags & 2) {
+        DrawTfrag();
+    }
+    Vif1ChainCmd(VIF_CHAIN_STAGE_1);
+
+    if (RenderFlags & 4) {
+        if (videoModePal) {
+            DrawTiesEx();
+        } else {
+            DrawTie();
+        }
+    }
+    Vif1ChainCmd(VIF_CHAIN_STAGE_2);
+
+    if (drawConfig.post_draws && PostDrawCnt) {
+        VU1_gsRegsEffects();
+        FlipAndExploreTimersVU1(1);
+        ExecutePostDraws();
+        FinalizeVU1FramePacketChain();
+        VU1_gsRegsNormal();
+    }
+    printf_stub2(PreEffectsLabel, 6);
+    printf_stub3(PreEffectsLabel, 6);
+
+    if (RenderFlags & 8) {
+        DrawShrub();
+    }
+    Vif1ChainCmd(VIF_CHAIN_STAGE_3);
+
+    if (drawConfig.screen_overlays && g_ScreenInsertEffect.enabled) {
+        DrawScreenInsertEffect(&g_ScreenInsertEffect);
+    }
+    if (RenderFlags & 0x20) {
+        FlipAndExploreTimersVU1(1);
+        DrawWorldEffectsPass();
+        FinalizeVU1FramePacketChain();
+    }
+    if (drawConfig.post_draws && PostPreDrawCnt) {
+        VU1_gsRegsEffects();
+        FlipAndExploreTimersVU1(1);
+        ExecutePostPreDraws();
+        FinalizeVU1FramePacketChain();
+        VU1_gsRegsNormal();
+    }
+
+    if (RenderFlags & 0x10) {
+        DrawMobys();
+    }
+    Vif1ChainCmd(VIF_CHAIN_STAGE_4);
+    FlipAndExploreTimersVU1(0);
+
+    if ((RenderFlags & 0x20) && drawConfig.moby_vu1_data && mobyVu1State != 6) {
+        VU1_addDataRef(MobyVU1Data, MobyVu1HeaderData.qwc);
+        mobyVu1State = 6;
+    }
+    printf_stub3(VuEffectsLabel, 4);
+    printf_stub2(VuEffectsLabel, 4);
+
+    if (RenderFlags & 0x20) {
+        VU1_gsRegsEffects();
+        if (drawConfig.post_draws) {
+            if (MobyFnListCnt) {
+                ExecuteRegisteredMobyFuncs();
+            }
+            VU1_addGSregister(0x42, 0x8000000048);
+            Camera_DrawReticule();
+            VU1_gsRegsEffects();
+            DrawLameShadows();
+        }
+        printf_stub2(MobyEffectsLabel, 6);
+        printf_stub3(MobyEffectsLabel, 6);
+
+        if (drawConfig.particles) {
+            VU1_addGSregister(8, 5);
+            VU1_gsRegsEffects();
+            FlushCache(0);
+            PartProc();
+            mobyVu1State = 8;
+        }
+        printf_stub2(PartDrawLabel, 8);
+        printf_stub3(PartDrawLabel, 8);
+
+        if (drawConfig.pre_draws) {
+            if (PreDrawCnt) {
+                VU1_gsRegsEffects();
+                ExecutePreDraws();
+            }
+            if (gameMode == 0) {
+                ImpactSprite_Draw();
+            }
+            VU1_addGSregister(0x42, 0x8000000044);
+            TargetCrosshairDraw();
+        }
+        printf_stub2(PostEffectsLabel, 6);
+        printf_stub3(PostEffectsLabel, 6);
+    }
+
+    if (drawConfig.aa_blur) {
+        AA_BlurPass();
+    }
+    printf_stub3(AaBlurLabel, 15);
+    VU1_gsRegsEffects();
+
+    if (RenderFlags & 0x10000) {
+        update_stub();
+    }
+    if ((RenderFlags & 0x80) && drawConfig.hud) {
+        DrawGameplayHud();
+        Help_Draw();
+        UpdateLetterBox();
+    }
+    if (gameMode == 2 && g_SubtitlesOn) {
+        DrawSubtitles();
+    }
+    printf_stub3(HudLabel, 14);
+    printf_stub2(HudLabel, 14);
+    FinalizeVU1FramePacketChain();
+
+    if (RenderFlags & 0x40) {
+        if (drawConfig.screen_overlays) {
+            VU1_addGSregister(0x42, 0x8000000044);
+            if (GameCamera.camUnderWater) {
+                SetScreenClearColorPacket(g_UnderwaterTintR, g_UnderwaterTintG, g_UnderwaterTintB, g_UnderwaterTintA);
+            }
+            if (screenFade > 0.0f) {
+                if (screenFade > 1.0f) {
+                    screenFade = 1.0f;
+                }
+                SetScreenClearColorPacket(0, 0, 0, FastFloatToInt(screenFade * 128.0f));
+            }
+            if (g_SceneFlash > 0.0f) {
+                if (g_SceneFlash > 1.0f) {
+                    g_SceneFlash = 1.0f;
+                }
+                SetScreenClearColorPacket(255, 255, 255, FastFloatToInt(g_SceneFlash * 128.0f));
+            }
+            if (ScreenColorEffectEnabled && ScreenColorEffectNow) {
+                DrawScreenEffect();
+            }
+        }
+        printf_stub3(ScreenOverlaysLabel, 10);
+    }
+
+    // Light and patch next frame's packets while VU1 draws this one.
+    VU0_loadMicroProgram(LightVU0Program);
+    FlushCache(0);
+    PerfLoad = FastIntToFloat(*T0_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
+
+    VU1_syncChain(2);
+    printf_stub2(PatchLightLabel, 17);
+    if (RenderFlags & 2) {
+        if (drawConfig.tfrag) {
+            LightTfrags(TfragSprStash);
+            PatchTfragGifs();
+        }
+        printf_stub2(TfragPatchLightLabel, 2);
+    }
+
+    VU1_syncChain(4);
+    printf_stub2(PatchLightLabel, 17);
+    if (RenderFlags & 4) {
+        if (drawConfig.tie) {
+            if (videoModePal) {
+                RefreshTieLights();
+                UpdateTieTextures();
+            } else {
+                LightTies(TieSprStash);
+                PatchTieGifs();
+            }
+        }
+        printf_stub2(TiePatchLightLabel, 5);
+    }
+
+    VU1_syncChain(8);
+    printf_stub2(PatchLightLabel, 17);
+    if (RenderFlags & 8) {
+        if (drawConfig.shrub) {
+            LightShrubs(ShrubSprStash);
+            PatchShrubGifs();
+        }
+        printf_stub2(ShrubPatchLightLabel, 7);
+    }
+
+    VU1_syncChain(0x10);
+    printf_stub2(PatchLightLabel, 17);
+    if (RenderFlags & 0x10) {
+        if (drawConfig.mobys) {
+            PatchMobyGifs();
+        }
+        printf_stub2(MobyPatchLabel, 3);
+    }
+
+    UpdateFog();
+    OcclMode = 0;
+}
+
+
+
+// Timer section names for DefaultDraw. Retail keeps these strings in .sdata, which our -G8 build only
+// does for strings of 8 bytes or fewer, so they are named arrays placed there explicitly.
+char RenderSetupLabel[] __attribute__((section(".sdata"))) = "render setup";
+char SkyDrawLabel[] __attribute__((section(".sdata"))) = "sky draw";
+char PreEffectsLabel[] __attribute__((section(".sdata"))) = "pre effects";
+char VuEffectsLabel[] __attribute__((section(".sdata"))) = "vu effects";
+char MobyEffectsLabel[] __attribute__((section(".sdata"))) = "moby effects";
+char PartDrawLabel[] __attribute__((section(".sdata"))) = "part draw";
+char PostEffectsLabel[] __attribute__((section(".sdata"))) = "post effects";
+char AaBlurLabel[] __attribute__((section(".sdata"))) = "aa blur";
+char HudLabel[] __attribute__((section(".sdata"))) = "hud";
+char ScreenOverlaysLabel[] __attribute__((section(".sdata"))) = "screen overlays";
+char PatchLightLabel[] __attribute__((section(".sdata"))) = "";
+char TiePatchLightLabel[] __attribute__((section(".sdata"))) = "tie patch-light";
+char MobyPatchLabel[] __attribute__((section(".sdata"))) = "moby patch";
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetupDefaultDraw);
 
@@ -662,3 +918,36 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", InitAlphaPal);
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", FontPrintCenterScaled);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DrawTimedHelpMsg);
+
+// The rest of draw.cpp's small data. Defined last so every function above reaches it the way retail
+// does (lui, or $gp only where the compiler fills a delay slot).
+int RenderFlags = 0;
+int gsFrame = 0;
+float screenFade = 0.0f;
+float g_SceneFlash = 0.0f;
+int DrawSdata15F404 = 0;
+int DrawSdata15F408 = 0;
+int DrawSdata15F40C = 0;
+int DrawSdata15F410 = 0;
+int DrawSdata15F414 = 0;
+int GifLoadCnt = 0;
+int DrawSdata15F41C = 0;
+int DrawSdata15F420 = 0;
+int MobyFnListCnt = 0;
+int PreDrawCnt = 0;
+int PostDrawCnt = 0;
+int PostPreDrawCnt = 0;
+int DrawSdata15F434 = 0;
+int DrawSdata15F438 = 0;
+int DrawSdata15F43C = 0;
+int DrawSdata15F440 = 0;
+unsigned char DrawSdata15F444 = 0;
+unsigned char DrawSdata15F445 = 0;
+unsigned char DrawSdata15F446 = 0;
+float DrawSdata15F448 = 0.0f;
+float DrawSdata15F44C = 0.0f;
+float DrawSdata15F450 = 0.0f;
+float DrawSdata15F454 = 0.0f;
+int DrawSdata15F458 = 0;
+int FontColorsEnabled = 0;
+int DrawSdata15F460 = 0;

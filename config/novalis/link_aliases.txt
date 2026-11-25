@@ -521,4 +521,3 @@ TargetCrosshairDraw__Fv = 0x0020FC40;
 UpdateFog__Fv = 0x00218D70;
 UpdateLetterBox__Fv = 0x0021B7D8;
 UpdateOcclusion__Fv = 0x002193F8;
-DefaultDraw__Fv = 0x0021A1B8;
