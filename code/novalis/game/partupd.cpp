@@ -254,7 +254,18 @@ void UpdatePart_048(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286E18);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_049);
+void UpdatePart_049(PartInstance *part)
+{
+    PartTweenSpin *spin = &part->tweenSpin;
+
+    part->rot += spin->rotationStep;
+    FastVec3Add(&part->pos, &part->pos, &spin->velocity);
+
+    part->rgba = FastTweenColor(spin->colorA, spin->colorB, FastAbsF(FastIntToFloat(part->timer) * spin->rate - 1.0f));
+
+    if (FastDecTimer(part->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_050);
 
