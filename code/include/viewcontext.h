@@ -28,9 +28,9 @@ struct ViewContext {
     Vec4 hvdf;
     Vec4 unSquish;
     Vec4 guard;
-    Vec4 iguard;
     Vec4 sphereCheckA;
     Vec4 sphereCheckB;
+    Vec4 sphereCheckC;
     float xpix;
     float ypix;
     float xclip;
@@ -58,17 +58,51 @@ struct ViewContext {
 
 extern ViewContext VC;
 
+// Constants for the tfrag VU1 program that follow the view.
+struct TfragVuConsts {
+    char unk0[0x10];
+    int fog0;
+    int fogFarIntensity;
+    int fogNearIntensity;
+    char unk1C[0x44];
+    Vec4 hvdf;
+    Vec4 hmgScale;
+    Vec4 ihmgScale;
+    char unk90[0x10];
+    int guardX;
+    int guardY;
+};
+
+// Fog constants for the shrub VU1 programs (float bit patterns).
+struct ShrubFogConsts {
+    char unk0[0x28];
+    int fog0;
+    int max;
+    int fogFarIntensity;
+    int fogNearIntensity;
+};
+
+// The near shrub constants also carry the view's screen scale and offset.
+struct ShrubNearConsts {
+    char unk0[0x28];
+    int fog0;
+    int max;
+    int fogFarIntensity;
+    int fogNearIntensity;
+    char unk38[0x8];
+    Vec4 ihmgScale;
+    Vec4 hvdf;
+};
+
 // Copies of the view that the renderers and VU1 programs read; UpdateViewContext keeps them up.
 extern Vec4 FastFrustum[8];
-extern Vec4 part_constants;
+extern float part_constants[4];
 extern Vec4 ViewConstsA[3];
-extern unsigned char ViewConstsB[0x48];
-extern unsigned char ViewConstsC[0x20];
-extern unsigned char tfrag_setup_consts[0x1C];
-extern unsigned char shrub_near_setup_consts[0x38];
-extern unsigned char shrub_setup_consts[0x38];
-extern unsigned char stripvif_head[0x40];
-extern unsigned char watertile_blockvif_head[0x40];
+extern TfragVuConsts tfrag_setup_consts;
+extern ShrubFogConsts shrub_setup_consts;
+extern ShrubNearConsts shrub_near_setup_consts;
+extern float stripvif_head[16];
+extern float watertile_blockvif_head[16];
 extern float RenderConsts1;
 
 #endif

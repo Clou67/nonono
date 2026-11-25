@@ -24,4 +24,11 @@ static inline void ClearVec4Inline(Vec4 *vector)
     __asm__ volatile("sq $0, %0" : "=m"(*vector) : : "memory");
 }
 
+// Clears an aligned vector through an address register. The asm has no outputs or clobbers, so GCC
+// forgets every value it was tracking (retail reloads addresses after it, as in UpdateViewContext).
+static inline void ZeroVec4Inline(Vec4 *vector)
+{
+    __asm__ volatile("sq $0, 0(%0)" : : "r"(vector));
+}
+
 #endif

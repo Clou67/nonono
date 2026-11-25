@@ -6,6 +6,8 @@
 #include "viewcontext.h"
 #include "mathfunc_inline.h"
 #include "tfrag.h"
+#include "mathfunc_inline.h"
+#include "tfrag.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", ScreenPosFromWorldSpace);
 
@@ -81,7 +83,180 @@ void InitViewContext(void)
     VC.fogFarIntensity = 0.0f;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", UpdateViewContext);
+// Rebuilds everything in VC that follows from the screen size, the view angle, the clip planes and the fog,
+// and the copies of it that the renderers and VU1 programs read.
+void UpdateViewContext(void)
+{
+    float zscale;
+    float zoffset;
+    float xclipRadpad;
+    float yclipRadpad;
+    float fogRange;
+    float fogSpan;
+    float fogMult;
+    float nearClip;
+    float projNearClip;
+    float farClip;
+    float fog0;
+    float projFog0;
+    float xratio;
+    float yratio;
+    float xpix;
+    float ypix;
+    int nearBits;
+    int farBits;
+    int fogBits;
+
+    zscale = -8388080.0f;
+    zoffset = 8388112.0f;
+    if (videoModePal) {
+        VC.yratio = VC.xratio * 0.756f;
+    } else {
+        VC.yratio = VC.xratio * 0.775f;
+    }
+    VC.xclipratio = VC.xclip / VC.xpix;
+    VC.yclipratio = VC.yclip / VC.ypix;
+    VC.xradpad = 1.0f / FastAngleSinF(FastArcTan(1.0f, VC.xratio));
+    VC.yradpad = 1.0f / FastAngleSinF(FastArcTan(1.0f, VC.yratio));
+    xclipRadpad = 1.0f / FastAngleSinF(FastArcTan(1.0f, VC.xratio * VC.xclipratio));
+    yclipRadpad = 1.0f / FastAngleSinF(FastArcTan(1.0f, VC.yratio * VC.yclipratio));
+    xclipRadpad /= VC.xradpad;
+    yclipRadpad /= VC.yradpad;
+    VC.sphereCheckA.z = 1.0f / VC.xclipratio;
+    VC.sphereCheckA.w = 1.0f / VC.yclipratio;
+    VC.sphereCheckB.x = VC.xradpad;
+    VC.sphereCheckB.y = VC.yradpad;
+    VC.sphereCheckC.x = VC.farClip;
+    VC.sphereCheckA.x = VC.xclipratio;
+    VC.sphereCheckA.y = VC.yclipratio;
+    nearClip = VC.nearClip;
+    VC.sphereCheckC.y = nearClip;
+    VC.sphereCheckB.z = (xclipRadpad + yclipRadpad) * 0.5f;
+    CopyVec4Inline(&FastFrustum[4], (Vec4 *)&VC.xratio);
+    CopyVec4Inline(&FastFrustum[5], &VC.sphereCheckA);
+    CopyVec4Inline(&FastFrustum[6], &VC.sphereCheckB);
+    CopyVec4Inline(&FastFrustum[7], &VC.sphereCheckC);
+
+    farBits = *(int *)&VC.fogFarIntensity;
+    nearBits = *(int *)&VC.fogNearIntensity;
+    fogRange = VC.fogFarDist - VC.fogNearDist;
+    fogSpan = VC.fogFarIntensity - VC.fogNearIntensity;
+    fog0 = fogSpan * nearClip / fogRange;
+    fogMult = fogSpan / (fogRange * 0.0009765625f);
+    VC.fog1 = (VC.fogNearIntensity * VC.fogFarDist - VC.fogFarIntensity * VC.fogNearDist) / fogRange;
+    VC.fogMult = fogMult;
+    VC.fogAdd = VC.fogNearIntensity - VC.fogNearDist * 0.0009765625f * fogMult;
+    VC.fog0 = fog0;
+    RenderConsts1 = fog0;
+    stripvif_head[12] = fog0;
+    watertile_blockvif_head[12] = fog0;
+    fogBits = *(int *)&VC.fog0;
+    tfrag_setup_consts.fog0 = fogBits;
+    tfrag_setup_consts.fogFarIntensity = farBits;
+    tfrag_setup_consts.fogNearIntensity = nearBits;
+    shrub_setup_consts.fog0 = fogBits;
+    shrub_near_setup_consts.fog0 = fogBits;
+    shrub_setup_consts.fogFarIntensity = farBits;
+    shrub_setup_consts.fogNearIntensity = nearBits;
+    shrub_near_setup_consts.fogFarIntensity = farBits;
+    shrub_near_setup_consts.fogNearIntensity = nearBits;
+    shrub_setup_consts.max = 0x437EFFFF;
+    shrub_near_setup_consts.max = 0x437EFFFF;
+    SetTfragDists();
+
+    projNearClip = VC.nearClip;
+    farClip = VC.farClip;
+    xratio = VC.xratio;
+    yratio = VC.yratio;
+    xpix = VC.xpix;
+    ypix = VC.ypix;
+    projFog0 = VC.fog0;
+    part_constants[0] = 0.5f / 210000.0f;
+    part_constants[1] = -0.5f / 210000.0f;
+    part_constants[2] = 0.5f;
+    part_constants[3] = xpix / (xratio * 210000.0f);
+    VC.fMtx.v0.x = xpix / (xratio * projNearClip);
+    VC.fMtx.v0.y = 0.0f;
+    VC.fMtx.v0.z = 0.0f;
+    VC.fMtx.v0.w = 0.0f;
+    VC.fMtx.v1.x = 0.0f;
+    VC.fMtx.v1.y = ypix / (yratio * projNearClip);
+    VC.fMtx.v1.z = 0.0f;
+    VC.fMtx.v1.w = 0.0f;
+    VC.fMtx.v2.x = 0.0f;
+    VC.fMtx.v2.y = 0.0f;
+    VC.fMtx.v2.z = (farClip + projNearClip) / (projNearClip * (farClip - projNearClip)) * zscale;
+    VC.fMtx.v2.w = 1.0f / projNearClip * projFog0;
+    VC.fMtx.v3.x = 0.0f;
+    VC.fMtx.v3.y = 0.0f;
+    VC.fMtx.v3.z = -2.0f * projNearClip * farClip / (projNearClip * (farClip - projNearClip)) * zscale;
+    VC.fMtx.v3.w = 0.0f;
+    FastMemCopy32(&VC.nfMtx, &VC.fMtx, sizeof(Mtx4));
+    VC.nfMtx.v2.w = 1.0f / VC.nearClip;
+    FastMemCopy32(&VC.hMtx, &VC.nfMtx, sizeof(Mtx4));
+    VC.hMtx.v0.x /= VC.xclip;
+    VC.hMtx.v1.y /= VC.yclip;
+    VC.hMtx.v2.z /= zscale;
+    VC.hMtx.v3.z /= zscale;
+    VC.hmgScale.x = 1.0f / VC.xclip;
+    VC.hmgScale.y = 1.0f / VC.yclip;
+    VC.hmgScale.z = 1.0f / zscale;
+    VC.hmgScale.w = 1.0f / VC.fog0;
+    VC.ihmgScale.x = VC.xclip;
+    VC.ihmgScale.y = VC.yclip;
+    VC.ihmgScale.z = zscale;
+    VC.ihmgScale.w = VC.fog0;
+    VC.unSquish.x = VC.xclip / VC.fMtx.v0.x;
+    VC.unSquish.y = VC.yclip / VC.fMtx.v1.y;
+    VC.unSquish.z = zscale / VC.fMtx.v2.z;
+    VC.unSquish.w = VC.fog0;
+    VC.hvdf.x = 2048.0f;
+    VC.hvdf.y = 2048.0f;
+    VC.hvdf.z = zoffset;
+    VC.hvdf.w = VC.fog1;
+    VC.guard.x = VC.xclip / VC.xpix;
+    VC.guard.y = VC.yclip / VC.ypix;
+    VC.guard.z = 1.0f;
+    VC.guard.w = 1.0f;
+
+    VC.headerBase[0][0] = *(int *)&VC.fogFarIntensity;
+    VC.headerBase[0][1] = 0x103E4000;
+    VC.headerBase[0][2] = 0xE;
+    VC.headerBase[0][3] = 0;
+    ZeroVec4Inline((Vec4 *)VC.headerBase[1]);
+
+    VC.headerTex[0] = *(int *)&VC.fog0;
+    VC.headerTex[1] = 0x303E4000;
+    VC.headerTex[2] = 0x412;
+    VC.headerTex[3] = 0x303EC000;
+    VC.headerTexNoFog[0] = *(int *)&VC.fog0;
+    VC.headerTexNoFog[1] = 0x302E4000;
+    VC.headerTexNoFog[2] = 0x412;
+    VC.headerTexNoFog[3] = 0x302EC000;
+    VC.headerGr[0] = *(int *)&VC.fog0;
+    VC.headerGr[1] = 0x20364000;
+    VC.headerGr[2] = 0x41;
+    VC.headerGr[3] = 0;
+    VC.headerGrNoFog[0] = *(int *)&VC.fog0;
+    VC.headerGrNoFog[1] = 0x20264000;
+    VC.headerGrNoFog[2] = 0x41;
+    VC.headerGrNoFog[3] = 0;
+    CopyVec4Inline((Vec4 *)VC.headerBase[1], (Vec4 *)VC.headerTex);
+    CopyVec4Inline((Vec4 *)VC.headerBase[2], &VC.guard);
+    CopyVec4Inline((Vec4 *)VC.headerBase[3], &VC.hmgScale);
+    CopyVec4Inline((Vec4 *)VC.headerBase[4], &VC.ihmgScale);
+    CopyVec4Inline((Vec4 *)VC.headerBase[5], &VC.hvdf);
+    CopyVec4Inline(&ViewConstsA[0], &VC.hvdf);
+    CopyVec4Inline(&ViewConstsA[1], &VC.ihmgScale);
+    CopyVec4Inline(&ViewConstsA[2], &VC.guard);
+    CopyVec4Inline(&tfrag_setup_consts.hvdf, &VC.hvdf);
+    CopyVec4Inline(&tfrag_setup_consts.hmgScale, &VC.hmgScale);
+    CopyVec4Inline(&tfrag_setup_consts.ihmgScale, &VC.ihmgScale);
+    tfrag_setup_consts.guardX = *(int *)&VC.guard.x;
+    tfrag_setup_consts.guardY = *(int *)&VC.guard.y;
+    CopyVec4Inline(&shrub_near_setup_consts.ihmgScale, &VC.ihmgScale);
+    CopyVec4Inline(&shrub_near_setup_consts.hvdf, &VC.hvdf);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetUserViewContext);
 
