@@ -925,7 +925,18 @@ void ClampVec3Magnitude(Vec4 *vector, float maximum)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_AddMobyToDynamicGroup);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DeleteMobyFromDynamicGroup);
+void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group)
+{
+    int entry;
+
+    for (entry = 1; entry <= group[0]; entry++) {
+        if (&MobyInstances[group[entry]] == moby) {
+            group[entry] = group[group[0]];
+            group[0]--;
+            return;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_FindMobyByVarId);
 
