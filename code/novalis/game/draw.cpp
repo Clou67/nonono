@@ -6,6 +6,16 @@
 #include "viewcontext.h"
 #include "mathfunc_inline.h"
 #include "tfrag.h"
+#include "sce.h"
+#include "gameglobals.h"
+#include "lights.h"
+#include "update.h"
+#include "help.h"
+#include "camera.h"
+#include "vuchain.h"
+#include "shrub.h"
+#include "tie.h"
+#include "sky.h"
 #include "mathfunc_inline.h"
 #include "tfrag.h"
 
@@ -268,12 +278,87 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetupFogColorGsReg
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", ResetGsRegistersPr);
 
+// A full-screen colour wash; DrawScreenInsertEffect sets the alpha register from alphaReg and fills the screen.
+struct ScreenInsertEffect {
+    int enabled;
+    unsigned int color;
+    unsigned long alphaReg;
+};
+
+extern int RenderFlags __attribute__((section(".sdata")));
+// Debug switches for the draw loop.
+struct DrawDebugState {
+    int occlMode;
+    char unk_04[0x14];
+    int forceClear;
+};
+
+extern DrawDebugState DrawDebug;
+extern int OcclMode;
+extern int PostDrawCnt;
+extern int PostPreDrawCnt;
+extern int MobyFnListCnt;
+extern int PreDrawCnt;
+extern int mobyVu1State;
+extern int ScreenColorEffectEnabled;
+extern ScreenInsertEffect *ScreenColorEffectNow;
+extern ScreenInsertEffect g_ScreenInsertEffect __attribute__((section(".sdata")));
+extern float g_SceneFlash;
+extern unsigned char g_UnderwaterTintR;
+extern unsigned char g_UnderwaterTintG;
+extern unsigned char g_UnderwaterTintB;
+extern unsigned char g_UnderwaterTintA;
+extern unsigned char g_SubtitlesOn;
+extern long LightVU0Program[];
+
+// Names the timer sections of the frame for the (stubbed out) profiler.
+extern char RenderSetupLabel[];
+extern char SkyDrawLabel[];
+extern char PreEffectsLabel[];
+extern char VuEffectsLabel[];
+extern char MobyEffectsLabel[];
+extern char PartDrawLabel[];
+extern char PostEffectsLabel[];
+extern char AaBlurLabel[];
+extern char HudLabel[];
+extern char ScreenOverlaysLabel[];
+extern char PatchLightLabel[];
+extern char TfragPatchLightLabel[];
+extern char TiePatchLightLabel[];
+extern char ShrubPatchLightLabel[];
+extern char MobyPatchLabel[];
+
+void ComposeCameraMatrix(void);
+void CleanAnimationCache(void);
+void UpdateOcclusion(void);
+void SetupFogColorGsReg(void);
+void ExecutePostDraws(void);
+void ExecutePostPreDraws(void);
+void ExecuteRegisteredMobyFuncs(void);
+void ExecutePreDraws(void);
+void DrawLameShadows(void);
+void DrawWorldEffectsPass(void);
+void DrawMobys(void);
+void Camera_DrawReticule(void);
+void PartProc(void);
+void ImpactSprite_Draw(void);
+void TargetCrosshairDraw(void);
+void DrawGameplayHud(void);
+void UpdateLetterBox(void);
+void DrawSubtitles(void);
+void SetScreenClearColorPacket(int r, int g, int b, int a);
+void DrawScreenEffect(void);
+void DrawScreenInsertEffect(ScreenInsertEffect *effect);
+void LightTfrags(void *sprStash);
+void LightShrubs(void *sprStash);
+void PatchMobyGifs(void);
+void UpdateFog(void);
+
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", DefaultDraw);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetupDefaultDraw);
 
 extern int CutscenePlaying;
-extern int RenderFlags __attribute__((section(".sdata")));
 void DefaultDraw(void);
 
 void SetupDefaultDrawMovie(int black)

@@ -682,3 +682,5 @@ sceMpegGetPicture = 0x0012B9F0;
 MobyVu1HeaderData = 0x0010FA90;
 MobyVU1Data = 0x0010FAA0;
 MobyVU0Program = 0x00100080;
+g_SubtitlesOn = 0x0015EE40;
+LightVU0Program = 0x00100AE0;

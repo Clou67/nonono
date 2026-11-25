@@ -40,6 +40,14 @@ struct DrawConfig {
             int shrub;
             int moby_texture_paging;
             int mobys;
+            int unk_2C;
+            int moby_vu1_data;
+            int post_draws;
+            int particles;
+            int pre_draws;
+            int hud;
+            int screen_overlays;
+            int aa_blur;
         };
     };
 };

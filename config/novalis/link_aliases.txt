@@ -419,7 +419,6 @@ FastVec3DistLen__FP4Vec4T0 = 0x00221398;
 
 MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988;
 
-DefaultDraw__Fv = 0x0021A1B8;
 
 VendorBoltsThousandsFormat = 0x00161158;
 
@@ -499,3 +498,27 @@ MB_PathStepIndex__FP8MobyPathiii = 0x00272660;
 MB_SegmentPush__FP4Vec4N30f = 0x00272B98;
 CreatePart__Fi = 0x0027C498;
 SetMobyLights__FP12MobyInstancexUxll = 0x002650B0;
+Camera_DrawReticule__Fv = 0x0020F480;
+ComposeCameraMatrix__Fv = 0x00218A48;
+DrawGameplayHud__Fv = 0x0024FB50;
+DrawLameShadows__Fv = 0x0021B260;
+DrawScreenEffect__Fv = 0x0021B9F8;
+DrawScreenInsertEffect__FP18ScreenInsertEffect = 0x0021BB78;
+DrawSubtitles__Fv = 0x0021B620;
+DrawTiesEx__Fv = 0x002A9838;
+DrawWorldEffectsPass__Fv = 0x0021E648;
+ExecutePostDraws__Fv = 0x0021B0A8;
+ExecutePostPreDraws__Fv = 0x0021B120;
+ExecutePreDraws__Fv = 0x0021B1E8;
+ExecuteRegisteredMobyFuncs__Fv = 0x0021B030;
+ImpactSprite_Draw__Fv = 0x002209E8;
+LightShrubs__FPv = 0x0029E7E8;
+LightTfrags__FPv = 0x002A8E40;
+PartProc__Fv = 0x0027C878;
+SetScreenClearColorPacket__Fiiii = 0x0021BC50;
+SetupFogColorGsReg__Fv = 0x0021A050;
+TargetCrosshairDraw__Fv = 0x0020FC40;
+UpdateFog__Fv = 0x00218D70;
+UpdateLetterBox__Fv = 0x0021B7D8;
+UpdateOcclusion__Fv = 0x002193F8;
+DefaultDraw__Fv = 0x0021A1B8;
