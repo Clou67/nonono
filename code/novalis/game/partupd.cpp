@@ -235,7 +235,22 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_047)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_047);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_048);
+void UpdatePart_048(PartInstance *part)
+{
+    PartSpinMotion *motion = &part->spinMotion;
+    int rgba;
+
+    FastVec3Scale(&motion->velocity, &motion->velocity, 0.975f);
+    FastVec3Add(&part->pos, &part->pos, &motion->velocity);
+
+    part->scale += 14700.0f;
+    part->rot += motion->rotationStep;
+    rgba = part->rgba + 0xFE000000;
+    part->rgba = rgba;
+
+    if (rgba < 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286E18);
 
