@@ -6,6 +6,10 @@
 #include "moby.h"
 #include "hero.h"
 #include "mobyutil.h"
+#include "pad.h"
+#include "galaxymap.h"
+#include "help.h"
+#include "libc.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DropAmmo);
 
@@ -1045,7 +1049,16 @@ void MB_RotateMoby(MobyInstance *moby, float xAngle, float yAngle, float zAngle)
     MB_GetOrientationMtx(&orientation, &moby->rotation);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", CreateMotionBlur);
+void CreateMotionBlur(MobyInstance *pMoby, MotionBlur *blur)
+{
+    if (blur->active == 0) {
+        blur->pMoby = pMoby;
+        blur->head = 0;
+        blur->filled = 0;
+        blur->count = 0;
+        blur->active = 1;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", AddMotionBlurElem);
 
