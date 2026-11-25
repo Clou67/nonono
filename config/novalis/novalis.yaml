@@ -72,6 +72,7 @@ segments:
     - [0x1754, lit4]
     - [0x2028, .sdata, game/memcard]  # g_loaderr, entry path and delete formats
     - [0x2050, lit4]
+    - [0x2220, .sdata, game/music]  # cdrom device, stop warning
     - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators, price format
     - [0x2260, lit4]
     - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep

@@ -432,7 +432,6 @@ music_PreseekTrack__Fiii = 0x00279ED0;
 
 music_StartSpeech__Fiii = 0x00279CD8;
 
-MusicUnexpectedStopHandle = 0x00160128;
 
 snd_ContinueVAGStream__FUi = 0x0012ECA0;
 
