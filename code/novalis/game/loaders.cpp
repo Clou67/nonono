@@ -6,6 +6,7 @@
 #include "part.h"
 #include "sky.h"
 #include "framebuf.h"
+#include "sce.h"
 #include "fastfunc.h"
 #include "music.h"
 #include "wad.h"
@@ -249,7 +250,54 @@ void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clam
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParsePermGsRam);
+// Uploads the level's permanent textures into GS memory from GSmemBase on; GSloc and
+// GSbase end up just past them.
+void ParsePermGsRam(char *data, int count, PermGsTexture *texture)
+{
+    sceGsLoadImage loadImage;
+
+    GSbase = GSloc = GSmemBase;
+
+    for (int index = 0; index < count; index++, texture++) {
+        char *image = data + texture->offset;
+        int size = texture->size;
+        int gsAddr = GSloc;
+        int width = size & 0xFFFF;
+        int height = size >> 16;
+
+        if (texture->psm == GS_PSMT8) {
+            int bufferWidth = width >> 6;
+
+            if (bufferWidth < 1)
+                bufferWidth = 1;
+
+            sceGsSetDefLoadImage(&loadImage, gsAddr >> 8, bufferWidth, GS_PSMT8, 0, 0, width, height);
+
+            int bytes = width * height;
+
+            if (bytes < 0x100)
+                bytes = 0x100;
+
+            GSloc += bytes;
+        }
+
+        else if (texture->psm == GS_PSMCT16) {
+            sceGsSetDefLoadImage(&loadImage, gsAddr >> 8, 1, GS_PSMCT16, 0, 0, 16, 16);
+            GSloc += 0x200;
+        }
+
+        else if (texture->psm == GS_PSMCT32) {
+            sceGsSetDefLoadImage(&loadImage, gsAddr >> 8, 1, GS_PSMCT32, 0, 0, 16, 16);
+            GSloc += 0x400;
+        }
+
+        FlushCache(0);
+        sceGsExecLoadImage(&loadImage, (u_long128 *)image);
+        sceGsSyncPath(0, 0);
+    }
+
+    GSbase = GSloc;
+}
 
 void ParseMobySeq(MobyClass *mobyClass, int animation)
 {

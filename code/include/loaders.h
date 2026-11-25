@@ -93,6 +93,20 @@ enum {
     TEXDEF_MIP2 = 7
 };
 
+#define GS_PSMCT32 0x00
+#define GS_PSMCT16 0x02
+#define GS_PSMT8 0x13
+
+// One permanent texture in the level data: its format, size and where its pixels are.
+struct PermGsTexture {
+    int psm;        // 0x00
+    int size;       // 0x04: width | height << 16
+    int unk_08;
+    int offset;     // 0x0C: from the data start
+};
+
+void ParsePermGsRam(char *data, int count, PermGsTexture *texture);
+
 void SetUpVisGif(unsigned long *gifRegs, short *texDef, int mipDist, int filter, int clampU, int clampV, int index);
 void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index);
 
