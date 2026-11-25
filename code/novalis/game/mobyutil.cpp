@@ -723,7 +723,121 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SegmentPush
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SegmentPush);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PathFollowToPos);
+float MB_DistIgnoreSmallZ(Vec4 *first, Vec4 *second, float tolerance);
+int MB_PathMoveDist(MobyPath *path, Vec4 *position, int *segment, float *fraction, float distance, int wrap);
+int MB_PathStepIndex(MobyPath *path, int index, int step, int wrap);
+float MB_SegmentPush(Vec4 *nearest, Vec4 *point, Vec4 *start, Vec4 *end, float tolerance);
+
+int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment, float *fraction, int wrap, float limit, float step, float tolerance)
+{
+    Vec4 points[4];
+    int current = 0;
+    int pointCount;
+    int crossed;
+    float currentFraction = 0.0f;
+    float nextDist;
+    float bestFraction;
+    float dist;
+    int bestSegment;
+    float expandedLimit;
+    int start;
+    int end;
+    float prevDist;
+
+    CopyVec4Inline(&points[0], &path->points[0]);
+    CopyVec4(&points[1], point);
+
+    bestFraction = 0.0f;
+    dist = MB_DistIgnoreSmallZ(&points[0], &points[1], tolerance);
+    bestSegment = 0;
+
+    if (path->pointCount == 0) {
+        FastVecZero(nearest);
+        return 0;
+    }
+
+    expandedLimit = step + limit;
+
+    do {
+        crossed = MB_PathMoveDist(path, &points[0], &current, &currentFraction, step, wrap);
+        CopyVec4(&points[1], point);
+        nextDist = MB_DistIgnoreSmallZ(&points[0], &points[1], tolerance);
+
+        if (nextDist < dist) {
+            dist = nextDist;
+            bestSegment = current;
+            bestFraction = currentFraction;
+        }
+    } while (!crossed);
+
+    if (expandedLimit < dist)
+        return 0;
+
+    start = bestSegment;
+    currentFraction = bestFraction;
+    MB_PathMoveDist(path, &points[0], &start, &currentFraction, -step, wrap);
+
+    currentFraction = bestFraction;
+    end = bestSegment;
+    MB_PathMoveDist(path, &points[0], &end, &currentFraction, step, wrap);
+
+    end = MB_PathStepIndex(path, end, 1, wrap);
+    current = start;
+    dist = 1000000000.0f;
+
+    do {
+        CopyVec4(&points[1], &path->points[current]);
+        CopyVec4(&points[2], point);
+        nextDist = MB_DistIgnoreSmallZ(&points[1], &points[2], tolerance);
+
+        if (nextDist < dist) {
+            dist = nextDist;
+            bestSegment = current;
+        }
+
+        if (current == end)
+            break;
+
+        current = (current + 1) % path->pointCount;
+    } while (1);
+
+    prevDist = 1000000000.0f;
+
+    if (bestSegment > 0 || wrap) {
+        float segmentDist;
+        int previous;
+
+        pointCount = path->pointCount;
+        previous = pointCount - 1;
+        previous = (bestSegment + previous) % pointCount;
+        segmentDist = MB_SegmentPush(nearest, point, &path->points[previous], &path->points[bestSegment], tolerance);
+
+        *segment = previous;
+        CopyVec4(&points[1], &path->points[previous]);
+        CopyVec4(&points[2], nearest);
+
+        *fraction = MB_DistIgnoreSmallZ(&points[1], &points[2], 0.0f);
+        prevDist = segmentDist;
+    }
+
+    pointCount = path->pointCount;
+
+    if (bestSegment < pointCount - 1 || wrap) {
+        nextDist = MB_SegmentPush(&points[1], point, &path->points[bestSegment], &path->points[(bestSegment + 1) % pointCount], tolerance);
+
+        if (nextDist < prevDist) {
+            CopyVec4Inline(nearest, &points[1]);
+            *segment = bestSegment;
+
+            CopyVec4(&points[2], &path->points[bestSegment]);
+            CopyVec4(&points[3], nearest);
+
+            *fraction = MB_DistIgnoreSmallZ(&points[2], &points[3], 0.0f);
+        }
+    }
+
+    return 1;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002731C0);
 
