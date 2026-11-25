@@ -131,7 +131,8 @@ segments:
     - [0xac860, .rodata, movie/movie]  # open error
     - [0xac878, .rodata, movie/read]  # pts overflow message
     - [0xac890, .rodata, movie/vibuf]  # inactive DMA message
-    - [0xac8a8, data]
+    - [0xac8a8, .rodata, movie/videodec]  # decode error messages
+    - [0xac8e8, data]
 
   - name: lvl.vtbl
     type: code

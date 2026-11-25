@@ -2204,8 +2204,6 @@ StashClient = 0x001C1728;
 
 videoErrorMessage = 0x00161360;
 
-decodeThreadAbortedMessage = 0x0020A7A8;
-decodePictureErrorMessage = 0x0020A7C0;
 
 FontSmallMetrics = 0x001C3970;
 

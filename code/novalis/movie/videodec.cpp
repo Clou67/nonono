@@ -149,8 +149,6 @@ void videoDecMain(void *argument)
 }
 
 void setImageTag(unsigned int (*packets)[2], VoData *frame, int width, int height);
-extern const char decodeThreadAbortedMessage[];
-extern char decodePictureErrorMessage[];
 void printf_stub(const char *format, ...);
 
 int decBs0(VideoDec *decoder)
@@ -159,7 +157,8 @@ int decBs0(VideoDec *decoder)
     while (!sceMpegIsEnd(&decoder->mpeg)) {
         if (videoDecGetState(decoder) == VIDEO_DECODER_ABORTED) {
             result = -1;
-            printf_stub(decodeThreadAbortedMessage);
+            printf_stub("decode thread: aborted
+");
             break;
         }
 
@@ -168,7 +167,7 @@ int decBs0(VideoDec *decoder)
             switchThread();
         }
         if (sceMpegGetPicture(&decoder->mpeg, frame, 0x340) < 0)
-            ErrMessage(decodePictureErrorMessage);
+            ErrMessage("sceMpegGetPicture() decode error");
 
         if (decoder->mpeg.frameCount == 0) {
             int width = decoder->mpeg.width;
