@@ -144,7 +144,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_027)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_027);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_028);
+void UpdatePart_028(PartInstance *part)
+{
+    PartTimedFade *fade = &part->timedFade;
+
+    FastVec3Add(&part->pos, &part->pos, &fade->velocity);
+
+    part->rgba = (part->rgba & 0xFFFFFF) + (((fade->alpha * fade->timer) / fade->duration) << 24);
+
+    if (FastDecTimer(fade->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_028);
 
