@@ -95,13 +95,6 @@ void ResetGsRegistersPr(void);
 void sound_StopAllSounds(void);
 void DoSpaceTransition(void);
 
-// The level record keeps the longest stay; TotalPlayTime counts frames, the record 10 second units.
-static inline void UpdateLevelPlayTime(LevelRecord *record)
-{
-    if (record->playTime < FastScaleRoundInt(TotalPlayTime) / 600) {
-        record->playTime = FastScaleRoundInt(TotalPlayTime) / 600;
-    }
-}
 
 // Loads the level and runs the main loop until another level is asked for.
 void startLevel(void)
@@ -110,6 +103,8 @@ void startLevel(void)
     int reloadMode;
     int mode;
     float angle;
+    int one;
+    int per;
 
     // Clear the per-level state: with FastMemSetZero when it is quadword aligned, else a byte at a time.
     if (((StartLevelClearEnd - StartLevelClearStart) & 15) == 0 && ((unsigned int)StartLevelClearStart & 15) == 0) {
@@ -123,14 +118,15 @@ void startLevel(void)
     Stash_InitOnce();
     FramesSinceStateChange = 0;
     gameMode = 6;
+    one = 1;
     InitLevel();
     musicTransition.primary_track = 0;
     InitLevelFromWad(1, 0);
     Debug.update = 0xF;
     Debug.tvMode = videoModePal;
     Debug.scene = -1;
-    Debug.actuator = 1;
-    Debug.selectedCol = 1;
+    Debug.selectedCol = one;
+    Debug.actuator = one;
     ResetDebugEnables();
     map_LoadPlanetMap();
     hud_InitBanks();
@@ -141,7 +137,7 @@ void startLevel(void)
     PutDispBuffer();
 
     music_StartTrack(musicTransition.primary_track, 1, 0x400);
-    if ((Level == 1 && g_SeenPlanets[3] == 0) || (Level == 0 && g_MiscLevelFlags[0] != 0)) {
+    if ((Level == one && g_SeenPlanets[3] == 0) || (Level == 0 && g_MiscLevelFlags[0] != 0)) {
         music_Unpause();
     } else {
         music_Pause(0);
@@ -153,7 +149,10 @@ void startLevel(void)
     if (LevelRecords[Level].visits < 0xFFFF) {
         LevelRecords[Level].visits++;
     }
-    UpdateLevelPlayTime(&LevelRecords[Level]);
+    per = 600;
+    if (FastScaleRoundInt(TotalPlayTime) / per > LevelRecords[Level].playTime) {
+        LevelRecords[Level].playTime = FastScaleRoundInt(TotalPlayTime) / 600;
+    }
     LevelRecords[Level].flags |= (1 << Level) | 0x80000000;
     snd_UnkFunction_0012eaf0();
 
@@ -167,15 +166,12 @@ void startLevel(void)
         VU1_sendChain();
         VU1_swapChain();
         PutDrawBufferSmall();
-        {
-            int opaque; // never set: retail passes whatever is in $a0
-            AA_DisplayPass(opaque);
-        }
+        ((void (*)(void))AA_DisplayPass)(); // retail passes no argument
         PutDrawBufferLarge();
         snd_FlushSoundCommands();
 
         mode = gameMode;
-        switch (gameMode) {
+        switch (mode) {
         case -1:
             UpdatePad();
             UpdateDebugSelections();
@@ -192,10 +188,7 @@ void startLevel(void)
         case 2:
             UpdatePad();
             UpdateInLevelMovie();
-            {
-                int black; // never set, as in retail
-                SetupDefaultDrawMovie(black);
-            }
+            ((void (*)(void))SetupDefaultDrawMovie)(); // retail passes no argument
             break;
         case 3:
             UpdatePad();
@@ -238,11 +231,15 @@ void startLevel(void)
         memcard_Update();
         UpdateMCState();
         if ((g_memcard.stage >= 3 || g_memcard.nextstage >= 0) && !PauseMenu.hideActivityIcon) {
+            int n = 55;
+            float size;
+
             FlipAndExploreTimersVU1(0);
+            size = 272.0f;
             VU1_addGSregister(0x47, 0x3004B);
             Hud_DrawTexQuad(HudTex_GetFrame(0x755D, 0), 50, 300, 64, 64, 0x80);
-            angle = (float)(gsFrame % 55) * -6.2831855f / (float)55;
-            Hud_DrawRotatedSprite16(1312.0f, 5312.0f, 272.0f, 272.0f, angle, 64, 64,
+            angle = (float)(gsFrame % n) * -6.2831855f / (float)n;
+            Hud_DrawRotatedSprite16(1312.0f, 5312.0f, size, size, angle, 64, 64,
                                     HudTex_Bind(HudTex_GetFrame(0x755D, 1)));
             FinalizeVU1FramePacketChain();
         }
@@ -298,7 +295,10 @@ void startLevel(void)
             music_StartTrack(musicTransition.primary_track, 1, 0x400);
             hud_InitBanks();
         }
-        UpdateLevelPlayTime(&LevelRecords[Level]);
+        per = 600;
+        if (FastScaleRoundInt(TotalPlayTime) / per > LevelRecords[Level].playTime) {
+            LevelRecords[Level].playTime = FastScaleRoundInt(TotalPlayTime) / 600;
+        }
     }
     DoSpaceTransition();
 }
