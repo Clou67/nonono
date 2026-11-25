@@ -253,7 +253,7 @@ void Help_StartMessageBox(void)
     SetFontWindow(&window, 0xF0, 0x1E0, 0x2C, 0x1D4, HELP_BOX_CENTER_X, 0x168, 0x10, 7);
     FontPrintWindowSmall(&window, HELP_TEXT_COLOR, text, -1);
 
-    screenHeight = occlViewParams[1];
+    screenHeight = Scrn.paramY;
     textWidth = window.max_width;
     textHeight = window.max_height;
     halfHeight = (textHeight >> 1) + HELP_BOX_PADDING_Y;

@@ -2,6 +2,8 @@
 #include "font.h"
 #include "framebuf.h"
 #include "draw.h"
+#include "fastfunc.h"
+#include "viewcontext.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", ScreenPosFromWorldSpace);
 
@@ -45,7 +47,37 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", BuildOcclVisibilit
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", UpdateOcclusion);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", InitViewContext);
+void InitViewContext(void)
+{
+    short width = aaBuff.drawW;
+    int halfWidth = width >> 1;
+    short height = aaBuff.drawH;
+    int halfHeight = height >> 1;
+
+    Scrn.paramX = width;
+    Scrn.paramY = height;
+    Scrn.halfX = halfWidth;
+    Scrn.halfY = halfHeight;
+    Scrn.minX = (0x800 - halfWidth) << 4;
+    Scrn.minY = (0x800 - halfHeight) << 4;
+    Scrn.maxX = (halfWidth + 0x800) << 4;
+    Scrn.maxY = (halfHeight + 0x800) << 4;
+
+    VC.xratio = 32.0f;
+    VC.yratio = 745472.0f;
+    VC.fMtx.v0.x = 0.63f;
+
+    VC.xpix = FastIntToFloat(width) * 0.5f;
+    VC.ypix = FastIntToFloat(aaBuff.drawH) * 0.5f;
+
+    VC.xclip = VC.xpix * 4.0f;
+    VC.yclip = VC.ypix * 4.0f;
+
+    VC.fogNearDist = 0.0f;
+    VC.fogFarDist = 524288.0f;
+    VC.fogNearIntensity = 255.0f;
+    VC.fogFarIntensity = 0.0f;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", UpdateViewContext);
 

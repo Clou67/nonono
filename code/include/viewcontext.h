@@ -5,7 +5,8 @@
 
 // The view the frame is drawn from (DL's ViewContext).
 struct ViewContext {
-    int headerBase[6][4];
+    // Retail has 0x50 bytes of header here; VC points at the 0x10 bytes after the DL start.
+    int headerBase[5][4];
     unsigned long headerTex[2];
     unsigned long headerTexNoFog[2];
     unsigned long headerGr[2];

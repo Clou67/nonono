@@ -140,8 +140,19 @@ struct GsTextureLoc {
     short mip;
 };
 
-// Display size, read by the scissor clamp (core global).
-extern int occlViewParams[];
+// Screen size and the GS-space bounds derived from it (core global; set by InitViewContext).
+struct Screen {
+    int paramX;  // 0x00 draw width, sign-extended
+    int paramY;  // 0x04 draw height, sign-extended
+    int halfX;   // 0x08 paramX >> 1
+    int halfY;   // 0x0C paramY >> 1
+    int minX;    // 0x10 (0x800 - halfX) << 4
+    int minY;    // 0x14 (0x800 - halfY) << 4
+    int maxX;    // 0x18 (halfX + 0x800) << 4
+    int maxY;    // 0x1C (halfY + 0x800) << 4
+};
+
+extern Screen Scrn;
 
 // GS register blocks streamed to the VU1 by reference.
 extern unsigned int Gif_Tex_Flush[12];
