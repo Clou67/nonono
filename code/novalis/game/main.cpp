@@ -51,7 +51,7 @@ extern int g_newlevel;
 extern int FramesSinceStateChange;
 extern float FrameLoad;
 extern int FrameOverrun;
-extern short g_SceneRecording;
+extern short g_SceneRecording[]; // incomplete type: retail loads it with lui/lh, not $gp
 extern unsigned long frm_clock_time;
 extern int gsFrame;
 
@@ -60,7 +60,7 @@ extern "C" void snd_UnkFunction_0012eb00(void);
 
 void Stash_InitOnce(void);
 void InitLevel(void);
-void InitLevelFromWad(int firstLoad, int reload);
+int InitLevelFromWad(int firstLoad, int reload); // result unused, but the int return changes register choice
 void map_LoadPlanetMap(void);
 void hud_InitBanks(void);
 void LoadHudSeqs(void);
@@ -99,19 +99,20 @@ void DoSpaceTransition(void);
 // Loads the level and runs the main loop until another level is asked for.
 void startLevel(void)
 {
+    int i;
+    int mode;
     int reloadLevel;
     int reloadMode;
-    int mode;
-    float angle;
     int one;
     int per;
+    float angle;
 
     // Clear the per-level state: with FastMemSetZero when it is quadword aligned, else a byte at a time.
     if (((StartLevelClearEnd - StartLevelClearStart) & 15) == 0 && ((unsigned int)StartLevelClearStart & 15) == 0) {
         FastMemSetZero(StartLevelClearStart, StartLevelClearEnd - StartLevelClearStart);
     } else {
         printf_stub("crap\n");
-        for (int i = 0; i < StartLevelClearEnd - StartLevelClearStart; i++) {
+        for (i = 0; i < StartLevelClearEnd - StartLevelClearStart; i++) {
             StartLevelClearStart[i] = 0;
         }
     }
@@ -153,7 +154,7 @@ void startLevel(void)
     if (FastScaleRoundInt(TotalPlayTime) / per > LevelRecords[Level].playTime) {
         LevelRecords[Level].playTime = FastScaleRoundInt(TotalPlayTime) / 600;
     }
-    LevelRecords[Level].flags |= (1 << Level) | 0x80000000;
+    LevelRecords[Level].flags = LevelRecords[Level].flags | (1 << Level) | 0x80000000;
     snd_UnkFunction_0012eaf0();
 
     while (!g_newlevel) {
@@ -266,7 +267,7 @@ void startLevel(void)
                     if (gameMode == 0) {
                         UpdatePad();
                         UpdateGameplay();
-                    } else if (gameMode == 2 && !g_SceneRecording) {
+                    } else if (gameMode == 2 && !g_SceneRecording[0]) {
                         UpdatePad();
                         UpdateInLevelMovie();
                     }
