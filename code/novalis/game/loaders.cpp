@@ -5,14 +5,22 @@
 #include "music.h"
 #include "wad.h"
 #include "draw.h"
+#include "hud.h"
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadByteGrid);
+void LoadByteGrid(int *grid)
+{
+    byteGridStride = *grid++;
+    byteGridRows = *grid++;
+    byteGridMin = *(float *)grid++;
+    byteGridMax = *(float *)grid++;
+    byteGridData = (unsigned char *)grid;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", RelocEffectTable);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseGsRamTextures);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", func_00253640);
+TEXT_PADDING(0x27BD0060, 0x00000000);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseParticleTexs);
 
@@ -60,7 +68,19 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseShrubClass
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseTfrag);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseColl);
+void ParseColl(char *data)
+{
+    int *offsets = (int *)data;
+
+    if (offsets[0])
+        CollOutput.grid = data + offsets[0];
+
+    if (offsets[1]) {
+        HeroCollision = (HeroCollHeader *)(data + offsets[1]);
+        for (int cell = 0; cell < HeroCollision->cellCount; cell++)
+            HeroCollision->cells[cell].data = (char *)HeroCollision + (int)HeroCollision->cells[cell].data;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", PrintMobyMemory);
 
@@ -70,7 +90,19 @@ void STUB_RET_255950(void *data, int count)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ResetLevelData);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", SetupLevelWadBuffer);
+int SetupLevelWadBuffer(void)
+{
+    // The level WAD goes at the top of RAM, page aligned and with room for its header.
+    int size = (bootAssets.levelSoundBank.length * 0x800 + 0x1057) & 0xFFFFF000;
+
+    levelRoot = (int *)((int)(LevelWadBufferEnd - size) & ~0xF);
+
+    // The sound bank is read in right after the 0x60-byte header.
+    levelRoot[LEVEL_WAD_SOUND_BANK] = 0x60;
+    music_LoadBankFromEE((char *)levelRoot + levelRoot[LEVEL_WAD_SOUND_BANK], bootAssets.levelSoundBank.offset, bootAssets.levelSoundBank.length);
+
+    return 1;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadLevelFiles);
 

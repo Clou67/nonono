@@ -544,3 +544,5 @@ vendor_PostUpdate__Fv = 0x002B4020;
 vendor_PreUpdate__Fv = 0x002B03B8;
 bss_start = 0x00162280;
 bss_end = 0x00166430;
+WadDecompress__FPvT0 = 0x002618E8;
+music_LoadBankFromEE__FPvii = 0x0027AB20;

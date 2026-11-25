@@ -19,7 +19,9 @@ struct BootAssets {
     int unk_0[2];
     WadEntry debugFont;
     WadEntry savegame;
-    char unk_18[0x12E8 - 0x18];
+    char unk_18[0x4F8 - 0x18];
+    WadEntry levelSoundBank;        // 0x4F8: sound bank streamed to the IOP for the level
+    char unk_500[0x12E8 - 0x500];
     WadEntry spaceScenes[10];       // 0x12E8
     WadEntry palSpaceScenes[10];    // 0x1338
     char unk_1388[0x1530 - 0x1388];

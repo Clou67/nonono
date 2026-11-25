@@ -96,4 +96,20 @@ void HudEntry_SetIcon(HudEntry *entry, unsigned int id);
 
 void HudEntry_Restore(HudEntry *entry);
 
+// Header of the loaded HUD image; only the fields known so far.
+struct HudBankHeader {
+    char unk_00[0x74];
+    void *bankData[6];        // 0x74: cleared by LoadCompressedHudBank
+};
+
+enum { HUD_HEAP_SIZE = 0x64000 };
+struct HudStateData {
+    char unk_00[0x10];
+    unsigned char *heapCursor;
+    unsigned char *heapEnd;
+    HudBankHeader *header;
+    HudIconTableEntry *icons;
+};
+extern HudStateData HudState;
+
 #endif
