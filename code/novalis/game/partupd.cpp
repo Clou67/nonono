@@ -473,7 +473,28 @@ void UpdatePart_077(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AC50);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_078);
+typedef int Vec4Quad __attribute__((mode(TI)));
+
+void UpdatePart_078(PartInstance *part)
+{
+    Vec4 origin;
+    float duration;
+    float fraction;
+
+    *(Vec4Quad *)&origin = *(Vec4Quad *)&part->motion20.origin;
+
+    duration = origin.w;
+    origin.w = 0.0f;
+
+    fraction = FastIntToFloat(part->timer) / duration;
+    part->rgba = (FastFloatToInt(fraction * 38.0f) << 24) | 0x808080;
+    part->rot = FastFloatToInt(fraction * 33.0f);
+
+    FastVec3Add(&part->pos, &part->pos, &origin);
+
+    if (FastDecTimer(part->timer))
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_078);
 
