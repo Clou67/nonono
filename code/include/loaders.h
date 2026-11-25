@@ -61,6 +61,21 @@ struct CollOutputData {
 
 extern CollOutputData CollOutput;
 
+// A texture in GS memory; TEX0 is built when it is first drawn.
+struct EffectTex {
+    unsigned long tex0;           // 0x00
+    unsigned short texOfs;        // 0x08
+    unsigned short palOfs;        // 0x0A
+    unsigned short uLog;          // 0x0C
+    unsigned short vLog;          // 0x0E
+};
+
+extern int EffectTexCnt;
+extern EffectTex EffectTexs[];
+
+int FastLog2(int value);
+void ParseEffectTexs(int *texDefs, int count);
+
 void LoadByteGrid(int *grid);
 void ParseColl(char *data);
 void LoadCompressedHudBank(int bank, char *destination);

@@ -27,7 +27,22 @@ TEXT_PADDING(0x27BD0060, 0x00000000);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseParticleTexs);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseEffectTexs);
+// Each texture definition is {clut address, texture address, width, height}.
+void ParseEffectTexs(int *texDefs, int count)
+{
+    for (EffectTexCnt = 0; EffectTexCnt < count; EffectTexCnt++) {
+        int clutAddr = *texDefs++;
+        int texAddr = *texDefs++;
+        int width = *texDefs++;
+        int height = *texDefs++;
+
+        EffectTexs[EffectTexCnt].palOfs = clutAddr >> 4;
+        EffectTexs[EffectTexCnt].texOfs = texAddr >> 4;
+        EffectTexs[EffectTexCnt].uLog = FastLog2(width);
+        EffectTexs[EffectTexCnt].vLog = FastLog2(height);
+        EffectTexs[EffectTexCnt].tex0 = 0;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseSky);
 
