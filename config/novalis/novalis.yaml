@@ -107,6 +107,8 @@ segments:
     - [0x8580, data]
     - [0x1b990, .data, game/help]  # Help, HelpPairs, not_found
     - [0x1bc50, data]
+    - [0xaa970, .rodata, game/actuator]  # jump table
+    - [0xaa990, data]
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]
