@@ -131,7 +131,55 @@ void LoadCompressedHudBank(int bank, char *destination)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", SetUpVisGif);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", SetUpVisGifViewer);
+// Writes a texture's TEX1 and CLAMP-style register words into a GIF packet (one per qword),
+// then two words from its row of VisGifTemplates. A negative index is a special one:
+// -2 and -3 use the fixed special rows, -1 a constant.
+void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index)
+{
+    unsigned long first = VisGifTemplates[index * 3];
+    unsigned long mipLevels = VisGifTemplates[index * 3 + 1];
+    unsigned long last = VisGifTemplates[index * 3 + 2];
+
+    if (index >= 0) {
+        unsigned long filterBits = ((unsigned long)filter << 6) | 0x20;
+
+        *gifRegs = (mipLevels & 0x1C) | filterBits | ((unsigned long)mipDist << 32);
+        gifRegs += 2;
+        *gifRegs = clampU | ((unsigned long)clampV << 2) | ((unsigned long)index << 24);
+        gifRegs += 2;
+        *gifRegs = first;
+        gifRegs[2] = last;
+    }
+
+    else if (index < -1) {
+        unsigned long *special = VisGifSpecialTemplate;
+
+        if (index == -3)
+            special = VisGifSpecialTemplateAlt;
+
+        unsigned long filterBits = (unsigned long)filter << 6;
+        unsigned long lodBits = ((unsigned long)mipDist << 32) | 0x20;
+
+        *gifRegs = filterBits | lodBits;
+        gifRegs += 2;
+        *gifRegs = 5;
+        gifRegs += 2;
+        *gifRegs = special[0];
+        gifRegs[2] = special[2];
+    }
+
+    else {
+        unsigned long filterBits = (unsigned long)filter << 6;
+        unsigned long lodBits = ((unsigned long)mipDist << 32) | 0x20;
+
+        *gifRegs = filterBits | lodBits;
+        gifRegs += 2;
+        *gifRegs = 5;
+        gifRegs += 2;
+        *gifRegs = 0x80000004CC007FFB;
+        gifRegs[2] = 0;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParsePermGsRam);
 
@@ -154,7 +202,7 @@ void ParseMobySeq(MobyClass *mobyClass, int animation)
 }
 
 void SetUpVisGif(int *gif, short *texDef, int mipDist, int filter, int clampU, int clampV, int index);
-void SetUpVisGifViewer(int *gif, int mipDist, int filter, int clampU, int clampV, int index);
+void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index);
 
 #define MOBY_GIF_STASH_END 0xFF
 
@@ -262,7 +310,7 @@ void ParseMobyClass(MobyClass *mobyClass, short *texDefs, char *texRefs, int oCl
             if (texDefs)
                 SetUpVisGif((int *)gif, texDefs + texIndex * 8, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
             else
-                SetUpVisGifViewer((int *)gif, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
+                SetUpVisGifViewer((unsigned long *)gif, gif->mipDist, gif->filter, gif->clampU, gif->clampV, texIndex);
 
             gif++;
         }

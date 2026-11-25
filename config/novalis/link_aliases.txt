@@ -547,5 +547,4 @@ bss_end = 0x00166430;
 WadDecompress__FPvT0 = 0x002618E8;
 music_LoadBankFromEE__FPvii = 0x0027AB20;
 SetUpVisGif__FPiPsiiiii = 0x00254108;
-SetUpVisGifViewer__FPiiiiii = 0x00254360;
 SetupMobyFunctions__Fi = 0x00279218;

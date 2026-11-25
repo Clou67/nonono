@@ -78,6 +78,13 @@ void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
 void ParseEffectTexs(int *texDefs, int count);
 void ParseSky(char *data);
 
+// Per-template GS register words used when building class GIF packets (3 words per row).
+extern unsigned long VisGifTemplates[];
+extern unsigned long VisGifSpecialTemplate[3];
+extern unsigned long VisGifSpecialTemplateAlt[3];
+
+void SetUpVisGifViewer(unsigned long *gifRegs, int mipDist, int filter, int clampU, int clampV, int index);
+
 void LoadByteGrid(int *grid);
 void ParseColl(char *data);
 void LoadCompressedHudBank(int bank, char *destination);
