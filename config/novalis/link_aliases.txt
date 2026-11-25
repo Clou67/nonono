@@ -194,7 +194,6 @@ MB_UnlockItem__Fic = 0x00275760;
 MB_UnlockLevel__Fi = 0x002756D0;
 InitMemSlots__Fv = 0x00252128;
 FastMemSet__FPvii = 0x00220F50;
-InitViewContext__Fv = 0x00219448;
 UpdateViewContext__Fv = 0x00219580;
 ResetParticles__Fv = 0x0027D4E0;
 printf_stub3__FPCce = 0x002189A0;
