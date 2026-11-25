@@ -58,4 +58,17 @@ struct ViewContext {
 
 extern ViewContext VC;
 
+// Copies of the view that the renderers and VU1 programs read; UpdateViewContext keeps them up.
+extern Vec4 FastFrustum[8];
+extern Vec4 part_constants;
+extern Vec4 ViewConstsA[3];
+extern unsigned char ViewConstsB[0x48];
+extern unsigned char ViewConstsC[0x20];
+extern unsigned char tfrag_setup_consts[0x1C];
+extern unsigned char shrub_near_setup_consts[0x38];
+extern unsigned char shrub_setup_consts[0x38];
+extern unsigned char stripvif_head[0x40];
+extern unsigned char watertile_blockvif_head[0x40];
+extern float RenderConsts1;
+
 #endif
