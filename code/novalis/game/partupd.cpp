@@ -3,6 +3,7 @@
 #include "fastfunc.h"
 #include "part.h"
 #include "mobyutil.h"
+#include "mathfunc_inline.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", ResetParticles);
 
@@ -234,7 +235,27 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_046);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_047);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_047);
+PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
+{
+    PartInstance *part = CreatePart(0x2F);
+
+    if (part != 0) {
+        CopyVec4Inline(&part->pos, position);
+
+        part->rgba = ((MB_randInt(8) + 0x28) << 0x18) | 0x808080;
+        part->draw_dist = FastFloatToInt(2.0f) + 0x20;
+
+        part->gs_alpha = 0x48;
+        part->type = 0;
+        part->tex = *PartTextures[0x2F];
+        part->scale = scale;
+
+        CopyVec4Inline(&part->motion20.origin, velocity);
+        part->rot = MB_randInt(0x100);
+    }
+
+    return part;
+}
 
 void UpdatePart_048(PartInstance *part)
 {

@@ -498,4 +498,5 @@ MB_DistIgnoreSmallZ__FP4Vec4T0f = 0x00272930;
 MB_PathMoveDist__FP8MobyPathP4Vec4PiPffi = 0x002726C8;
 MB_PathStepIndex__FP8MobyPathiii = 0x00272660;
 MB_SegmentPush__FP4Vec4N30f = 0x00272B98;
+CreatePart__Fi = 0x0027C498;
 SetMobyLights__FP12MobyInstancexUxll = 0x002650B0;

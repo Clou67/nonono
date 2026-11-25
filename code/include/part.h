@@ -90,6 +90,9 @@ struct PartInstance {
     };
 };
 
+// Texture slot of each particle class, indexed by the iClass passed to CreatePart.
+extern unsigned char *PartTextures[];
+
 PartInstance *CreatePart(int iClass);
 void DeletePart(PartInstance *part);
 
