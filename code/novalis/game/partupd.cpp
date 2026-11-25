@@ -2,6 +2,7 @@
 #include "hero.h"
 #include "fastfunc.h"
 #include "part.h"
+#include "mobyutil.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", ResetParticles);
 
@@ -460,7 +461,15 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AAE0);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_076);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_077);
+int PartFadeAlphaStep = 19;
+
+void UpdatePart_077(PartInstance *part)
+{
+    DecAlpha(&part->rgba, PartFadeAlphaStep);
+
+    if (FastDecTimer(part->timer) != 0)
+        DeletePart(part);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AC50);
 
