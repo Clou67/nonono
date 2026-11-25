@@ -19,7 +19,13 @@ struct BootAssets {
     int unk_0[2];
     WadEntry debugFont;
     WadEntry savegame;
-    char unk_18[0x2AFC - 0x18];
+    char unk_18[0x12E8 - 0x18];
+    WadEntry spaceScenes[10];       // 0x12E8
+    WadEntry palSpaceScenes[10];    // 0x1338
+    char unk_1388[0x1530 - 0x1388];
+    WadEntry weaponScenes[14];      // 0x1530
+    WadEntry palWeaponScenes[14];   // 0x15A0
+    char unk_1610[0x2AFC - 0x1610];
     NpcSceneSectors scenes[1];  // 0x2AFC; count unknown
 };
 

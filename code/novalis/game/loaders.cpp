@@ -103,7 +103,30 @@ int PreLoadNpcChunk(int chunk)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseNpcChunk);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadWeaponCutscene);
+// Points SceneLoad.chunks at each chunk of the scene file just loaded into the scene buffer.
+static inline void SetSceneChunks(void)
+{
+    SceneChunkEntry *entry = (SceneChunkEntry *)SceneLoad.buffer;
+    int chunk;
+
+    for (chunk = 0; chunk < SCENE_MAX_CHUNKS && entry->length != 0; chunk++, entry++)
+        SceneLoad.chunks[chunk] = SceneLoad.buffer + (entry->offset + SCENE_HEADER_SIZE);
+}
+
+void LoadWeaponCutscene(int weapon)
+{
+    if (!videoModePal)
+        music_LoadFile(SceneLoad.buffer, bootAssets.weaponScenes[weapon].offset, bootAssets.weaponScenes[weapon].length);
+
+    else
+        music_LoadFile(SceneLoad.buffer, bootAssets.palWeaponScenes[weapon].offset, bootAssets.palWeaponScenes[weapon].length);
+
+    music_Sync(0);
+    FadeToBlack(4);
+    music_Sync(1);
+
+    SetSceneChunks();
+}
 
 void ParseWeaponSceneChunk(int chunk)
 {
