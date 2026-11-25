@@ -3,6 +3,8 @@
 #include "moby.h"
 #include "loaders.h"
 #include "initlevel.h"
+#include "part.h"
+#include "fastfunc.h"
 #include "music.h"
 #include "wad.h"
 #include "draw.h"
@@ -25,7 +27,35 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseGsRamTextu
 
 TEXT_PADDING(0x27BD0060, 0x00000000);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseParticleTexs);
+// Copies the level's particle texture data into PartTexData, points each particle class's
+// texture slot into it, and builds the GS addresses of each particle texture.
+void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
+{
+    int classCount = header[0];
+    int dataOffset = header[2];
+    int dataSize = header[3];
+    int *texOffset = header + 4;
+
+    for (int index = 0; index < classCount; index++, texOffset++) {
+        if (*texOffset == 0)
+            PartTextures[index] = PartTexData;
+
+        else
+            PartTextures[index] = (unsigned char *)(*texOffset - (dataOffset - (int)PartTexData));
+    }
+
+    FastMemCopy32(PartTexData, (char *)header + dataOffset, dataSize);
+
+    for (PartTexCnt = 0; PartTexCnt < count; PartTexCnt++) {
+        int texBlock = gsBase + *texDefs++;
+        int texWidth = *texDefs++;
+        int clutBlock = gsBase + *texDefs++;
+        int clutSize = *texDefs++;
+
+        PartTexs[PartTexCnt].unk_00 = (texBlock << 4) + texWidth;
+        PartTexs[PartTexCnt].unk_04 = (clutBlock << 4) + FastLog2(clutSize);
+    }
+}
 
 // Each texture definition is {clut address, texture address, width, height}.
 void ParseEffectTexs(int *texDefs, int count)

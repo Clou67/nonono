@@ -74,6 +74,7 @@ extern int EffectTexCnt;
 extern EffectTex EffectTexs[];
 
 int FastLog2(int value);
+void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
 void ParseEffectTexs(int *texDefs, int count);
 
 void LoadByteGrid(int *grid);

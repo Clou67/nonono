@@ -93,6 +93,16 @@ struct PartInstance {
 // Texture slot of each particle class, indexed by the iClass passed to CreatePart.
 extern unsigned char *PartTextures[];
 
+// The level's particle texture data, and the GS address words built for each particle texture.
+struct PartTex {
+    int unk_00;
+    int unk_04;
+};
+
+extern unsigned char PartTexData[];
+extern int PartTexCnt;
+extern PartTex PartTexs[];
+
 PartInstance *CreatePart(int iClass);
 void DeletePart(PartInstance *part);
 
