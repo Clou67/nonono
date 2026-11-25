@@ -285,7 +285,6 @@ struct ScreenInsertEffect {
     unsigned long alphaReg;
 };
 
-extern int RenderFlags;
 extern float g_SceneFlash;
 // Debug switches for the draw loop.
 struct DrawDebugState {
@@ -379,7 +378,7 @@ void DefaultDraw(void)
 {
     int clearColor; // never set: retail passes whatever is in $a0
 
-    if (Sky == 0 || Sky->clear_screen != 0 || !(RenderFlags & 1) || drawConfig.sky == 0 || DrawDebug.forceClear != 0) {
+    if (Sky == 0 || Sky->clear_screen != 0 || !(RenderFlags & RENDER_SKY) || drawConfig.sky == 0 || DrawDebug.forceClear != 0) {
         ClearDrawBufferLarge(clearColor);
     }
     ComposeCameraMatrix();
@@ -390,7 +389,7 @@ void DefaultDraw(void)
     printf_stub2(RenderSetupLabel, 15);
     printf_stub3(RenderSetupLabel, 15);
 
-    if (Sky != 0 && (RenderFlags & 1)) {
+    if (Sky != 0 && (RenderFlags & RENDER_SKY)) {
         if (drawConfig.sky) {
             InitSky();
         }
@@ -398,12 +397,12 @@ void DefaultDraw(void)
         printf_stub2(SkyDrawLabel, 14);
     }
 
-    if (RenderFlags & 2) {
+    if (RenderFlags & RENDER_TFRAGS) {
         DrawTfrag();
     }
     Vif1ChainCmd(VIF_CHAIN_STAGE_1);
 
-    if (RenderFlags & 4) {
+    if (RenderFlags & RENDER_TIES) {
         if (videoModePal) {
             DrawTiesEx();
         } else {
@@ -422,7 +421,7 @@ void DefaultDraw(void)
     printf_stub2(PreEffectsLabel, 6);
     printf_stub3(PreEffectsLabel, 6);
 
-    if (RenderFlags & 8) {
+    if (RenderFlags & RENDER_SHRUBS) {
         DrawShrub();
     }
     Vif1ChainCmd(VIF_CHAIN_STAGE_3);
@@ -430,7 +429,7 @@ void DefaultDraw(void)
     if (drawConfig.screen_overlays && g_ScreenInsertEffect.enabled) {
         DrawScreenInsertEffect(&g_ScreenInsertEffect);
     }
-    if (RenderFlags & 0x20) {
+    if (RenderFlags & RENDER_EFFECTS) {
         FlipAndExploreTimersVU1(1);
         DrawWorldEffectsPass();
         FinalizeVU1FramePacketChain();
@@ -443,20 +442,20 @@ void DefaultDraw(void)
         VU1_gsRegsNormal();
     }
 
-    if (RenderFlags & 0x10) {
+    if (RenderFlags & RENDER_MOBYS) {
         DrawMobys();
     }
     Vif1ChainCmd(VIF_CHAIN_STAGE_4);
     FlipAndExploreTimersVU1(0);
 
-    if ((RenderFlags & 0x20) && drawConfig.moby_vu1_data && mobyVu1State != 6) {
+    if ((RenderFlags & RENDER_EFFECTS) && drawConfig.moby_vu1_data && mobyVu1State != 6) {
         VU1_addDataRef(MobyVU1Data, MobyVu1HeaderData.qwc);
         mobyVu1State = 6;
     }
     printf_stub3(VuEffectsLabel, 4);
     printf_stub2(VuEffectsLabel, 4);
 
-    if (RenderFlags & 0x20) {
+    if (RenderFlags & RENDER_EFFECTS) {
         VU1_gsRegsEffects();
         if (drawConfig.post_draws) {
             if (MobyFnListCnt) {
@@ -501,10 +500,10 @@ void DefaultDraw(void)
     printf_stub3(AaBlurLabel, 15);
     VU1_gsRegsEffects();
 
-    if (RenderFlags & 0x10000) {
+    if (RenderFlags & RENDER_DEBUG) {
         update_stub();
     }
-    if ((RenderFlags & 0x80) && drawConfig.hud) {
+    if ((RenderFlags & RENDER_HUD) && drawConfig.hud) {
         DrawGameplayHud();
         Help_Draw();
         UpdateLetterBox();
@@ -516,7 +515,7 @@ void DefaultDraw(void)
     printf_stub2(HudLabel, 14);
     FinalizeVU1FramePacketChain();
 
-    if (RenderFlags & 0x40) {
+    if (RenderFlags & RENDER_SCREEN_OVERLAYS) {
         if (drawConfig.screen_overlays) {
             VU1_addGSregister(0x42, 0x8000000044);
             if (GameCamera.camUnderWater) {
@@ -548,7 +547,7 @@ void DefaultDraw(void)
 
     VU1_syncChain(2);
     printf_stub2(PatchLightLabel, 17);
-    if (RenderFlags & 2) {
+    if (RenderFlags & RENDER_TFRAGS) {
         if (drawConfig.tfrag) {
             LightTfrags(TfragSprStash);
             PatchTfragGifs();
@@ -558,7 +557,7 @@ void DefaultDraw(void)
 
     VU1_syncChain(4);
     printf_stub2(PatchLightLabel, 17);
-    if (RenderFlags & 4) {
+    if (RenderFlags & RENDER_TIES) {
         if (drawConfig.tie) {
             if (videoModePal) {
                 RefreshTieLights();
@@ -573,7 +572,7 @@ void DefaultDraw(void)
 
     VU1_syncChain(8);
     printf_stub2(PatchLightLabel, 17);
-    if (RenderFlags & 8) {
+    if (RenderFlags & RENDER_SHRUBS) {
         if (drawConfig.shrub) {
             LightShrubs(ShrubSprStash);
             PatchShrubGifs();
@@ -583,7 +582,7 @@ void DefaultDraw(void)
 
     VU1_syncChain(0x10);
     printf_stub2(PatchLightLabel, 17);
-    if (RenderFlags & 0x10) {
+    if (RenderFlags & RENDER_MOBYS) {
         if (drawConfig.mobys) {
             PatchMobyGifs();
         }
@@ -621,7 +620,8 @@ void SetupDefaultDrawMovie(int black)
 {
     if (!CutscenePlaying) {
         ClearDrawBufferLarge(black);
-        RenderFlags = 0x7F;
+        RenderFlags = RENDER_SKY | RENDER_TFRAGS | RENDER_TIES | RENDER_SHRUBS | RENDER_MOBYS | RENDER_EFFECTS |
+                      RENDER_SCREEN_OVERLAYS;
         DefaultDraw();
     }
 }

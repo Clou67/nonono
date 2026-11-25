@@ -20,6 +20,22 @@ extern int gsFrame;
 extern int videoModePal;
 
 extern float screenFade;
+
+// What the frame draws (RenderFlags).
+enum RenderFlag {
+    RENDER_SKY = 0x1,
+    RENDER_TFRAGS = 0x2,
+    RENDER_TIES = 0x4,
+    RENDER_SHRUBS = 0x8,
+    RENDER_MOBYS = 0x10,
+    // World effects, moby effects and particles. The PS3 build calls this bit Ocean.
+    RENDER_EFFECTS = 0x20,
+    RENDER_SCREEN_OVERLAYS = 0x40,
+    RENDER_HUD = 0x80,
+    RENDER_DEBUG = 0x10000,
+};
+
+extern int RenderFlags;
 void FadeToBlack(int frames);
 
 // Which scene layers are drawn, and whether their textures are paged into GS memory this frame.
