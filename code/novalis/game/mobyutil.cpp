@@ -1167,7 +1167,17 @@ void MB_DistributeBoltsNearHero(MobyInstance *moby)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SpawnSparksPair);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToastMessage);
+extern int ToastMsgTimer;
+extern char ToastMsgBuff[];
+
+void MB_ToastMessage(int message, int time)
+{
+    if (time == -1)
+        time = FastScaleRoundInt(0xB4);
+
+    strcpy(ToastMsgBuff, msg_string(message));
+    ToastMsgTimer = time;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToastMessageFmt);
 
