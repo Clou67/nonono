@@ -36,7 +36,6 @@ void UpdateNumSpawnableMobys(void)
 }
 
 extern unsigned char *mobyVars;
-extern const char createMobyFailureMessage[] __attribute__((section(".data")));
 
 extern MobyClass *MobyClasses[];
 extern void *MobyClassUpdate[];
@@ -68,7 +67,7 @@ MobyInstance *CreateMoby(int oClass)
         return moby;
     }
 
-    printf_stub(createMobyFailureMessage, worldUpdateTime, oClass);
+    printf_stub("Tried to create moby and couldn't. Time: %d, oClass: %d\n", worldUpdateTime, oClass);
     return 0;
 }
 
@@ -687,7 +686,7 @@ void MB_GetJointsWorldMtx(MobyInstance *moby, int count, int *indices, Mtx4 *joi
     }
 }
 
-extern Vu1ChainCursor MobyVu1Marker;
+extern DmaTag *MobyVu1Marker;
 extern int GSloc;
 int BuildMobyTextureDma(unsigned int gsBase);
 
@@ -695,10 +694,10 @@ void DmaMobyTextures(void)
 {
     DmaTag *start = vu1_bufPtr.tag++;
 
-    MobyVu1Marker.tag->tag = DMA_TAG_NEXT;
-    MobyVu1Marker.tag->addr = (unsigned int)vu1_bufPtr.tag;
-    MobyVu1Marker.tag->vif0 = 0;
-    MobyVu1Marker.tag->vif1 = 0;
+    VU1_CURSOR(MobyVu1Marker).tag->tag = DMA_TAG_NEXT;
+    VU1_CURSOR(MobyVu1Marker).tag->addr = (unsigned int)vu1_bufPtr.tag;
+    VU1_CURSOR(MobyVu1Marker).tag->vif0 = 0;
+    VU1_CURSOR(MobyVu1Marker).tag->vif1 = 0;
 
     if (drawConfig.mobys != 0) {
         if (drawConfig.moby_texture_paging != 0) {
@@ -708,7 +707,7 @@ void DmaMobyTextures(void)
     }
 
     vu1_bufPtr.tag->tag = DMA_TAG_NEXT;
-    vu1_bufPtr.tag->addr = (unsigned int)(MobyVu1Marker.tag + 1);
+    vu1_bufPtr.tag->addr = (unsigned int)(VU1_CURSOR(MobyVu1Marker).tag + 1);
     vu1_bufPtr.tag->vif0 = 0;
     vu1_bufPtr.tag->vif1 = 0;
     vu1_bufPtr.tag++;
@@ -783,7 +782,6 @@ void MB_UpdateLightAngle(void)
 extern int MobyShadowCnt;
 extern int ShadowScratchPad[];
 extern Vu1ChainCursor MobyVu1ShadowMarker;
-extern const char mobyShadowProfileMarker[] __attribute__((section(".data")));
 
 void DrawShadow(int *list);
 void ShadowDrawStencil(void);
@@ -825,7 +823,7 @@ void ProcessMobyShadows(void)
     start->vif0 = 0;
     start->vif1 = 0;
 
-    printf_stub2(mobyShadowProfileMarker, 8);
+    printf_stub2("moby shadow", 8);
 }
 
 extern char cs_table[];
@@ -858,13 +856,12 @@ void RestoreMobyClassDists(void)
 }
 
 extern int mobyVu1State;
-extern Vu1ChainCursor MobyVu1Marker;
+extern DmaTag *MobyVu1Marker;
 extern int GSloc;
 extern int GSbase;
 extern int vu1_bufLimit;
 extern Vu1ChainCursor MobyVu1ShadowMarker;
 extern int MobyBuff;
-extern const char mobyTextureMarker[] __attribute__((section(".data")));
 
 void DrawMobysSetup(void)
 {
@@ -876,12 +873,12 @@ void DrawMobysSetup(void)
     VU1_addGSregister(0x47, 0x5360B);
 
     packet = (int)vu1_bufPtr.bytes;
-    MobyVu1Marker.bytes = (unsigned char *)packet;
+    VU1_CURSOR(MobyVu1Marker).bytes = (unsigned char *)packet;
     GSloc = GSbase;
     packet += 0x10;
     vu1_bufPtr.bytes = (unsigned char *)packet;
 
-    printf_stub3(mobyTextureMarker, 1);
+    printf_stub3("moby texs", 1);
 
     MobyVu1ShadowMarker.tag = 0;
     vu1_bufLimit = (int)SkinVertexCache - 0x10000;
@@ -900,8 +897,6 @@ void DrawMobyListProc(MobyInstance* moby, int count) {
     MobyBuff -= 0x10;
 }
 
-extern const char mobyDrawMarker[] __attribute__((section(".data")));
-extern const char mobySkinMarker[] __attribute__((section(".data")));
 extern Vu1ChainCursor MobyVu1ShadowMarker;
 extern int MobyTexMarker;
 
@@ -911,9 +906,9 @@ void SetMobyTexColors(void);
 
 void DrawMobysCleanup(void)
 {
-    printf_stub3(mobyDrawMarker, 3);
+    printf_stub3("moby draw", 3);
     DmaMobyTextures();
-    printf_stub2(mobyDrawMarker, 5);
+    printf_stub2("moby draw", 5);
 
     if (drawConfig.mobys != 0) {
         ProcessMobyAnimData();
@@ -921,7 +916,7 @@ void DrawMobysCleanup(void)
             SetMobyTexColors();
     }
 
-    printf_stub2(mobySkinMarker, 3);
+    printf_stub2("moby skin", 3);
 
     if (drawConfig.mobys != 0 && MobyVu1ShadowMarker.tag != 0)
         ProcessMobyShadows();
@@ -929,7 +924,6 @@ void DrawMobysCleanup(void)
 
 extern MobyInstance *MobyInstances;
 extern int vu1_bufLimit;
-extern const char mobyChainOverflowMessage[] __attribute__((section(".data")));
 
 void DrawMobysSetup(void);
 void DrawMobysCleanup(void);
@@ -943,7 +937,7 @@ void DrawMobys(void)
         MobyBuff = MobyProc(MobyInstances, MobyBuff, -1, 1);
 
         if ((int)vu1_bufPtr.bytes > vu1_bufLimit)
-            printf_stub(mobyChainOverflowMessage);
+            printf_stub("vu chain overflow - mobys dropped\n");
     }
 
     DrawMobysCleanup();
@@ -971,7 +965,6 @@ extern EnvSample* EnvSamples;   // 0x160040
 extern SoundAudioState audioState;
 extern MusicTransition musicTransition;
 
-extern const char envSampleMissingMessage[] __attribute__((section(".data")));
 void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     Vec4 diff;
     float distSq;
@@ -990,7 +983,7 @@ void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     }
 
     if (bestIdx == -1) {
-        printf_stub(envSampleMissingMessage);
+        printf_stub("TJB - No env sample point found!\n");
         return;
     }
 
@@ -1025,3 +1018,55 @@ void SetLevelFlag(int flag)
     if (flag != 0xFF)
         occlCharTable[Level][flag] = 0xFF;
 }
+
+// mobyfunc.cpp's small data after its timer labels, in retail order. Defined last so every function above
+// reaches it with lui, as retail does.
+int numSpawnableMobys = 0;
+int MobyClassIndex = 0;
+int MobySdata15FFC4 = 0;
+int MobySdata15FFC8 = 0;
+DmaTag *MobyVu1Marker = 0;
+int MobySdata15FFD0 = 0;
+int MobyBuff = 0;
+MobyInstance *MobyInstances = 0;
+MobyInstance *MobyInstancePermEnd = 0;
+MobyInstance *MobyInstanceEnd = 0;
+int MobyUpdateChainStart = 0;
+unsigned char *mobyVars = 0;
+int MobySdata15FFEC = 0;
+int MobySdata15FFF0 = 0;
+int MobySdata15FFF4 = 0;
+int MobyTexMarker = 0;
+int MobyShadowCnt = 0;
+Vu1ChainCursor MobyVu1ShadowMarker = { 0 };
+int MobySdata160004 = 0;
+int MobySdata160008 = 0;
+int MobySdata16000C = 0;
+int MobySdata160010 = 0;
+int EnvSampleCnt = 0;
+int MobySdata160018 = 0;
+int MobySdata16001C = 0;
+int MobySdata160020 = 0;
+int MobySdata160024 = 0;
+int MobySdata160028 = 0;
+int MobySdata16002C = 0;
+int MobySdata160030 = 0;
+int MobySdata160034 = 0;
+int MobySdata160038 = 0;
+int MobySdata16003C = 0;
+EnvSample *EnvSamples = 0;
+int MobySdata160044 = 0;
+int MobySdata160048 = 0;
+int MobySdata16004C = 0;
+int MobySdata160050 = 0;
+int MobySdata160054 = 0;
+int MobySdata160058 = 0;
+int MobySdata16005C = 0;
+int MobySdata160060 = 0;
+int MobySdata160064 = 0;
+int MobySdata160068 = 0;
+int MobySdata16006C = 0;
+int MobySdata160070 = 0;
+int MobySdata160074 = 0;
+int MobySdata160078 = 0;
+int MobySdata16007C = 0;

@@ -15,8 +15,6 @@
 #define TIE_SPR_RESULT_ADDRESS 0x3600
 #define TIE_SPR_RESULT_QWORDS 0x40
 
-// A named .data string rather than a literal, so its carve is separate from the labels' .rodata.
-const char TieTextureOverflowMessage[] __attribute__((section(".data"))) = "tie texture overflow\n";
 
 void DmaTieTextures(void)
 {
@@ -34,7 +32,7 @@ void DmaTieTextures(void)
             VU1_texFlush();
 
             if (gsEnd > TIE_GS_MEMORY_LIMIT)
-                printf_stub(TieTextureOverflowMessage);
+                printf_stub("tie texture overflow\n");
 
             if (TieGsMax < gsEnd)
                 TieGsMax = gsEnd;

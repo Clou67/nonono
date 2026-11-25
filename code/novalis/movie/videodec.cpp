@@ -1,6 +1,9 @@
 #include "common.h"
 #include "movie.h"
 
+// MPEG sequence end code (as stream bytes) that videoDecFlush feeds the decoder.
+unsigned char VideoSequenceEndCode[4] = { 0x00, 0x00, 0x01, 0xB7 };
+
 enum {
     MPEG_CALLBACK_ERROR = 0,
     MPEG_CALLBACK_NO_DATA = 1,
@@ -149,8 +152,6 @@ void videoDecMain(void *argument)
 }
 
 void setImageTag(unsigned int (*packets)[2], VoData *frame, int width, int height);
-extern const char decodeThreadAbortedMessage[];
-extern char decodePictureErrorMessage[];
 void printf_stub(const char *format, ...);
 
 int decBs0(VideoDec *decoder)
@@ -159,7 +160,7 @@ int decBs0(VideoDec *decoder)
     while (!sceMpegIsEnd(&decoder->mpeg)) {
         if (videoDecGetState(decoder) == VIDEO_DECODER_ABORTED) {
             result = -1;
-            printf_stub(decodeThreadAbortedMessage);
+            printf_stub("decode thread: aborted\n");
             break;
         }
 
@@ -168,7 +169,7 @@ int decBs0(VideoDec *decoder)
             switchThread();
         }
         if (sceMpegGetPicture(&decoder->mpeg, frame, 0x340) < 0)
-            ErrMessage(decodePictureErrorMessage);
+            ErrMessage("sceMpegGetPicture() decode error");
 
         if (decoder->mpeg.frameCount == 0) {
             int width = decoder->mpeg.width;
@@ -186,12 +187,11 @@ int decBs0(VideoDec *decoder)
     return result;
 }
 
-extern const char videoErrorMessage[];
 void printf_stub(const char *format, ...);
 
 int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument)
 {
-    printf_stub(videoErrorMessage, data->message);
+    printf_stub("%s\n", data->message);
     return 1;
 }
 

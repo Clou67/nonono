@@ -227,7 +227,7 @@ void DrawDialogText(void)
         int dialogHeight;
         float alpha;
 
-        text = FreezeEmptyText;
+        text = "";
         left = 0;
         mid = 0;
         right = 0;
@@ -283,7 +283,7 @@ void DrawDialogText(void)
             } else if (InFrontEnd != 0) {
                 left = 0x524E;
                 right = 0x524B;
-                sprintf(formattedText, FreezeFormatPrompt, msg_string(0x4FA9), 1, 1, msg_string(0x4FAA));
+                sprintf(formattedText, "%s%c%c%s", msg_string(0x4FA9), 1, 1, msg_string(0x4FAA));
                 text = formattedText;
             } else {
                 mid = 0x4FA8;
@@ -301,7 +301,7 @@ void DrawDialogText(void)
         case CS_PROMPT_BEGIN_NOSAVE:
             left = 0x524E;
             right = 0x524B;
-            sprintf(formattedText, FreezeFormatPrompt, msg_string(0x4FAE), 1, 1, msg_string(0x4FAA));
+            sprintf(formattedText, "%s%c%c%s", msg_string(0x4FAE), 1, 1, msg_string(0x4FAA));
             text = formattedText;
             break;
         case CS_PROMPT_BEGIN_UNFORMATTED:
@@ -322,7 +322,7 @@ void DrawDialogText(void)
             break;
         case CS_UNFORMATTED:
             mid = 0x4FA8;
-            sprintf(formattedText, FreezeFormatPrompt, msg_string(0x4FB0), 1, 1, msg_string(0x4FA7));
+            sprintf(formattedText, "%s%c%c%s", msg_string(0x4FB0), 1, 1, msg_string(0x4FA7));
             text = formattedText;
             break;
         }
@@ -460,16 +460,16 @@ void DrawDialogText(void)
         } else {
             DrawRoundedRect(FreezeStatsBoxCenterY - FastFloatToInt((float)FreezeStatsBoxHalfHeight * scale), FreezeStatsBoxCenterY + FastFloatToInt((float)FreezeStatsBoxHalfHeight * scale), FreezeStatsBoxCenterX - FastFloatToInt((float)FreezeStatsBoxHalfWidth * scale), FreezeStatsBoxCenterX + FastFloatToInt((float)FreezeStatsBoxHalfWidth * scale), pulse);
 
-            sprintf(line, FreezeFormatIndented, msg_string(0x5240));
+            sprintf(line, "    %s", msg_string(0x5240));
 
             if (Hero.racePlace == 1) {
-                sprintf(line, FreezeFormatFirst, 1);
+                sprintf(line, "%dst", 1);
             } else if (Hero.racePlace == 2) {
-                sprintf(line, FreezeFormatSecond, 2);
+                sprintf(line, "%dnd", 2);
             } else if (Hero.racePlace == 3) {
-                sprintf(line, FreezeFormatThird, 3);
+                sprintf(line, "%drd", 3);
             } else {
-                sprintf(line, FreezeFormatNth, Hero.racePlace);
+                sprintf(line, "%dth", Hero.racePlace);
             }
 
             line[3] = ' ';
@@ -489,24 +489,24 @@ void DrawDialogText(void)
                 seconds = remainder / perSecond;
                 hundredths = (remainder - seconds * perSecond) * 100 / perSecond;
 
-                sprintf(line, FreezeFormatString, msg_string(0x50A3));
+                sprintf(line, "%s", msg_string(0x50A3));
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x26, matchedColor, line, -1);
-                sprintf(line, FreezeFormatTime, minutes, seconds, hundredths);
+                sprintf(line, "%d:%02d:%02d", minutes, seconds, hundredths);
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x3A, matchedColor, line, -1);
             } else {
-                sprintf(line, FreezeFormatString, msg_string(0x50A2));
+                sprintf(line, "%s", msg_string(0x50A2));
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x30, unmatchedColor, line, -1);
             }
 
             scoreReference = freezeStatsScoreRefA[(Level ^ 0x10) ? 0 : 1];
 
             if (scoreReference != 0 && scoreReference == Hero.raceScore) {
-                sprintf(line, FreezeFormatString, msg_string(0x50A5));
+                sprintf(line, "%s", msg_string(0x50A5));
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x56, matchedColor, line, -1);
-                sprintf(line, FreezeFormatNumber, Hero.raceScore);
+                sprintf(line, "%d", Hero.raceScore);
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x6A, matchedColor, line, -1);
             } else {
-                sprintf(line, FreezeFormatString, msg_string(0x50A4));
+                sprintf(line, "%s", msg_string(0x50A4));
                 FontPrintCenter(0x100, FreezeStatsTextY + 0x60, unmatchedColor, line, -1);
             }
 

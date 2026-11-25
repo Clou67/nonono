@@ -9,7 +9,6 @@ struct MoviePutSpans {
     int secondSize;
 };
 
-extern char ptsOverflowMessage[];
 void ErrMessage(char *message);
 
 int videoCallback(sceMpeg *mpeg, sceMpegCbData *data, void *argument)
@@ -29,7 +28,7 @@ int videoCallback(sceMpeg *mpeg, sceMpegCbData *data, void *argument)
                          source, firstSize, buffer->data, remaining);
     if (copied > 0) {
         if (!videoDecPutTs(&moviePlayer->video_dec, stream->pts, stream->dts, spans.first, copied))
-            ErrMessage(ptsOverflowMessage);
+            ErrMessage("pts buffer overflow\n");
     }
     videoDecEndPut(&moviePlayer->video_dec, copied);
     return copied > 0;

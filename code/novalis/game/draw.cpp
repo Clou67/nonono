@@ -308,22 +308,6 @@ extern unsigned char g_UnderwaterTintA;
 extern unsigned char g_SubtitlesOn;
 extern long LightVU0Program[];
 
-// Names the timer sections of the frame for the (stubbed out) profiler.
-extern char RenderSetupLabel[];
-extern char SkyDrawLabel[];
-extern char PreEffectsLabel[];
-extern char VuEffectsLabel[];
-extern char MobyEffectsLabel[];
-extern char PartDrawLabel[];
-extern char PostEffectsLabel[];
-extern char AaBlurLabel[];
-extern char HudLabel[];
-extern char ScreenOverlaysLabel[];
-extern char PatchLightLabel[];
-extern char TfragPatchLightLabel[];
-extern char TiePatchLightLabel[];
-extern char ShrubPatchLightLabel[];
-extern char MobyPatchLabel[];
 
 void ComposeCameraMatrix(void);
 void CleanAnimationCache(void);
@@ -369,8 +353,7 @@ int DrawSdata15F320 = 0;
 int DrawSdata15F324 = 0;
 int DrawSdata15F328 = 0;
 int DrawSdata15F32C = 0;
-// Retail keeps this 16-byte struct in .sdata, which -G8 alone would not do.
-ScreenInsertEffect g_ScreenInsertEffect __attribute__((section(".sdata"))) = { 0, 0, 0 };
+ScreenInsertEffect g_ScreenInsertEffect = { 0, 0, 0 };
 
 // Draws the frame: the sky, the tfrags, ties, shrubs and mobys, the effects, the HUD and the screen
 // overlays, then lights and patches the next frame's packets while VU1 works through this one.
@@ -386,15 +369,15 @@ void DefaultDraw(void)
     UpdateOcclusion();
     SetupFogColorGsReg();
     mobyVu1State = -1;
-    printf_stub2(RenderSetupLabel, 15);
-    printf_stub3(RenderSetupLabel, 15);
+    printf_stub2("render setup", 15);
+    printf_stub3("render setup", 15);
 
     if (Sky != 0 && (RenderFlags & RENDER_SKY)) {
         if (drawConfig.sky) {
             InitSky();
         }
-        printf_stub3(SkyDrawLabel, 14);
-        printf_stub2(SkyDrawLabel, 14);
+        printf_stub3("sky draw", 14);
+        printf_stub2("sky draw", 14);
     }
 
     if (RenderFlags & RENDER_TFRAGS) {
@@ -418,8 +401,8 @@ void DefaultDraw(void)
         FinalizeVU1FramePacketChain();
         VU1_gsRegsNormal();
     }
-    printf_stub2(PreEffectsLabel, 6);
-    printf_stub3(PreEffectsLabel, 6);
+    printf_stub2("pre effects", 6);
+    printf_stub3("pre effects", 6);
 
     if (RenderFlags & RENDER_SHRUBS) {
         DrawShrub();
@@ -452,8 +435,8 @@ void DefaultDraw(void)
         VU1_addDataRef(MobyVU1Data, MobyVu1HeaderData.qwc);
         mobyVu1State = 6;
     }
-    printf_stub3(VuEffectsLabel, 4);
-    printf_stub2(VuEffectsLabel, 4);
+    printf_stub3("vu effects", 4);
+    printf_stub2("vu effects", 4);
 
     if (RenderFlags & RENDER_EFFECTS) {
         VU1_gsRegsEffects();
@@ -466,8 +449,8 @@ void DefaultDraw(void)
             VU1_gsRegsEffects();
             DrawLameShadows();
         }
-        printf_stub2(MobyEffectsLabel, 6);
-        printf_stub3(MobyEffectsLabel, 6);
+        printf_stub2("moby effects", 6);
+        printf_stub3("moby effects", 6);
 
         if (drawConfig.particles) {
             VU1_addGSregister(8, 5);
@@ -476,8 +459,8 @@ void DefaultDraw(void)
             PartProc();
             mobyVu1State = 8;
         }
-        printf_stub2(PartDrawLabel, 8);
-        printf_stub3(PartDrawLabel, 8);
+        printf_stub2("part draw", 8);
+        printf_stub3("part draw", 8);
 
         if (drawConfig.pre_draws) {
             if (PreDrawCnt) {
@@ -490,14 +473,14 @@ void DefaultDraw(void)
             VU1_addGSregister(0x42, 0x8000000044);
             TargetCrosshairDraw();
         }
-        printf_stub2(PostEffectsLabel, 6);
-        printf_stub3(PostEffectsLabel, 6);
+        printf_stub2("post effects", 6);
+        printf_stub3("post effects", 6);
     }
 
     if (drawConfig.aa_blur) {
         AA_BlurPass();
     }
-    printf_stub3(AaBlurLabel, 15);
+    printf_stub3("aa blur", 15);
     VU1_gsRegsEffects();
 
     if (RenderFlags & RENDER_DEBUG) {
@@ -511,8 +494,8 @@ void DefaultDraw(void)
     if (gameMode == 2 && g_SubtitlesOn) {
         DrawSubtitles();
     }
-    printf_stub3(HudLabel, 14);
-    printf_stub2(HudLabel, 14);
+    printf_stub3("hud", 14);
+    printf_stub2("hud", 14);
     FinalizeVU1FramePacketChain();
 
     if (RenderFlags & RENDER_SCREEN_OVERLAYS) {
@@ -537,7 +520,7 @@ void DefaultDraw(void)
                 DrawScreenEffect();
             }
         }
-        printf_stub3(ScreenOverlaysLabel, 10);
+        printf_stub3("screen overlays", 10);
     }
 
     // Light and patch next frame's packets while VU1 draws this one.
@@ -546,17 +529,17 @@ void DefaultDraw(void)
     PerfLoad = FastIntToFloat(*T0_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
 
     VU1_syncChain(2);
-    printf_stub2(PatchLightLabel, 17);
+    printf_stub2("", 17);
     if (RenderFlags & RENDER_TFRAGS) {
         if (drawConfig.tfrag) {
             LightTfrags(TfragSprStash);
             PatchTfragGifs();
         }
-        printf_stub2(TfragPatchLightLabel, 2);
+        printf_stub2("tfrag patch-light", 2);
     }
 
     VU1_syncChain(4);
-    printf_stub2(PatchLightLabel, 17);
+    printf_stub2("", 17);
     if (RenderFlags & RENDER_TIES) {
         if (drawConfig.tie) {
             if (videoModePal) {
@@ -567,26 +550,26 @@ void DefaultDraw(void)
                 PatchTieGifs();
             }
         }
-        printf_stub2(TiePatchLightLabel, 5);
+        printf_stub2("tie patch-light", 5);
     }
 
     VU1_syncChain(8);
-    printf_stub2(PatchLightLabel, 17);
+    printf_stub2("", 17);
     if (RenderFlags & RENDER_SHRUBS) {
         if (drawConfig.shrub) {
             LightShrubs(ShrubSprStash);
             PatchShrubGifs();
         }
-        printf_stub2(ShrubPatchLightLabel, 7);
+        printf_stub2("shrub patch-light", 7);
     }
 
     VU1_syncChain(0x10);
-    printf_stub2(PatchLightLabel, 17);
+    printf_stub2("", 17);
     if (RenderFlags & RENDER_MOBYS) {
         if (drawConfig.mobys) {
             PatchMobyGifs();
         }
-        printf_stub2(MobyPatchLabel, 3);
+        printf_stub2("moby patch", 3);
     }
 
     UpdateFog();
@@ -595,21 +578,6 @@ void DefaultDraw(void)
 
 
 
-// Timer section names for DefaultDraw. Retail keeps these strings in .sdata, which our -G8 build only
-// does for strings of 8 bytes or fewer, so they are named arrays placed there explicitly.
-char RenderSetupLabel[] __attribute__((section(".sdata"))) = "render setup";
-char SkyDrawLabel[] __attribute__((section(".sdata"))) = "sky draw";
-char PreEffectsLabel[] __attribute__((section(".sdata"))) = "pre effects";
-char VuEffectsLabel[] __attribute__((section(".sdata"))) = "vu effects";
-char MobyEffectsLabel[] __attribute__((section(".sdata"))) = "moby effects";
-char PartDrawLabel[] __attribute__((section(".sdata"))) = "part draw";
-char PostEffectsLabel[] __attribute__((section(".sdata"))) = "post effects";
-char AaBlurLabel[] __attribute__((section(".sdata"))) = "aa blur";
-char HudLabel[] __attribute__((section(".sdata"))) = "hud";
-char ScreenOverlaysLabel[] __attribute__((section(".sdata"))) = "screen overlays";
-char PatchLightLabel[] __attribute__((section(".sdata"))) = "";
-char TiePatchLightLabel[] __attribute__((section(".sdata"))) = "tie patch-light";
-char MobyPatchLabel[] __attribute__((section(".sdata"))) = "moby patch";
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetupDefaultDraw);
 

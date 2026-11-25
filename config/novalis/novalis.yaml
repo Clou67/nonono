@@ -66,31 +66,33 @@ segments:
     - [0x1000, lit4]
     - [0x13f0, .sdata, game/draw]  # draw state and DefaultDraw timer labels
     - [0x1568, lit4]
-    - [0x15a8, .sdata, game/freeze]  # layout values
-    - [0x1604, data]
+    - [0x15a8, .sdata, game/freeze]  # layout values, format strings
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
-    - [0x2028, .sdata, game/memcard]  # g_loaderr
-    - [0x202c, lit4]
-    - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators
-    - [0x2250, lit4]
+    - [0x2028, .sdata, game/memcard]  # g_loaderr, entry path and delete formats
+    - [0x2050, lit4]
+    - [0x2080, .sdata, game/mobyfunc]  # timer labels, moby lists and markers, env samples
+    - [0x2180, lit4]
+    - [0x2220, .sdata, game/music]  # cdrom device, stop warning
+    - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators, price format
+    - [0x2260, lit4]
     - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep
     - [0x2344, lit4]
-    - [0x2570, .rodata, game/shrubfunc]  # shrub texs, shrub draw labels
+    - [0x2570, .sdata, game/shrubfunc]  # shrub texs, shrub draw labels
     - [0x2590, lit4]
-    - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index
-    - [0x25d8, lit4]
-    - [0x2610, .rodata, game/skyfunc]  # sky texture label; trailing zero fill includes Sky at 0x16051c
+    - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c
     - [0x2620, lit4]
-    - [0x3030, .rodata, game/tfragfunc]  # tfrag texs, tfrag draw labels
+    - [0x3030, .sdata, game/tfragfunc]  # tfrag texs, tfrag draw labels
     - [0x3050, lit4]
-    - [0x30a0, .rodata, game/tiefunc]  # tie texs, tie draw labels
+    - [0x30a0, .sdata, game/tiefunc]  # tie texs, tie draw labels
     - [0x30c0, lit4]
+    - [0x3228, .sdata, game/vendor]  # timer labels, bolt formats, arrows, dude state
     - [0x32a0, .sdata, game/vuchain]  # VifChainFlags
     - [0x32a4, lit4]
-    - [0x3438, .rodata, movie/movie]  # movie error format
-    - [0x3448, lit4]
+    - [0x3438, .sdata, movie/movie]  # movie error format, decoder state
+    - [0x3458, .sdata, movie/videodec]  # sequence end code, error format
+    - [0x3468, lit4]
 
   # .bss is NOBITS in the section table but the single PT_LOAD covers it with zeros.
   - name: bss
@@ -111,6 +113,7 @@ segments:
     - [0x1bc50, data]
     - [0xaa970, .rodata, game/actuator]  # jump table
     - [0xaa990, data]
+    - [0xaab60, .rodata, game/draw]  # long DefaultDraw timer labels
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]
@@ -118,15 +121,22 @@ segments:
     - [0xab7a0, data]
     - [0xabde0, .rodata, game/memcard]
     - [0xabfa0, data]
+    - [0xabfd0, .rodata, game/mobyfunc]  # create failure, chain overflow, env sample messages
+    - [0xac060, data]
     - [0xac280, .rodata, game/npc]  # separators, jump table
     - [0xac2c0, data]
-    - [0xac4d0, .data, game/shrubfunc]  # texture overflow message
+    - [0xac4d0, .rodata, game/shrubfunc]  # texture overflow message
     - [0xac4e8, data]
-    - [0xac5b0, .data, game/tfragfunc]  # texture overflow message
-    - [0xac5c8, .data, game/tiefunc]  # texture overflow message
+    - [0xac5b0, .rodata, game/tfragfunc]  # texture overflow message
+    - [0xac5c8, .rodata, game/tiefunc]  # texture overflow message
     - [0xac5e0, data]
     - [0xac690, .rodata, game/vuchain]
     - [0xac718, data]
+    - [0xac860, .rodata, movie/movie]  # open error
+    - [0xac878, .rodata, movie/read]  # pts overflow message
+    - [0xac890, .rodata, movie/vibuf]  # inactive DMA message
+    - [0xac8a8, .rodata, movie/videodec]  # decode error messages
+    - [0xac8e8, data]
 
   - name: lvl.vtbl
     type: code

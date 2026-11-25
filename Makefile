@@ -54,7 +54,7 @@ NOVALIS_LD = $(NOVALIS_DIR)/novalis.ld
 NOVALIS_ELF = $(NOVALIS_DIR)/overlay.elf
 NOVALIS_BIN = $(NOVALIS_DIR)/overlay.bin
 NOVALIS_ORIGINAL = assets/levels/1_novalis/overlay.elf
-NOVALIS_FLAGS = -G8 -O2 -fno-exceptions -snas
+NOVALIS_FLAGS = -G16 -O2 -fno-exceptions -snas
 NOVALIS_OBJS = $(shell test -f $(NOVALIS_LD) && grep -oE '$(NOVALIS_DIR)/[^ ()]+\.o' $(NOVALIS_LD) | awk '!seen[$$0]++')
 
 .PHONY: split-novalis novalis

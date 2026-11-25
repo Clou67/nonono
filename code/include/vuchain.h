@@ -93,6 +93,10 @@ union Vu1ChainCursor {
 };
 
 extern Vu1ChainCursor vu1_bufPtr;
+
+// Views a plain DmaTag pointer variable as a chain cursor. Some chain markers are word-sized
+// variables, but RC1's code re-reads them around every packet store as it does vu1_bufPtr.
+#define VU1_CURSOR(pointer) (*(Vu1ChainCursor *)&(pointer))
 // End of the chain built last frame, kept by VU1_swapChain (no DL counterpart).
 extern unsigned char *vu1_lastChainEnd;
 
@@ -188,7 +192,7 @@ struct MobyVu1Header {
     unsigned char unk_02[14];
 };
 
-extern MobyVu1Header MobyVu1HeaderData;
+extern MobyVu1Header MobyVu1HeaderData __attribute__((section(".data")));
 extern unsigned char MobyVU1Data[];
 extern long MobyVU0Program[];
 

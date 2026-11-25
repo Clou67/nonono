@@ -48,7 +48,6 @@ extern int movieDecoderThread;
 // Sampled again when checking whether Start is allowed.
 extern volatile int decodeMode;
 extern int GoodiesMenuUnlocked;
-extern const char movieOpenError[];
 
 int playMpegMovie(int sector, int size, unsigned char *decoder_buffer, MoviePlayer *player, int language);
 int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file);

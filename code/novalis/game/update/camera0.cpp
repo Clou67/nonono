@@ -7,7 +7,7 @@ void FUN_0030f338(UpdateCam *camera)
 {
 }
 
-extern Vec4 HeroPosition;
+extern Vec4 HeroPosition __attribute__((section(".data")));
 
 void Camera_CopyHeroPosition(MobyInstance *target, Vec4 *position)
 {

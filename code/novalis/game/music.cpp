@@ -2,6 +2,9 @@
 #include "vuchain.h"
 #include "music.h"
 
+// Device prefix for music files on the disc; nothing in the overlay reads it.
+char MusicCdromDevice[] = "cdrom0:";
+
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", music_Init);
 
 void snd_StreamSafeCdCallback(void (*callback)(int reason));
@@ -180,14 +183,12 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", func_0027AF20);
 static const unsigned int MUSIC_STOP_PENDING = 0xFFFFFFFF;
 enum { MUSIC_STOP_COMPLETE = 7 };
 
-extern const char MusicUnexpectedStopHandle[];
-
 void music_StopCB(unsigned int result, unsigned long long data)
 {
     MusicPlaying *playing = (MusicPlaying *)(int)data;
     if (playing) {
         if (playing->handle != MUSIC_STOP_PENDING)
-            printf_stub(MusicUnexpectedStopHandle);
+            printf_stub("wtf\n");
 
         else {
             playing->handle = result;

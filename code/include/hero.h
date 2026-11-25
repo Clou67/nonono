@@ -362,7 +362,7 @@ extern unsigned char UnlockableItems[ITEM_COUNT];
 extern unsigned char ObtainedItems[ITEM_COUNT];
 
 // The equipped item first, then the items equipped before it.
-extern int EquippedItems[4];
+extern int EquippedItems[];
 
 #define QUICK_SELECT_SLOT_COUNT 8
 extern int QuickSelectItems[QUICK_SELECT_SLOT_COUNT];

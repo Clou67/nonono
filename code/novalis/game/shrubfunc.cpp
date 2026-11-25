@@ -15,8 +15,6 @@
 #define SHRUB_SPR_RESULT_ADDRESS 0x3200
 #define SHRUB_SPR_RESULT_QWORDS 0x40
 
-// A named .data string rather than a literal, so its carve is separate from the labels' .rodata.
-const char ShrubTextureOverflowMessage[] __attribute__((section(".data"))) = "shrub texture overflow\n";
 
 void DmaShrubTextures(void)
 {
@@ -34,7 +32,7 @@ void DmaShrubTextures(void)
             VU1_texFlush();
 
             if (gsEnd > SHRUB_GS_MEMORY_LIMIT)
-                printf_stub(ShrubTextureOverflowMessage);
+                printf_stub("shrub texture overflow\n");
 
             if (ShrubGsMax < gsEnd)
                 ShrubGsMax = gsEnd;

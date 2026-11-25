@@ -195,7 +195,7 @@ int initAll(int sector, int size, int language)
 
     if (!strFileBegin(&moviePlayer->str_file, sector, size)) {
         opened = 0;
-        printf_stub(movieOpenError);
+        printf_stub("Can't Open movie\n");
     } else {
         opened = 1;
     }
@@ -235,3 +235,10 @@ void proceedAudio(void)
 {
     audioDecSend(&moviePlayer->audio_dec);
 }
+
+// The rest of movie.cpp's small data, after its error format. Defined last so the functions above reach it
+// with lui, as retail does.
+unsigned char *movieDecoderBuffer = 0;
+MoviePlayer *moviePlayer = 0;
+int movieDecoderThread = 0;
+int MovieSdata161354 = 0;

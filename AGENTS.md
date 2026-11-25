@@ -19,7 +19,7 @@ The goal is C++ source that compiles to the original bytes and is also good code
 
 - Compiler: EE GCC 2.95.2 (`tools/cc/bin/ee-gcc.exe`, run through Wine), always with exactly:
   ```
-  -G8 -O2 -fno-exceptions -snas
+  -G16 -O2 -fno-exceptions -snas
   ```
 - Assembler for compiled C++: SN `ps2eeas` 1.9.6.516 (`make setup-snas` installs it into `tools/cc/lib/gcc-lib/ee/2.95.2/`). Other ps2eeas builds pad DIV instructions differently and do not reproduce the original.
 - Generated `.s` files (data, handwritten asm files) are assembled with GNU as: `-EL -march=r5900 -mabi=eabi -no-pad-sections -Icode/include`.
@@ -131,12 +131,9 @@ Rules:
 
 ## Known shortcomings
 
-- **String placement (possible `-G16`).** Some original string literals sit in the small-data zone while longer ones from the same file sit in normal `.rodata`. At `-G8` every string over 8 bytes lands in `.rodata`, so the build cannot reproduce that layout from literals alone. The cases so far:
-  - `freeze`: its strings are extern data symbols carved as raw data.
-  - `initlevel`: a 12-byte array that also matches at `-G12`.
-  - `shrubfunc`: "shrub texs" and "shrub draw" (11 bytes each) sit in the small-data zone, the 24-byte overflow message in `.rodata`. The labels stay literals in a `.rodata` carve, and the overflow message is a named `const char` array with `section(".data")` so it can have its own carve. Named arrays for the labels break `DrawShrub`: the compiler shares the high half of the address between them.
-  
-  All of this fits a threshold between 12 and 23 bytes, but the labels are reached with `lui`/`addiu` and not gp-relative, which does not fit cleanly. A whole-overlay `-G15` or `-G16` build broke other files, and per-file flags are not allowed, so the flag stays at `-G8`. Treat the workarounds as temporary and collect more evidence before changing the flag.
+- **Small-data threshold is `-G16`.** String literals and initialized globals of up to 16 bytes go to `.sdata`; longer strings go to `.rodata`. So a file's short labels sit in the small-data zone next to its small variables, and its long messages sit in its `.rodata` carve. Write them as plain literals.
+  - Retail code did not treat every 9–16-byte extern as small data. If a matched function's codegen changes because GCC now thinks an extern is small (it stops keeping the base address in a register, or moves a store into a delay slot), declare the extern the way retail evidently did. For arrays, leave the size out (`extern float TfragDists[];`, `extern char CollJointCacheKeys[];`, with a `#define` for any `sizeof`). For 16-byte core structs such as `Vec4` globals, add `__attribute__((section(".data")))` to the extern declaration (`LightDirection`, `HeroPosition`, `camPosOffset`, `MobyVu1HeaderData`). Core globals far from the overlay's `$gp` fail to link otherwise.
+  - `freeze`: its strings are still extern data symbols carved as raw data, from before the flag change.
 
 ## Commits
 

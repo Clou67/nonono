@@ -205,9 +205,6 @@ struct mc_resource {
 // The directory listing memcard_Update deletes a save folder through.
 extern sceMcTblGetDir mc_dirEntry[];
 
-// Path pieces used when deleting a save folder.
-extern char mc_entryPathFormat[];
-extern char mc_deletingEntryMessage[];
 
 // Staging buffers memcard_Save packs the game and level blocks into.
 extern char mc_gameprepbuff[];

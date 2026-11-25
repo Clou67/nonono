@@ -233,7 +233,6 @@ snd_SetMasterVolume__Fii = 0x0012E208;
 sceMpegInit = 0x0012B730;
 AddIntcHandler = 0x00118790;
 EnableIntc = 0x00119090;
-movieOpenError = 0x0020A760;
 vblankHandler__Fi = 0x0031B280;
 handler_endimage__Fi = 0x0031B3E8;
 ShrubProc__Fv = 0x0029CDF0;
@@ -413,16 +412,13 @@ VendorScrollFormat = 0x0020A510;
 
 VendorRender = 0x001CA940;
 
-VendorDudeVisible = 0x00161188;
 
 FastVec3DistLen__FP4Vec4T0 = 0x00221398;
 
 MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988;
 
 
-VendorBoltsThousandsFormat = 0x00161158;
 
-VendorBoltsFormat = 0x00161160;
 
 sound_PlayMobySound__FiiP12MobyInstance = 0x002A1618;
 
@@ -436,7 +432,6 @@ music_PreseekTrack__Fiii = 0x00279ED0;
 
 music_StartSpeech__Fiii = 0x00279CD8;
 
-MusicUnexpectedStopHandle = 0x00160128;
 
 snd_ContinueVAGStream__FUi = 0x0012ECA0;
 

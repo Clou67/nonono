@@ -44,8 +44,8 @@ extern GsTextureLoc TfragGsLocStash[TFRAG_GS_LOC_MAX];
 extern TfragGifGroup TfragGifRectify[TFRAG_GIF_GROUP_MAX];
 extern char TfragSprStash[0x400];
 // Distances at which the tfrag level of detail changes, and the same scaled to fixed point.
-extern float TfragDists[3];
-extern int TfragIntDists[3];
+extern float TfragDists[];
+extern int TfragIntDists[];
 // Constants for the tfrag VU1 program. SetTfragDists rebuilds them.
 extern float TfragSetupConsts[4][4];
 // Chain packet that opens the tfrag DMA stage.

@@ -24,7 +24,7 @@ void InitLevel(void)
     GSloc = GSmemBase;
     GSbase = GSmemBase;
 
-    FastMemSet(CollJointCacheKeys, COLL_JOINT_CACHE_EMPTY, sizeof(CollJointCacheKeys));
+    FastMemSet(CollJointCacheKeys, COLL_JOINT_CACHE_EMPTY, COLL_JOINT_CACHE_KEYS_SIZE);
     FastMemSet(MobyClassLookup, -1, sizeof(MobyClassLookup));
     FastMemSet(MobyTexLookup, -1, sizeof(MobyTexLookup));
     FastMemSet(MobyMipDists, 0, sizeof(MobyMipDists));

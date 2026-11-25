@@ -244,7 +244,7 @@ void InfobotHint_SetState(MobyInstance *moby, InfobotHint *hint, int activate)
         }
 
         cost = VendorPrices[entry->conditionValue].goldBoltPrice;
-        sprintf(price, InfobotPriceFormat, cost / 1000, separators[gameLanguage % LANGUAGE_COUNT], cost % 1000);
+        sprintf(price, "%d%s%03d", cost / 1000, separators[gameLanguage % LANGUAGE_COUNT], cost % 1000);
         sprintf(text, (char *)SCRATCHPAD, price);
     } else {
         sprintf(text, msg_string(entry->message));

@@ -147,14 +147,13 @@ void viBufEndPut(ViBuf *buffer, int size)
 }
 
 void ErrMessage(char *message);
-extern char inactiveVideoDmaMessage[];
 
 int viBufAddDMA(ViBuf *buffer)
 {
     int added = 0;
     WaitSema(buffer->sema);
     if (!buffer->isActive) {
-        ErrMessage(inactiveVideoDmaMessage);
+        ErrMessage("DMA ADD not active\n");
         return 0;
     }
 
