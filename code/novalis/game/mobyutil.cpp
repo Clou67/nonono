@@ -1071,7 +1071,24 @@ int MB_ScaledVecWrapper(Vec4 *vector, float radius)
     return FastBsphereCheck(&scaled, radius);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockLevel);
+void MB_UnlockLevel(int level)
+{
+    int unlockedCount = 0;
+    int slot;
+
+    if (LevelUnlocked[level] == 0) {
+        for (slot = 0; slot < 20; slot++) {
+            if (LevelUnlocked[slot] != 0)
+                unlockedCount++;
+        }
+
+        LevelUnlocked[level] = 1;
+        LevelUnlockOrder[unlockedCount] = level;
+
+        if (level != Level)
+            MB_ToastMessageByIndex(level);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockItem);
 

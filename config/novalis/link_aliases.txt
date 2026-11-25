@@ -191,7 +191,6 @@ Hud_DrawRotatedSprite16__FfffffiiUl = 0x00250EA8;
 DrawRoundedRect__Fiiiii = 0x0021CAA0;
 memset = 0x001153FC;
 MB_UnlockItem__Fic = 0x00275760;
-MB_UnlockLevel__Fi = 0x002756D0;
 InitMemSlots__Fv = 0x00252128;
 FastMemSet__FPvii = 0x00220F50;
 InitViewContext__Fv = 0x00219448;
