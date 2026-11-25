@@ -41,6 +41,27 @@ struct PartRotationMotion {
     char rotationStep;
 };
 
+struct PartTweenSpin {
+    Vec4 velocity;
+    float rate;       // timer-to-fraction scale for the colour tween
+    int colorB;
+    int colorA;
+    char rotationStep;
+};
+
+struct PartFollowFade {
+    short fadeStep;   // alpha removed each frame
+    short mode;       // 1 = frozen, 2 = follows pMoby
+    MobyInstance *pMoby;
+    char unk_08[8];
+    Vec4 offset;      // offset from pMoby
+};
+
+struct PartTimedScale {
+    int timer;
+    float scaleStep;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -63,8 +84,14 @@ struct PartInstance {
         PartScaleFade scaleFade;
         PartFadingMotion fadingMotion;
         PartRotationMotion rotationMotion;
+        PartTweenSpin tweenSpin;
+        PartFollowFade followFade;
+        PartTimedScale timedScale;
     };
 };
+
+PartInstance *CreatePart(int iClass);
+void DeletePart(PartInstance *part);
 
 void UpdatePart_018(PartInstance *part);
 

@@ -23,6 +23,9 @@ int FastVec3AddSubLen(Vec4 *sphere, BSphere *bounds);
 void FastScaleVec4(Vec4 *out, Vec4 *in, float scale);
 // Counts a timer down to zero; returns nonzero once it has run out.
 int FastDecTimer(int &timer);
+int FastDecTimer(short &timer);
+float FastAbsF(float value);
+void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 float FastVec3Length(float *vec);
 void FastMemCopy32(void *destination, void *source, int size);
 // Writes the scaled xyz of in to out.
