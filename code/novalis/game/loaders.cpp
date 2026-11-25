@@ -32,7 +32,16 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMobyPack);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadHudBanks);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadCompressedHudBank);
+void LoadCompressedHudBank(int bank, char *destination)
+{
+    char *aligned = (char *)((unsigned int)(destination + 15) & 0xFFFFFFF0);
+
+    // The bank's offset is relative to the start of the level WAD buffer.
+    if (aligned)
+        WadDecompress((void *)(((LevelWadHeader *)levelRoot)->hudBanks[bank].offset + (int)levelRoot), aligned);
+
+    HudState.header->bankData[bank] = 0;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", SetUpVisGif);
 
@@ -93,13 +102,13 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ResetLevelData)
 int SetupLevelWadBuffer(void)
 {
     // The level WAD goes at the top of RAM, page aligned and with room for its header.
-    int size = (bootAssets.levelSoundBank.length * 0x800 + 0x1057) & 0xFFFFF000;
+    int size = (bootAssets.frontbin.length * 0x800 + 0x1057) & 0xFFFFF000;
 
     levelRoot = (int *)((int)(LevelWadBufferEnd - size) & ~0xF);
 
     // The sound bank is read in right after the 0x60-byte header.
     levelRoot[LEVEL_WAD_SOUND_BANK] = 0x60;
-    music_LoadBankFromEE((char *)levelRoot + levelRoot[LEVEL_WAD_SOUND_BANK], bootAssets.levelSoundBank.offset, bootAssets.levelSoundBank.length);
+    music_LoadBankFromEE((char *)levelRoot + levelRoot[LEVEL_WAD_SOUND_BANK], bootAssets.frontbin.offset, bootAssets.frontbin.length);
 
     return 1;
 }

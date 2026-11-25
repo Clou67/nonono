@@ -6,8 +6,7 @@ struct WadEntry;
 
 // The level WAD buffer starts with a table of offsets from its start to each part.
 enum {
-    LEVEL_WAD_SOUND_BANK = 0,     // word 0
-    LEVEL_WAD_HUD_BANKS = 10      // words 10..: an (offset, size) pair per compressed HUD bank
+    LEVEL_WAD_SOUND_BANK = 0      // word 0; see LevelWadHeader for the rest
 };
 
 // Points at the level WAD buffer at the top of RAM.
@@ -16,6 +15,13 @@ extern int *levelRoot;
 struct LevelWadHudBank {
     int offset;
     int size;
+};
+
+// The start of the level WAD buffer seen as a struct.
+struct LevelWadHeader {
+    int soundBank;                    // 0x00
+    char unk_04[0x24];
+    LevelWadHudBank hudBanks[6];      // 0x28
 };
 
 // End of the space the level WAD buffer is placed below.
