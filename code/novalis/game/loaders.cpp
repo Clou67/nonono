@@ -4,6 +4,7 @@
 #include "loaders.h"
 #include "initlevel.h"
 #include "part.h"
+#include "sky.h"
 #include "fastfunc.h"
 #include "music.h"
 #include "wad.h"
@@ -74,7 +75,44 @@ void ParseEffectTexs(int *texDefs, int count)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseSky);
+// Relocates the level's sky file in place. Its texture definitions are rewritten as sky_tex.
+void ParseSky(char *data)
+{
+    SKY *sky = (SKY *)data;
+
+    Sky = sky;
+    sky->clear_screen = 1;
+    sky->tex_defs = (sky_tex *)((char *)sky->tex_defs + (int)sky);
+    sky->tex_data = (char *)sky->tex_data + (int)sky;
+    sky->fx_list = sky->fx_list + (int)sky;
+
+    if (sky->sprites)
+        sky->sprites = (sky_sprite *)((char *)sky->sprites + (int)sky);
+
+    int *texDef = (int *)Sky->tex_defs;
+
+    for (int tex = 0; tex < Sky->tex_cnt; tex++) {
+        int clutAddr = *texDef++;
+        int texAddr = *texDef++;
+        int width = *texDef++;
+        int height = *texDef++;
+
+        Sky->tex_defs[tex].pal_ofs = clutAddr >> 4;
+        Sky->tex_defs[tex].tex_ofs = texAddr >> 4;
+        Sky->tex_defs[tex].u_log = FastLog2(width);
+        Sky->tex_defs[tex].v_log = FastLog2(height);
+        Sky->tex_defs[tex].tex0 = 0;
+    }
+
+    for (int shellIndex = 0; shellIndex < Sky->shell_cnt; shellIndex++) {
+        Sky->shells[shellIndex] = (sky_shell *)((char *)Sky->shells[shellIndex] + (int)sky);
+
+        sky_shell *shell = Sky->shells[shellIndex];
+
+        for (int cluster = 0; cluster < shell->cluster_cnt; cluster++)
+            shell->clusters[cluster].data = (char *)shell->clusters[cluster].data + (int)sky;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMobyPack);
 
