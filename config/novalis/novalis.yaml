@@ -70,8 +70,8 @@ segments:
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
-    - [0x2028, .sdata, game/memcard]  # g_loaderr
-    - [0x202c, lit4]
+    - [0x2028, .sdata, game/memcard]  # g_loaderr, entry path and delete formats
+    - [0x2050, lit4]
     - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators, price format
     - [0x2260, lit4]
     - [0x2340, .sdata, game/partupd]  # PartFadeAlphaStep

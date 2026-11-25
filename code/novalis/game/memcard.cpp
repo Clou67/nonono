@@ -496,8 +496,8 @@ void memcard_Update(void)
             break;
         case MC_DELETE_FILE:
             if (g_memcard.res == 1) {
-                sprintf(name, mc_entryPathFormat, SAVEGAME_NAME, (char *)mc_dirEntry[0].EntryName);
-                printf_stub(mc_deletingEntryMessage, name);
+                sprintf(name, "%s/%s", SAVEGAME_NAME, (char *)mc_dirEntry[0].EntryName);
+                printf_stub("deleting %s\n", name);
                 if (sceMcDelete(CURRENT_CARD.port, CURRENT_CARD.slot, name) == 0) {
                     g_memcard.substage = 2;
                 }
@@ -1306,3 +1306,7 @@ int memcard_Save(int force, int level)
 
     return g_memcard.nextstage == MC_STAGE_SAVE;
 }
+
+// The rest of memcard.cpp's small data; nothing decompiled reads it yet.
+int MemcardSdata15FF48 = 0x1C0;
+int MemcardSdata15FF4C = 0x1C;
