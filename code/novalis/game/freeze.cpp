@@ -329,7 +329,7 @@ void DrawDialogText(void)
 
         FontWindow initialWindow;
         memset(&initialWindow, 0, sizeof(initialWindow));
-        initialWindow.win_bot = occlViewParams[1];
+        initialWindow.win_bot = Scrn.paramY;
         initialWindow.win_left = 0x60;
         initialWindow.win_right = 0x1A0;
         initialWindow.text_x = 0x100;
@@ -341,7 +341,7 @@ void DrawDialogText(void)
         FontPrintWindowMedium(&box, 0, text, -1);
 
         dialogHeight = box.max_height + 0x28;
-        top = (occlViewParams[1] - dialogHeight) >> 1;
+        top = (Scrn.paramY - dialogHeight) >> 1;
         box.win_bot = top + dialogHeight;
         box.text_y = top + 4;
         box.win_top = top;

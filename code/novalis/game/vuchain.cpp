@@ -167,8 +167,8 @@ TEXT_PADDING(0xAF82C020, 0x00000000);
 
 void VU1_setScissor(int left, int right, int top, int bottom)
 {
-    int maxX = occlViewParams[0] - 1;
-    int maxY = occlViewParams[1] - 1;
+    int maxX = Scrn.paramX - 1;
+    int maxY = Scrn.paramY - 1;
 
     VU1_CHAIN_WORD(0) = DMA_TAG_CNT | 2;
     VU1_CHAIN_WORD(4) = 0;
