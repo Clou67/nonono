@@ -2213,7 +2213,6 @@ FontLargeMetrics = 0x001C3D10;
 
 FontColorsEnabled = 0x0015F45C; // size:0x4
 
-ptsOverflowMessage = 0x0020A778;
 
 g_newlevelnum = 0x0015F5C0; // size:0x4
 g_newlevel = 0x0015F570; // size:0x4
