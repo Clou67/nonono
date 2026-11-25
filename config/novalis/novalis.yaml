@@ -70,6 +70,8 @@ segments:
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
+    - [0x1db0, .sdata, game/main]  # ClearMem warning, system misc timer label
+    - [0x1dc8, lit4]
     - [0x2028, .sdata, game/memcard]  # g_loaderr, entry path and delete formats
     - [0x2050, lit4]
     - [0x2080, .sdata, game/mobyfunc]  # timer labels, moby lists and markers, env samples
@@ -119,6 +121,8 @@ segments:
     - [0xaad50, data]
     - [0xab730, .rodata, game/lights]  # debug strings
     - [0xab7a0, data]
+    - [0xabc30, .rodata, game/main]  # mode switch jump table
+    - [0xabc60, data]
     - [0xabde0, .rodata, game/memcard]
     - [0xabfa0, data]
     - [0xabfd0, .rodata, game/mobyfunc]  # create failure, chain overflow, env sample messages
@@ -195,7 +199,6 @@ segments:
     - [0x100d38, cpp, game/mcstate]
     - [0x101528, cpp, game/memcard]
     - [0x103790, asm, game/miscproc]
-    - [0x103d10, cpp, game/mesh]
     - [0x104860, cpp, game/mission]
     - [0x105400, cpp, game/mobyfunc]
     - [0x1071b0, asm, game/mobyproc]

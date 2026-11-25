@@ -3,11 +3,16 @@
 
 // Values of gameMode.
 enum gameMode_t {
-    GAME_MODE_NORMAL,
-    GAME_MODE_MOVIE,
-    GAME_MODE_SCENE,
-    GAME_MODE_PAUSE,
-    GAME_MODE_FREEZE
+    GAME_MODE_NONE = -2,
+    GAME_MODE_DEBUG = -1,
+    GAME_MODE_NORMAL = 0,
+    GAME_MODE_MOVIE = 1,
+    GAME_MODE_SCENE = 2,
+    GAME_MODE_PAUSE = 3,
+    GAME_MODE_FREEZE = 4,
+    GAME_MODE_VENDOR = 5,
+    GAME_MODE_SPACE = 6,
+    GAME_MODE_CREDITS = 7
 };
 
 extern int gameMode;
