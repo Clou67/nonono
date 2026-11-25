@@ -36,7 +36,6 @@ void UpdateNumSpawnableMobys(void)
 }
 
 extern unsigned char *mobyVars;
-extern const char createMobyFailureMessage[] __attribute__((section(".data")));
 
 extern MobyClass *MobyClasses[];
 extern void *MobyClassUpdate[];
@@ -68,7 +67,8 @@ MobyInstance *CreateMoby(int oClass)
         return moby;
     }
 
-    printf_stub(createMobyFailureMessage, worldUpdateTime, oClass);
+    printf_stub("Tried to create moby and couldn't. Time: %d, oClass: %d
+", worldUpdateTime, oClass);
     return 0;
 }
 
@@ -929,7 +929,6 @@ void DrawMobysCleanup(void)
 
 extern MobyInstance *MobyInstances;
 extern int vu1_bufLimit;
-extern const char mobyChainOverflowMessage[] __attribute__((section(".data")));
 
 void DrawMobysSetup(void);
 void DrawMobysCleanup(void);
@@ -943,7 +942,8 @@ void DrawMobys(void)
         MobyBuff = MobyProc(MobyInstances, MobyBuff, -1, 1);
 
         if ((int)vu1_bufPtr.bytes > vu1_bufLimit)
-            printf_stub(mobyChainOverflowMessage);
+            printf_stub("vu chain overflow - mobys dropped
+");
     }
 
     DrawMobysCleanup();
@@ -971,7 +971,6 @@ extern EnvSample* EnvSamples;   // 0x160040
 extern SoundAudioState audioState;
 extern MusicTransition musicTransition;
 
-extern const char envSampleMissingMessage[] __attribute__((section(".data")));
 void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     Vec4 diff;
     float distSq;
@@ -990,7 +989,8 @@ void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     }
 
     if (bestIdx == -1) {
-        printf_stub(envSampleMissingMessage);
+        printf_stub("TJB - No env sample point found!
+");
         return;
     }
 

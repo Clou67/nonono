@@ -117,6 +117,8 @@ segments:
     - [0xab7a0, data]
     - [0xabde0, .rodata, game/memcard]
     - [0xabfa0, data]
+    - [0xabfd0, .rodata, game/mobyfunc]  # create failure, chain overflow, env sample messages
+    - [0xac060, data]
     - [0xac280, .rodata, game/npc]  # separators, jump table
     - [0xac2c0, data]
     - [0xac4d0, .rodata, game/shrubfunc]  # texture overflow message
