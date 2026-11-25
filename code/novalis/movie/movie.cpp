@@ -195,8 +195,7 @@ int initAll(int sector, int size, int language)
 
     if (!strFileBegin(&moviePlayer->str_file, sector, size)) {
         opened = 0;
-        printf_stub("Can't Open movie
-");
+        printf_stub("Can't Open movie\n");
     } else {
         opened = 1;
     }
