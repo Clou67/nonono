@@ -1064,7 +1064,21 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", AddMotionBlurE
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", UpdateMotionBlur);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", DeleteMotionBlur);
+void DeleteMotionBlur(MotionBlur *blur)
+{
+    int slot;
+
+    if (blur->active != 0) {
+        for (slot = 0; slot < blur->count; slot++) {
+            if (blur->copies[slot] != 0) {
+                DeleteMoby(blur->copies[slot]);
+                blur->copies[slot] = 0;
+            }
+        }
+
+        blur->active = 0;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002777C0);
 
