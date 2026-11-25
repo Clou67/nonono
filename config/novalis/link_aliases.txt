@@ -233,7 +233,6 @@ snd_SetMasterVolume__Fii = 0x0012E208;
 sceMpegInit = 0x0012B730;
 AddIntcHandler = 0x00118790;
 EnableIntc = 0x00119090;
-movieOpenError = 0x0020A760;
 vblankHandler__Fi = 0x0031B280;
 handler_endimage__Fi = 0x0031B3E8;
 ShrubProc__Fv = 0x0029CDF0;

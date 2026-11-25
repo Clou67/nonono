@@ -128,6 +128,8 @@ segments:
     - [0xac5e0, data]
     - [0xac690, .rodata, game/vuchain]
     - [0xac718, data]
+    - [0xac860, .rodata, movie/movie]  # open error
+    - [0xac878, data]
 
   - name: lvl.vtbl
     type: code
