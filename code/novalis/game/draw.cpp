@@ -4,6 +4,8 @@
 #include "draw.h"
 #include "fastfunc.h"
 #include "viewcontext.h"
+#include "mathfunc_inline.h"
+#include "tfrag.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", ScreenPosFromWorldSpace);
 
@@ -63,9 +65,9 @@ void InitViewContext(void)
     Scrn.maxX = (halfWidth + 0x800) << 4;
     Scrn.maxY = (halfHeight + 0x800) << 4;
 
-    VC.xratio = 32.0f;
-    VC.yratio = 745472.0f;
-    VC.fMtx.v0.x = 0.63f;
+    VC.nearClip = 32.0f;
+    VC.farClip = 745472.0f;
+    VC.xratio = 0.63f;
 
     VC.xpix = FastIntToFloat(width) * 0.5f;
     VC.ypix = FastIntToFloat(aaBuff.drawH) * 0.5f;

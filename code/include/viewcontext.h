@@ -5,14 +5,15 @@
 
 // The view the frame is drawn from (DL's ViewContext).
 struct ViewContext {
-    // Retail has 0x50 bytes of header here; VC points at the 0x10 bytes after the DL start.
-    int headerBase[5][4];
-    unsigned long headerTex[2];
-    unsigned long headerTexNoFog[2];
-    unsigned long headerGr[2];
-    unsigned long headerGrNoFog[2];
-    float D;
-    float F;
+    // The first row is the GIF tag for the fog far intensity, the five after it hold the GS register
+    // values; the four rows after those are the texture and gradient GIF tags.
+    int headerBase[6][4];
+    int headerTex[4];
+    int headerTexNoFog[4];
+    int headerGr[4];
+    int headerGrNoFog[4];
+    float nearClip;
+    float farClip;
     float xclipratio;
     float yclipratio;
     float xratio;
@@ -30,7 +31,6 @@ struct ViewContext {
     Vec4 iguard;
     Vec4 sphereCheckA;
     Vec4 sphereCheckB;
-    Vec4 sphereCheckC;
     float xpix;
     float ypix;
     float xclip;
