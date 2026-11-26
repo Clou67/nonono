@@ -299,4 +299,6 @@ extern MobyVolume *SphereVolumes;
 extern MobyVolume *CylinderVolumes;
 extern AnimLayer AnimLayerPool[];
 
+float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int axis);
+
 #endif

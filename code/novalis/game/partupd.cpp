@@ -417,7 +417,65 @@ void UpdatePart_020(PartInstance *part)
         DeletePart(part);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_021);
+void UpdatePart_021(PartInstance *particle)
+{
+    PartSpiralMotion *motion = &particle->spiralMotion;
+    Vec4 targetPosition, offset, rotatedOffset;
+    Mtx4 basis;
+
+    if (motion->radius != 0.0f) {
+        float zero = 0.0f;
+        CopyVec4(&basis.v0, &motion->basis->v0);
+        CopyVec4(&basis.v1, &motion->basis->v1);
+        CopyVec4(&basis.v2, &motion->basis->v2);
+        offset.y = FastAngleCosF(motion->angle) * motion->radius;
+        offset.z = FastAngleSinF(motion->angle) * motion->radius;
+        offset.x = zero;
+        offset.w = zero;
+        FastTransformVec4(&rotatedOffset, &offset, &basis);
+        FastSubVec3(&particle->pos, &particle->pos, &rotatedOffset);
+
+        motion->approachSpeed += transStepScale * 0.06001f;
+        MB_GetBonePos(motion->target, 0, &targetPosition);
+        FastSubVec3(&offset, &targetPosition, &particle->pos);
+        FastVec3Normalize(&offset, &offset, motion->approachSpeed);
+        FastVec3Add(&particle->pos, &particle->pos, &offset);
+
+        motion->angle = FastAddRots(motion->angle, transStepScale * 0.5235988f);
+        motion->radius *= transStepScale * -0.10000002384185791f + 1.0f;
+        offset.y = FastAngleCosF(motion->angle) * motion->radius;
+        offset.z = FastAngleSinF(motion->angle) * motion->radius;
+        offset.x = zero;
+        offset.w = zero;
+        FastTransformVec4(&rotatedOffset, &offset, &basis);
+        FastVec3Add(&particle->pos, &particle->pos, &rotatedOffset);
+        if (zero < MB_GetNormalizedMtxElem(&targetPosition, &motion->target->transform,
+                                           &particle->pos, 1)) {
+            DeletePart(particle);
+            return;
+        }
+    }
+
+    motion->alpha += transStepScale * 0.011f * motion->alphaStep;
+    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    if (1.0f <= motion->alpha) {
+        motion->alphaStep = -motion->alphaStep;
+        motion->alpha += transStepScale * 0.011f * motion->alphaStep;
+    }
+
+    particle->scale += transStepScale * -2940.0f;
+    particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(motion->alpha * 255.0f) << 24);
+
+    motion->rotation += transStepScale * 0.006f;
+    if (1.0f < motion->rotation)
+        motion->rotation -= 1.0f;
+
+    particle->rot = (int)(motion->rotation * 255.0f);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_021);
 

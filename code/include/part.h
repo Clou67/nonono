@@ -161,6 +161,17 @@ struct PartLinkedMotion {
     };
 };
 
+struct PartSpiralMotion {
+    Mtx4 *basis;
+    float alpha;
+    float rotation;
+    float alphaStep;
+    float radius;
+    float angle;
+    MobyInstance *target;
+    float approachSpeed;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -192,6 +203,7 @@ struct PartInstance {
         PartColorDecayMotion colorDecayMotion;
         PartDebrisMotion debrisMotion;
         PartLinkedMotion linkedMotion;
+        PartSpiralMotion spiralMotion;
     };
 };
 
@@ -247,5 +259,7 @@ PartInstance *SpawnPart_016(Vec4 *position, Vec4 *velocity, int startColor, int 
 void UpdatePart_017(PartInstance *particle);
 
 void UpdatePart_031(PartInstance *particle);
+
+void UpdatePart_021(PartInstance *particle);
 
 #endif
