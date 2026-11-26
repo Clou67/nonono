@@ -258,10 +258,22 @@ void ParseSpaceSceneChunk(int chunk);
 struct SceneLoadState {
     char unk_00[0x30];
     int sceneId;                    // 0x30
-    char unk_34[0x24];
+    char unk_34[4];
+    int cameraFrame;
+    char unk_3C[4];
+    short numFrames;
+    char unk_42[2];
+    short mobyCount;
+    char unk_46[2];
+    short speechFrame;
+    char unk_4A[2];
+    void *subtitles;
+    char unk_50[4];
+    void *cameraFrames;
     unsigned char *decodedChunk;    // 0x58
     unsigned char *buffer;          // 0x5C
     unsigned char *chunks[SCENE_MAX_CHUNKS]; // 0x60
+    MobyInstance *mobys[1]; // 0x178
 };
 
 // Table at the start of a loaded scene file: where each chunk sits, counted

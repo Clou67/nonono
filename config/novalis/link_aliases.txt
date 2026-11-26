@@ -447,7 +447,7 @@ HudEntries = 0x0017E0D0;
 
 SceneLoad = 0x0016CCE0;
 
-ParseNpcChunk__Fv = 0x00259288;
+ParseNpcChunk = 0x00259288;
 
 SphereVolumes = 0x001600F4;
 

@@ -3145,7 +3145,84 @@ int PreLoadNpcChunk(int chunk)
     return 1;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseNpcChunk);
+struct NpcChunk {
+    int numFrames;
+    int subtitles;
+    int speechFrame;
+    int mobyCount;
+    int cameraFrames;
+    int actors[1];
+};
+
+struct NpcActor {
+    int oClass;
+    int unk_04;
+    int unk_08;
+    int vars;
+    MobySeq sequence;
+};
+
+void ParseNpcChunk(void)
+{
+    FlushCache(0);
+    WadDecompress(SceneLoad.buffer, SceneLoad.decodedChunk);
+    FlushCache(0);
+
+    unsigned char *base = SceneLoad.decodedChunk;
+    NpcChunk *chunk = (NpcChunk *)base;
+    int *actors = chunk->actors;
+
+    SceneLoad.cameraFrame = 0;
+    SceneLoad.numFrames = chunk->numFrames;
+    int subtitleOffset = chunk->subtitles;
+    SceneLoad.speechFrame = chunk->speechFrame;
+    SceneLoad.mobyCount = chunk->mobyCount;
+    SceneLoad.cameraFrames = base + chunk->cameraFrames;
+
+    if (subtitleOffset < 0x400)
+        SceneLoad.subtitles = 0;
+    else
+        SceneLoad.subtitles = base + subtitleOffset;
+
+    for (int actorIndex = 0; actorIndex < SceneLoad.mobyCount; actorIndex++) {
+        MobySeq *sequence = (MobySeq *)(base + *actors++);
+        int oClass = *(int *)sequence;
+        sequence = (MobySeq *)&((NpcActor *)sequence)->vars;
+        unsigned char *vars = base + *(int *)sequence;
+        sequence = (MobySeq *)((int *)sequence + 1);
+
+        if (gameMode == GAME_MODE_SPACE && actorIndex == 0 && oClass == 0x215)
+            oClass = SpaceshipOClasses[bootSpaceTransitionState.shipVariant];
+
+        MobyInstance *moby = SceneLoad.mobys[actorIndex];
+        if (moby == 0) {
+            moby = CreateMoby(oClass);
+            int animation = moby->pClass->sequenceCount;
+            moby->pClass->sequenceCount = animation + 1;
+            moby->updateId = animation;
+            moby->modeBits |= NO_UPDATE | NO_POST_UPDATE;
+            moby->animationId = animation;
+            moby->drawDistance = 0x1FF;
+            moby->lodTransition = 0xFF;
+            moby->collision = 0;
+
+            if (Hero.moby == 0)
+                moby->lights = (((unsigned long long)0xE0E0 << 16) | 0xE000) << 22;
+            else
+                moby->lights = Hero.moby->lights;
+
+            if (moby->pClass->metalCount != 0)
+                moby->metal = 0x18;
+
+            SceneLoad.mobys[actorIndex] = moby;
+        }
+
+        moby->pVar = vars;
+        moby->pClass->animations[moby->updateId] = sequence;
+        for (int frame = 0; frame < sequence->frameCount; frame++)
+            sequence->frames[frame] = (MobySeqFrame *)((unsigned char *)sequence + (int)sequence->frames[frame]);
+    }
+}
 
 // Points SceneLoad.chunks at each chunk of the scene file just loaded into the scene buffer.
 static inline void SetSceneChunks(void)
