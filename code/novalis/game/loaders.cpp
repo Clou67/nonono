@@ -284,7 +284,121 @@ void ParseSky(char *data)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseMobyPack);
+// Texture definitions of the spaceship pack's two moby classes (their clut and image blocks
+// are filled in at load) and the texture remap both use. They start loaders.cpp's small data.
+TextureDef ShipTexDefA = { 0, 0x100, 0x100, 4, 0, 0, 0 };
+TextureDef ShipTexDefB = { 0, 0x80, 0x80, 1, 0, 0, 0 };
+unsigned char ShipTexRefs[16] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+};
+
+// The spaceship pack: offsets of its two moby classes and their textures.
+struct SpaceshipPack {
+    int mobyA;
+    int texturesA;
+    int mobyB;
+    int texturesB;
+};
+
+#define SHIP_TEXTURE_A_SIZE 0x14000
+#define SHIP_TEXTURE_B_SIZE 0x4000
+#define SHIP_TEXTURE_IMAGE 0x430        // the image follows the 0x30-byte header and the 256-colour clut
+
+extern int SpaceshipOClassesB[];
+// Retail reads GSmemBase here as the word after GSmemZbuf, which keeps the delay-slot loads
+// off $gp.
+extern int GSmemZbuf __attribute__((section(".sdata")));
+#define GSmemAfterZbuf ((&GSmemZbuf)[1])
+extern int ShipPackLoaded;
+extern int ShipPackReady;
+extern int ShipPackUnk;
+extern int MobySdata15FFC8;     // moby texture count
+extern int MobyTexLocs[];
+extern TextureDef MobyTexDefs[];
+
+// Copies the current spaceship's pack out of its WAD buffer, uploads its two images and
+// cluts to the GS blocks the level header reserved, and registers its two moby classes.
+// Returns the end of the pack's textures.
+char *ParseMobyPack(char *pack, LevelCoreHeader *header)
+{
+    sceGsLoadImage image;
+    int upload = 0;
+    int mobyA;
+    int texturesAOffset;
+    int mobyB;
+    int texturesBOffset;
+    char *texturesA;
+    char *destination;
+    char *source;
+    char *packStart;
+    int texIndex;
+    int nextTexIndex;
+
+    FastMemCopy16(pack, LevelLoad.spaceships, bootAssets.spaceships[bootSpaceTransitionState.shipVariant + 1].length << 11);
+    mobyA = ((SpaceshipPack *)pack)->mobyA;
+    texturesAOffset = ((SpaceshipPack *)pack)->texturesA;
+    texturesA = pack + texturesAOffset;
+    mobyB = ((SpaceshipPack *)pack)->mobyB;
+    texturesBOffset = ((SpaceshipPack *)pack)->texturesB;
+    do {
+        if (upload == 0) {
+            sceGsSetDefLoadImage(&image, (GSmemAfterZbuf + header->shipGsRam[0]) >> 8, 1, GS_PSMT8, 0, 0, 64, 64);
+            destination = pack + texturesAOffset;
+            source = texturesA + 0x14430;
+        } else if (upload == 1) {
+            sceGsSetDefLoadImage(&image, (GSmemAfterZbuf + header->shipGsRam[1]) >> 8, 1, GS_PSMT8, 0, 0, 32, 32);
+            destination = pack + texturesAOffset;
+            source = texturesA + 0x15430;
+        } else if (upload == 2) {
+            sceGsSetDefLoadImage(&image, (GSmemAfterZbuf + header->shipGsRam[2]) >> 8, 1, GS_PSMCT32, 0, 0, 16, 16);
+            source = texturesA + 0x30;
+            destination = pack + texturesAOffset;
+        } else {
+            sceGsSetDefLoadImage(&image, (GSmemAfterZbuf + header->shipGsRam[3]) >> 8, 1, GS_PSMCT32, 0, 0, 16, 16);
+            destination = pack + texturesAOffset;
+            source = pack + texturesBOffset + 0x30;
+        }
+        FlushCache(0);
+        upload++;
+        sceGsExecLoadImage(&image, (u_long128 *)source);
+        sceGsSyncPath(0, 0);
+    } while (upload < 4);
+
+    // The images are packed down over the pack's texture area.
+    packStart = pack;
+    pack = destination;
+    ShipTexDefA.clut = header->shipGsRam[2] >> 8;
+    texIndex = MobySdata15FFC8;
+    ShipTexDefA.mip1 = header->shipGsRam[0] >> 8;
+    ShipTexDefA.mip2 = header->shipGsRam[1] >> 8;
+    CopyVec4Inline((Vec4 *)&MobyTexDefs[texIndex], (Vec4 *)&ShipTexDefA);
+    MobyTexLocs[texIndex] = (int)pack - 0x80000000;
+    FastMemCopy16(pack, packStart + texturesAOffset + SHIP_TEXTURE_IMAGE, SHIP_TEXTURE_A_SIZE);
+    pack += SHIP_TEXTURE_A_SIZE;
+    ShipTexRefs[0] = MobySdata15FFC8;
+    if ((unsigned char)MobyClassLookup[SpaceshipOClasses[bootSpaceTransitionState.shipVariant]] == 0xFF)
+        ParseMoby(packStart + mobyA, (short *)(&ShipTexDefA - MobySdata15FFC8), (char *)ShipTexRefs,
+                  SpaceshipOClasses[bootSpaceTransitionState.shipVariant]);
+
+    nextTexIndex = MobySdata15FFC8 + 1;
+    ShipTexDefB.clut = header->shipGsRam[3] >> 8;
+    MobySdata15FFC8 = nextTexIndex;
+    CopyVec4Inline((Vec4 *)&MobyTexDefs[nextTexIndex], (Vec4 *)&ShipTexDefB);
+    MobyTexLocs[nextTexIndex] = (int)pack + 0x70000000;
+    FastMemCopy16(pack, packStart + texturesBOffset + SHIP_TEXTURE_IMAGE, SHIP_TEXTURE_B_SIZE);
+    pack += SHIP_TEXTURE_B_SIZE;
+    ShipTexRefs[0] = MobySdata15FFC8;
+    if ((unsigned char)MobyClassLookup[SpaceshipOClassesB[bootSpaceTransitionState.shipVariant]] == 0xFF)
+        ParseMoby(packStart + mobyB, (short *)(&ShipTexDefB - MobySdata15FFC8), (char *)ShipTexRefs,
+                  SpaceshipOClassesB[bootSpaceTransitionState.shipVariant]);
+
+    ShipPackLoaded = 1;
+    ShipPackReady = 1;
+    MobySdata15FFC8 = MobySdata15FFC8 + 1;
+    ShipPackUnk = 0;
+    return pack;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadHudBanks);
 
@@ -2424,25 +2538,9 @@ enum LevelLoadStage {
     LOAD_STAGE_RESOLVE_BANK,
 };
 
-// Start of the sound bank archive; the bank itself sits bankOffset bytes in.
-struct SoundBankWad {
-    int unk_0[2];
-    int bankOffset;
-};
-
 // Top of the IOP memory the level streams its archives into, working downwards.
 extern char IopLevelTop[];
 extern short SpaceshipVariant[];
-// State of the level file load (one small-data object).
-struct LevelLoadState {
-    unsigned short stage;
-    short hold;               // set while the level must not swap sound banks yet
-    SoundBankWad *soundBank;  // IOP sound bank archive
-    char *gameplay;           // IOP gameplay archive
-    char *spaceships;         // IOP spaceship archive
-};
-
-extern LevelLoadState LevelLoad;
 extern int cdStallFrames;
 extern int cdSlowedDown;
 extern int cdSpindleControl;
@@ -2580,56 +2678,6 @@ int LoadLevelFiles(void)
     return 0;
 }
 
-// The level core data's header: counts, and offsets from the header (or, for the data
-// itself, from MemSlots.levelBase).
-struct LevelCoreHeader {
-    int permTexCnt;             // 0x00
-    int permTexs;               // 0x04
-    int tfrags;                 // 0x08: data
-    int occlusion;              // 0x0C: data
-    int sky;                    // 0x10: data
-    int collision;              // 0x14: data
-    int mobyClassCnt;           // 0x18
-    int mobyClasses;            // 0x1C: 0x20-byte entries
-    int tieClassCnt;            // 0x20
-    int tieClasses;             // 0x24: 0x20-byte entries
-    int shrubClassCnt;          // 0x28
-    int shrubClasses;           // 0x2C: 0x30-byte entries
-    int tfragTexCnt;            // 0x30
-    int tfragTexs;              // 0x34
-    int mobyTexCnt;             // 0x38
-    int mobyTexs;               // 0x3C
-    int tieTexCnt;              // 0x40
-    int tieTexs;                // 0x44
-    int shrubTexCnt;            // 0x48
-    int shrubTexs;              // 0x4C
-    int partTexCnt;             // 0x50
-    int partTexs;               // 0x54
-    int fxTexCnt;               // 0x58
-    int fxTexs;                 // 0x5C
-    int texData;                // 0x60: data
-    int partTexData;            // 0x64: data
-    int fxTexData;              // 0x68: data
-    int partTexDefs;            // 0x6C
-    int sounds;                 // 0x70
-    int unk_74;
-    int ratchetSeqs;            // 0x78
-    int unk_7C;
-    int mobyRefCnt;             // 0x80
-    int mobyRefs;               // 0x84: 0x10-byte entries
-    int unk_88[2];
-    int tex128;                 // 0x90: GS blocks of the shared 128x128 texture and its clut
-    int clut128;                // 0x94
-    int tex64;                  // 0x98
-    int clut64;                 // 0x9C
-    int effectTable;            // 0xA0: data
-    int byteGrid;               // 0xA4: data
-    int occlOct;                // 0xA8: data
-    int shipGsRam[4];           // 0xAC: GS blocks of the spaceship pack (ParseMobyPack)
-    int unk_BC;
-    int tex128B;                // 0xC0: a second shared 128x128 texture and its clut
-    int clut128B;               // 0xC4
-};
 
 // Retail clears the hint's next time with an unaligned store.
 struct UnalignedHintTime {
@@ -2685,7 +2733,6 @@ extern int LevelUnkVars[16];
 
 void LoadHudBanks(void);
 void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass);
-char *ParseMobyPack(char *pack, LevelCoreHeader *header);
 void UpdateMobysInitial(void);
 
 // Loads the level: (on a full load) its core data, textures, classes, sounds and spaceship,
@@ -2983,14 +3030,6 @@ int InitLevelFromWad(int full, int keep)
 
 // loaders.cpp's small data, in retail order. Defined after the functions above so they reach it
 // with lui, as retail does.
-
-// Texture definitions and texture remap of the spaceship pack's two moby classes (ParseMobyPack).
-short ShipTexDefA[8] = { 0, 0, 0x100, 0x100, 4, 0, 0, 0 };
-short ShipTexDefB[8] = { 0, 0, 0x80, 0x80, 1, 0, 0, 0 };
-unsigned char ShipTexRefs[16] = {
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-};
 
 // LoadHudBanks' timer labels (stand-ins until it is decompiled), then InitLevelFromWad's memory map line break.
 char LoadersTimerLabel[] = "loaders.cpp";

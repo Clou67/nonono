@@ -136,6 +136,76 @@ struct TextureDef {
     short mip2;                 // 0x0E
 };
 
+// The level core data's header: counts, and offsets from the header (or, for the data
+// itself, from MemSlots.levelBase).
+struct LevelCoreHeader {
+    int permTexCnt;             // 0x00
+    int permTexs;               // 0x04
+    int tfrags;                 // 0x08: data
+    int occlusion;              // 0x0C: data
+    int sky;                    // 0x10: data
+    int collision;              // 0x14: data
+    int mobyClassCnt;           // 0x18
+    int mobyClasses;            // 0x1C: 0x20-byte entries
+    int tieClassCnt;            // 0x20
+    int tieClasses;             // 0x24: 0x20-byte entries
+    int shrubClassCnt;          // 0x28
+    int shrubClasses;           // 0x2C: 0x30-byte entries
+    int tfragTexCnt;            // 0x30
+    int tfragTexs;              // 0x34
+    int mobyTexCnt;             // 0x38
+    int mobyTexs;               // 0x3C
+    int tieTexCnt;              // 0x40
+    int tieTexs;                // 0x44
+    int shrubTexCnt;            // 0x48
+    int shrubTexs;              // 0x4C
+    int partTexCnt;             // 0x50
+    int partTexs;               // 0x54
+    int fxTexCnt;               // 0x58
+    int fxTexs;                 // 0x5C
+    int texData;                // 0x60: data
+    int partTexData;            // 0x64: data
+    int fxTexData;              // 0x68: data
+    int partTexDefs;            // 0x6C
+    int sounds;                 // 0x70
+    int unk_74;
+    int ratchetSeqs;            // 0x78
+    int unk_7C;
+    int mobyRefCnt;             // 0x80
+    int mobyRefs;               // 0x84: 0x10-byte entries
+    int unk_88[2];
+    int tex128;                 // 0x90: GS blocks of the shared 128x128 texture and its clut
+    int clut128;                // 0x94
+    int tex64;                  // 0x98
+    int clut64;                 // 0x9C
+    int effectTable;            // 0xA0: data
+    int byteGrid;               // 0xA4: data
+    int occlOct;                // 0xA8: data
+    int shipGsRam[4];           // 0xAC: GS blocks of the spaceship pack (ParseMobyPack)
+    int unk_BC;
+    int tex128B;                // 0xC0: a second shared 128x128 texture and its clut
+    int clut128B;               // 0xC4
+};
+
+// Start of the sound bank archive; the bank itself sits bankOffset bytes in.
+struct SoundBankWad {
+    int unk_0[2];
+    int bankOffset;
+};
+
+// State of the level file load (one small-data object).
+struct LevelLoadState {
+    unsigned short stage;
+    short hold;               // set while the level must not swap sound banks yet
+    SoundBankWad *soundBank;  // IOP sound bank archive
+    char *gameplay;           // IOP gameplay archive
+    char *spaceships;         // IOP spaceship archive
+};
+
+extern LevelLoadState LevelLoad;
+
+void ParseMoby(char *classData, short *texDefs, char *texRefs, int oClass);
+
 // A class texture definition (8 shorts).
 enum {
     TEXDEF_WIDTH = 2,
