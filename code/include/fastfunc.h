@@ -51,4 +51,6 @@ void FastVecZero(Vec4 *vector);
 void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 
+void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
+
 #endif

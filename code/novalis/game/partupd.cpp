@@ -11,6 +11,7 @@
 
 extern float frameTimeSq __attribute__((section(".sdata")));
 
+int CollSphere(Vec4 *position, int flags, MobyInstance *ignore, float radius);
 int CollSphere(float radius, Vec4 *position, int flags, MobyInstance *ignore);
 int CollLine(Vec4 *start, Vec4 *end, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
 
@@ -551,7 +552,116 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283400);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_030);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_031);
+void UpdatePart_031(PartInstance *particle)
+{
+    Vec4 nextPosition, displacement, acceleration, projectedPosition;
+    PartLinkedMotion *motion = &particle->linkedMotion;
+
+    if (!(motion->flags & PART_LINK_FIXED)) {
+        PartInstance *linkedParticle = motion->link;
+        PartLinkedMotion *linkedMotion = 0;
+        float linkRank = 2.0f, velocityScale;
+        if (linkedParticle)
+            linkedMotion = &linkedParticle->linkedMotion;
+
+        FastVecZero(&acceleration);
+        velocityScale = 0.15f;
+        if (motion->collided == 0 && linkedParticle != 0 &&
+            !(linkedMotion->status & PART_LINK_BLOCKED_MASK)) {
+            float squaredRank;
+            float linkStrength = 0.2f, rankStep = 1.0f, gainDecay = 0.999f;
+            do {
+                squaredRank = linkRank * linkRank;
+                FastSubVec3(&nextPosition, &linkedParticle->pos, &particle->pos);
+                linkRank += rankStep;
+                velocityScale *= gainDecay;
+                FastVec3Normalize(&nextPosition, &nextPosition, linkStrength / squaredRank);
+                FastVec3Add(&acceleration, &acceleration, &nextPosition);
+                linkedParticle = linkedMotion->link;
+                if (linkedParticle)
+                    linkedMotion = &linkedParticle->linkedMotion;
+                if (!linkedParticle)
+                    break;
+            } while (!(linkedMotion->status & PART_LINK_BLOCKED_MASK));
+        }
+
+        velocityScale = (0.15f - velocityScale) + 1.07f;
+        if (linkedMotion == 0 || linkedMotion->collided == 0)
+            FastVec3Add(&motion->velocity, &motion->velocity, &acceleration);
+
+        else
+            FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+
+        if (motion->link)
+            FastVec3Scale(&motion->velocity, &motion->velocity, velocityScale);
+
+        else
+            FastVec3Scale(&motion->velocity, &motion->velocity, 0.97f);
+
+        motion->velocity.z -= transStepScaleSq * 0.02f;
+        FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
+    }
+
+    else
+        CopyVec4Inline(&nextPosition, &particle->pos);
+
+    if (motion->target) {
+        FastSubVec3(&acceleration, &nextPosition, &motion->target->pos);
+        if (0.1f < FastAbsF(FastVec3Length2(&acceleration) - 0.15f)) {
+            FastVec3Normalize(&acceleration, &acceleration, 0.15f);
+            FastVec3Add(&nextPosition, &acceleration, &motion->target->pos);
+        }
+        if (CollSphere(&nextPosition, 0, 0, 0.15f)) {
+            if (motion->collided == 0)
+                CopyVec4Inline(&nextPosition, &MemSlots.collisionPush);
+
+            else
+                CopyVec4Inline(&nextPosition, &particle->pos);
+            motion->collided = 1;
+        }
+
+        else
+            motion->collided = 0;
+
+        FastSubVec3(&acceleration, &motion->target->pos, &GameCamera.position);
+        FastTransformVec4(&acceleration, &acceleration, &GameCamera.mtx3);
+        FastVec3Scale(&acceleration, &acceleration, 1.0f / acceleration.w);
+        FastSubVec3(&projectedPosition, &nextPosition, &GameCamera.position);
+        FastTransformVec4(&projectedPosition, &projectedPosition, &GameCamera.mtx3);
+        FastVec3Scale(&projectedPosition, &projectedPosition, 1.0f / projectedPosition.w);
+        FastSubVec3(&acceleration, &acceleration, &projectedPosition);
+        particle->rot =
+            FastFloatToInt(FastArcTan(acceleration.x, acceleration.y) * 128.0f / 3.1415927f) - 0x20;
+
+        if (motion->collided) {
+            FastVec3NormalizeFrom(&motion->velocity, &motion->velocity, &MemSlots.collisionNormal);
+            FastVec3Scale(&motion->velocity, &motion->velocity, 0.95f);
+        }
+
+        else {
+            FastSubVec3(&displacement, &nextPosition, &particle->pos);
+            FastVec3Add(&motion->velocity, &motion->velocity, &displacement);
+            FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+        }
+        FastSubVec3(&displacement, &nextPosition, &particle->pos);
+        FastVec3Add(&motion->velocity, &motion->velocity, &displacement);
+        FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+    }
+
+    CopyVec4Inline(&particle->pos, &nextPosition);
+
+    if (motion->flags & PART_LINK_FADING) {
+        int fadedAlpha = ((unsigned int)particle->rgba >> 24) - 2;
+        if (fadedAlpha > 0)
+            particle->rgba = (particle->rgba & 0xFFFFFF) | (fadedAlpha << 24);
+
+        else if (motion->link == 0) {
+            if (motion->target)
+                motion->target->linkedMotion.link = 0;
+            DeletePart(particle);
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283BE0);
 

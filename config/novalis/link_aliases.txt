@@ -693,3 +693,4 @@ SpawnPart_042__FP4Vec4T0iP12MobyInstance = 0x002858F0;
 SpawnPart_011__FP4Vec4T0iiiiifif = 0x0027F8F8;
 CollSphere__FfP4Vec4iP12MobyInstance = 0x00212960;
 SpawnPart_016__FP4Vec4T0iifii = 0x00280F30;
+CollSphere__FP4Vec4iP12MobyInstancef = 0x00212960;

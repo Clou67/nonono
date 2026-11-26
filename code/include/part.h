@@ -3,6 +3,8 @@
 
 #include "moby.h"
 
+struct PartInstance;
+
 struct PartLineMotion {
     Vec4 origin;
     Vec4 velocity;
@@ -137,6 +139,28 @@ struct PartDebrisMotion {
     float startScale;
 };
 
+enum PartLinkedFlags {
+    PART_LINK_FIXED = 1,
+    PART_LINK_FADING = 2
+};
+
+// Collision and fixed flags share a packed status word used when walking a particle chain.
+#define PART_LINK_BLOCKED_MASK 0x1FFFF00000000LL
+
+struct PartLinkedMotion {
+    Vec4 velocity;
+    PartInstance *target;
+    PartInstance *link;
+    union {
+        long long status;
+        struct {
+            int unk_18;
+            short collided;
+            unsigned short flags;
+        };
+    };
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -167,6 +191,7 @@ struct PartInstance {
         PartDriftingMotion driftingMotion;
         PartColorDecayMotion colorDecayMotion;
         PartDebrisMotion debrisMotion;
+        PartLinkedMotion linkedMotion;
     };
 };
 
@@ -220,5 +245,7 @@ void UpdatePart_026(PartInstance *particle);
 PartInstance *SpawnPart_016(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
                              float scale, int lifetime, int kind);
 void UpdatePart_017(PartInstance *particle);
+
+void UpdatePart_031(PartInstance *particle);
 
 #endif
