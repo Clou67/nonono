@@ -50,8 +50,13 @@ extern int Level;
 
 // Level ids.
 #define LEVEL_NOVALIS 1
+#define LEVEL_KERWAN 3
 #define LEVEL_RILGAR 5
+#define LEVEL_NEBULA_G34 6
+#define LEVEL_HOVEN 0xC
+#define LEVEL_QUARTU 0xF
 #define LEVEL_KALEBO_3 0x10
+#define LEVEL_VELDIN_ORBIT 0x11
 
 #define LEVEL_COUNT 19
 

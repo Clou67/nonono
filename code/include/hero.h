@@ -29,16 +29,34 @@ struct HeroRandTimer {
 
 // One of the hero's item slots. Slot 0 is the equipped gadget.
 struct HeroItemSlot {
-    MobyInstance *moby;
-    char unk4[0x14];
+    MobyInstance *moby;         // 0x00: item moby
+    MobyInstance *moby2;        // 0x04: second item moby
+    char unk8[0x4];
+    MobyInstance *moby3;        // 0x0C: third item moby
+    int buttonMask;             // 0x10: pad buttons that hold the gadget states
+    int respawnFrame;           // 0x14: set on release
     // Counts down; a slot change waits for 0.
-    short timer;
-    char unk1A[0xA];
+    short timer;                // 0x18
+    unsigned char thrown;       // 0x1A: cleared on a slot change
+    unsigned char releasedFrames; // 0x1B: counts releases
+    unsigned char switchLock;   // 0x1C: 2 blocks a slot change, 1 reloads timer
+    unsigned char timerReload;  // 0x1D: timer reload value
+    char unk1E[0x2];
+    int readyFrames;            // 0x20
     // 0 empty, 2 ready, 3 released.
-    int state;
+    int state;                  // 0x24
     // The item in the slot.
-    int itemId;
-    char unk2C[0x24];
+    int itemId;                 // 0x28
+    float glowPhase;            // 0x2C: phase of the item moby's colour pulse
+    float effectRandomBase;     // 0x30
+    float effectRandomHalfRange; // 0x34
+    int effectUpdatesLeft;      // 0x38
+    short effectCountPerPoint;  // 0x3C
+    unsigned short effectFlags; // 0x3E
+    int lockedOn;               // 0x40: on slot 6, nonzero makes the Ryno aim along lockYaw
+    char unk44[0x4];
+    MobyInstance *lockTarget;   // 0x48: on slot 6, the moby the weapons lock on to
+    float lockYaw;              // 0x4C
 };
 
 // The hero. Field names from the PS3 project's hero globals (same layout), plus RC1-only fields.
@@ -77,18 +95,29 @@ struct HeroState {
     int stepFrames;
     int animSeqFrames;
     char unk1A8[0x8];
-    short ledgeProbeCooldown;
-    char unk1B2[0xE];
-    int invulnerableFrames;
-    char unk1C4[0x8];
+    short noLedge;
+    short allowQuickSelect;
+    int wallJumpOk;
+    int longJumpLockout;
+    char unk1BC[0x4];
+    int postHitInvinc;
+    int moveLockTimer;
+    char unk1C8[0x4];
     int ghostFrames;
     int idleReturnDelay;
-    char unk1D4[0x12];
+    int jumpBufferLockout;
+    short noWaterJump;
+    char unk1DA[0x4];
+    short noWaterDive;
+    short sinkingFloorHold;
+    short stillFrames;
+    char unk1E4[0x2];
     short swingshotReleasedTimer;
-    char unk1E8[0x6];
-    short hitFlashTimer;
+    short fidgetCooldown;
+    char unk1EA[0x4];
+    short screenFlashRed;
     char unk1F0[0x2];
-    short jumpLockTimer;
+    short noJumps;
     char unk1F4[0x2];
     short splineWallHitTimer;
     char unk1F8[0x28];
@@ -96,23 +125,28 @@ struct HeroState {
     float collBottom;
     char unk228[0xC];
     float collRadius;
-    char unk238[0x38];
+    char unk238[0x10];
+    float wallProbeDistance;
+    char unk24C[0xB];
+    unsigned char wallHit;
+    char unk258[0x18];
     Vec4 groundNormal;
     char unk280[0x10];
     Vec4 gravityDir;
     Vec4 groundPoint;
     char unk2B0[0x28];
-    float groundZ;
+    float groundHeight;
     float groundDist;
     float groundSlope;
     char unk2E4[0xC];
-    float waterZ;
-    char unk2F4[0x8];
+    float waterHeight;
+    char unk2F4[0x4];
+    int inWaterFrames;
     MobyInstance *standingOnMoby;
     int framesGroundedCnt;
     char unk304[0x4];
     short onMagnerail;
-    char unk30A[0x2];
+    short onFlaggedGroundMoby;
     short framesOffGround;
     short framesNotGrounded;
     char unk310[0xA8];
@@ -148,7 +182,7 @@ struct HeroState {
     float apexAnimFrame;
     float targetAnimFrame;
     float jumpLandAnimFrame;
-    char unk44C[0x4];
+    int framesToLand;
     int jumpStickDirection;
     float airTargetSpeed;
     float highJumpDriftSpeed;
@@ -175,10 +209,11 @@ struct HeroState {
     float riseFallGravity;
     char unk4B4[0x4];
     float pastApex;
-    char unk4BC[0x4];
+    int predictedLandFrames;
     float riseFallTargetFrame;
     int riseFallLandFrames;
-    char unk4C8[0x24];
+    char unk4C8[0x20];
+    int ledgeFound;
     float ledgeGravity;
     float smoothedAirZ;
     char unk4F4[0x4];
@@ -251,7 +286,9 @@ struct HeroState {
     MobyInstance *ratchetMoby;
     char unkA8C[0x4];
     float animSpeed;
-    char unkA94[0xC];
+    char unkA94[0x4];
+    int animFlags;
+    int animChanging;
     int animBlendCurve;
     int animBlendStep;
     float animFrame;
@@ -259,7 +296,11 @@ struct HeroState {
     int nextAnimation;
     int nextAnimationFrame;
     int queuedFrameRequest;
-    char unkABC[0x534];
+    char unkABC[0x24C];
+    MobyInstance *heldItemAnimMoby[2];
+    char unkD10[0x4];
+    int armLayerFade;
+    char unkD18[0x2D8];
     // Random-interval timer; range 0 holds it off.
     HeroRandTimer randTimer;
     char unkFFC[0x14];
@@ -270,7 +311,7 @@ struct HeroState {
     char unk12C0[0x20];
     short groundType;
     unsigned char onIceGround;
-    char unk12E3[0x1];
+    unsigned char selector4;
     // The hero is in water.
     unsigned char hotSpotWater;
     unsigned char hotSpotLava;
@@ -279,13 +320,17 @@ struct HeroState {
     unsigned char onSlipGround;
     unsigned char hotSpotDeathSand;
     unsigned char hotSpotIceWater;
-    char unk12ED[0x322];
+    unsigned char groundSoundClass;
+    char unk12EE[0x321];
     unsigned char shipFlags;
     char unk1610[0x4];
     MobyInstance *fidgetPropMoby;
     char unk1618[0x18];
     int giantClankHealth;
-    char unk1634[0x3C];
+    char unk1634[0xC];
+    Vec4 targetPose;
+    int stateEntryOption;
+    char unk1654[0x1C];
     // Translucent copies that follow the hero.
     MotionBlur trail;
     char unk17B0[0x350];
@@ -313,7 +358,7 @@ struct HeroState {
     unsigned char invisible;
     char unk20A6[0x1];
     unsigned char itemSelectBlocked;
-    char unk20A8[0x1];
+    unsigned char itemAnimActive;
     unsigned char wading;
     unsigned char weaponUp;
     char unk20AB[0x1];
@@ -325,7 +370,8 @@ struct HeroState {
     unsigned char outOfBounds;
     unsigned char onHoverboard;
     unsigned char gravityMode;
-    char unk20B4[0x20];
+    char unk20B4[0x4];
+    int pendingItem[7];
     int weaponToSwapTo;
     char unk20D8[0x18];
     int savedItem[7];
@@ -340,12 +386,16 @@ struct HeroState {
     char unk21DA[0x3E];
     int loopSounds[8];
     MobyInstance *loopSoundMobys[8];
-    char unk2258[0x20];
+    char unk2258[0x18];
+    int fidgetIndex;
+    char unk2274[0x4];
     MobyInstance *animLinkMoby;
     int animLinkTable;
     char unk2280[4];
     int requestedCamType;
-    char unk2288[0x14];
+    char unk2288[0xC];
+    int itemHoldAnim;
+    int itemAnimItemId;
     float padMagnitude;
     int oxygen;
     float waterDepth;
@@ -357,14 +407,19 @@ struct HeroState {
     char unk22B8[0x8];
     // The command picked on the Clank command ring.
     int clankCommand;
-    char unk22C4[0x6];
+    int slot3AnimTimer;
+    short weaponLowered;
     unsigned char hoverLatch;
     char unk22CB[0x1];
     short requestedState;
-    char unk22CE[0xA];
+    char unk22CE[0x4];
+    short itemSelectorTimer;
+    short quickSwapTapTimer;
+    short quickSwapTapWindow;
     short hasClank;
     short splineWall;
-    char unk22DC[0x4];
+    short scalePulseStep;
+    short vehicleToggleTimer;
     short glowPulseLevel;
     char unk22E2[0x2E];
 };
@@ -558,16 +613,39 @@ struct HeroAttackRow {
     int comboEnds;          // 1: this is the finishing recovery animation
     int kind;
     int chainBeforeFrame;   // a wrench press before this animation frame chains to the next record
-    int fC;
+    int baseFrame;          // subtracted from the animation frame to time the forward motion
     int followUpFrame;      // frame from which a follow-up move may start
-    int f14;
-    int f18;
+    int interruptFrame;     // once past this frame the swing can be cut short
+    int endFrame;           // once past this frame the swing is over
     int hitStartFrame;      // the wrench hits between hitStartFrame and hitEndFrame
     int hitEndFrame;
     char pad24[0x8];
 };
 
+// One of the five idle fidget animations the hero picks between while standing still.
+struct HeroIdleFidget {
+    char pad00[0x44];
+    int useSpecialState; // nonzero: enter the fidget state instead of playing the animation directly
+    int animation;
+    char pad4C[0x4];
+    int itemId;          // only picked while this item is held, -1 for any
+    char pad54[0x4];
+    float interval;      // seconds between picks, 0 means never picked
+    float duration;      // seconds
+    int durationFrames;
+    char pad64[0xC];
+};
+
+// Speed thresholds the grounded jump transitions compare against.
+struct HeroJumpSpeedTweaks {
+    char pad00[0xC];
+    float minRunSpeed;
+    char pad10[0x8];
+    float stepSpeed;
+};
+
 extern HeroAttackRow HeroAttackTable[];
+extern HeroIdleFidget HeroIdleFidgets[5];
 extern float HeroAnimBlendCurves[][25];
 extern unsigned char HeroRunJumpAnims[];
 extern HeroVelocityKey HeroTrailJumpKeys[];
@@ -678,7 +756,7 @@ void Hero_ApplyRootMotion(float x, float y, float z);
 
 int Hero_GetJumpHoldTime(void);
 
-int STUB_00226fa0(int animation);
+int Hero_GetAnim(int animation);
 
 int Hero_GetWeaponAmmo(int item);
 
@@ -714,7 +792,10 @@ struct HeroTweakValues {
     char unk_15C[0xA8];
     float unk_204;
     float unk_208;
-    char unk_20C[0xA8];
+    char unk_20C[0x48];
+    float unk_254;
+    float unk_258;
+    char unk_25C[0x58];
     float unk_2B4;
     float unk_2B8;
 };

@@ -499,7 +499,9 @@ char *ResetLevelData(int reload);
 struct GadgetModelEntry {
     char unk_00[0x10];
     int oClass;                 // 0x10
-    char unk_14[0x38];
+    char unk_14[0x10];
+    int animation;              // 0x24
+    char unk_28[0x24];
 };
 
 struct GoldWeaponGif {

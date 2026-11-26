@@ -71,6 +71,9 @@ void HudEntry_InitCounterSlide(HudEntry *entry);
 
 void Draw_PromptMsg(HudEntry *entry);
 
+void QuickSelectHud_Init(HudEntry *entry);
+void UpdateQuickSelect(HudEntry *entry);
+void Draw_QuickSelectHud(HudEntry *entry);
 void BoltHud_Update(HudEntry *entry);
 void Draw_BoltCountUI(HudEntry *entry);
 // Shows a help prompt with the given text.

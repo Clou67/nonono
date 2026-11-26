@@ -35,7 +35,9 @@ struct SoundData {
 struct MobyInstance;
 
 struct SoundVoice {
-    unsigned char unk_00[0x0E];
+    unsigned char unk_00[4];
+    unsigned char inUse;
+    unsigned char unk_05[9];
     short soundId;
     int volume;
     int pitch_bend;
@@ -54,16 +56,24 @@ struct SoundInstance {
 };
 
 struct SoundAudioState {
-    unsigned char unk_00[0x48];
-    int group_volume[6];
-    int reverb_owner;
-    int reverb_depth;
-    unsigned char reverb_type;
-    unsigned char reverb_delay;
-    unsigned char reverb_feedback;
-    unsigned char reverb_commands;
-    int pending_commands;
-    SoundVoice voices[30];
+    union {
+        struct {
+            unsigned char unk_00[0x48];
+            int group_volume[6];
+            int reverb_owner;
+            int reverb_depth;
+            unsigned char reverb_type;
+            unsigned char reverb_delay;
+            unsigned char reverb_feedback;
+            unsigned char reverb_commands;
+            int pending_commands;
+            SoundVoice voices[30];
+        };
+
+        // The same memory as voice-sized rows: the header is row 0 and voices[n] is row n + 1.
+        SoundVoice rows[31];
+    };
+
     int soundInstanceCnt;               // 0xD90
     SoundInstance *soundInstances;      // 0xD94
 };
