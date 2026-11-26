@@ -4,33 +4,11 @@
 #include "framebuf.h"
 #include "music.h"
 #include "wad.h"
+#include "loaders.h"
 
 extern unsigned char debugFontBuffer[] __attribute__((section(".data")));
 extern unsigned long long debugFontPifHeader;
 
-
-struct PifHeader {
-    int pifID;
-    int fileSize;
-    int uSize;
-    int vSize;
-    int texFormat;
-    int clutFormat;
-    int clutOrder;
-    int mipLevels;
-};
-
-struct PifParser {
-    void* pClut;
-    void* pTex[4];
-    int cSize;
-    int tSize[4];
-    int cPos;
-    int tPos[4];
-    int tbw[4];
-    int uLog;
-    int vLog;
-};
 
 int FastLog2(int value);
 

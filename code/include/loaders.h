@@ -2,6 +2,40 @@
 #define LOADERS_H
 
 struct MobyClass;
+
+// Texture file header; the clut and the mip levels follow it.
+struct PifHeader {
+    int pifID;
+    int fileSize;
+    int uSize;
+    int vSize;
+    int texFormat;
+    int clutFormat;
+    int clutOrder;
+    int mipLevels;
+};
+
+// Where each part of a pif goes while it is uploaded.
+struct PifParser {
+    void* pClut;
+    void* pTex[4];
+    int cSize;
+    int tSize[4];
+    int cPos;
+    int tPos[4];
+    int tbw[4];
+    int uLog;
+    int vLog;
+};
+
+enum PifFormat {
+    PIF_PSMCT32 = 0x00,
+    PIF_PSMCT16 = 0x02,
+    PIF_PSMT8 = 0x13,
+    PIF_PSMT4 = 0x14,
+};
+
+int ParseGsRamTextures(PifHeader *pif, unsigned long long *gsRegisters);
 struct WadEntry;
 
 // The level WAD buffer starts with a table of offsets from its start to each part.

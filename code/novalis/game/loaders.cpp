@@ -15,6 +15,8 @@
 #include "hud.h"
 #include "initlevel.h"
 #include "mathfunc_inline.h"
+#include "sce.h"
+#include "fastfunc.h"
 
 void LoadByteGrid(int *grid)
 {
@@ -27,7 +29,134 @@ void LoadByteGrid(int *grid)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", RelocEffectTable);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseGsRamTextures);
+int FastLog2(int value);
+
+// Uploads a pif (clut and every mip level) at the GS texture allocation cursor and
+// writes its TEX0, TEX1 and MIPTBP1 register values.
+int ParseGsRamTextures(PifHeader *pif, unsigned long long *gsRegisters)
+{
+    PifParser parsed;
+    sceGsLoadImage packet;
+    int level;
+    int size;
+    unsigned long long tex0;   // GS TEX0
+    unsigned long long mip;    // GS MIPTBP1
+    unsigned long long clut;
+    unsigned long long lod;    // GS TEX1 mip count
+
+    FastMemSet(&parsed, 0, sizeof(parsed));
+
+    switch (pif->texFormat) {
+    case PIF_PSMCT32:
+    case PIF_PSMCT16:
+        parsed.pClut = 0;
+        parsed.cSize = 0;
+        break;
+
+    case PIF_PSMT8:
+    case PIF_PSMT4:
+        parsed.pClut = pif + 1;
+        if (pif->texFormat == PIF_PSMT4) {
+            if (pif->clutFormat == 0)
+                parsed.cSize = 0x40;
+            else
+                parsed.cSize = 0x20;
+        }
+
+        else {
+            if (pif->clutFormat == 0)
+                parsed.cSize = 0x400;
+            else
+                parsed.cSize = 0x200;
+        }
+        break;
+    }
+
+    parsed.uLog = FastLog2(pif->uSize);
+    parsed.vLog = FastLog2(pif->vSize);
+    parsed.pTex[0] = (char *)(pif + 1) + parsed.cSize;
+
+    switch (pif->texFormat) {
+    case PIF_PSMCT32:
+        parsed.tSize[0] = pif->uSize * pif->vSize * 4;
+        break;
+
+    case PIF_PSMCT16:
+        parsed.tSize[0] = pif->uSize * pif->vSize * 2;
+        break;
+
+    case PIF_PSMT8:
+        parsed.tSize[0] = pif->uSize * pif->vSize;
+        break;
+
+    case PIF_PSMT4:
+        parsed.tSize[0] = (pif->uSize * pif->vSize) >> 1;
+        break;
+    }
+
+    if (pif->texFormat == PIF_PSMT8 || pif->texFormat == PIF_PSMT4) {
+        parsed.cPos = GSloc >> 8;
+        if (pif->texFormat == PIF_PSMT4) {
+            GSloc += 0x100;
+            sceGsSetDefLoadImage(&packet, parsed.cPos, 1, pif->clutFormat, 0, 0, 8, 2);
+        }
+
+        else {
+            GSloc += parsed.cSize;
+            sceGsSetDefLoadImage(&packet, parsed.cPos, 1, pif->clutFormat, 0, 0, 16, 16);
+        }
+
+        FlushCache(0);
+        sceGsExecLoadImage(&packet, (u_long128 *)parsed.pClut);
+        sceGsSyncPath(0, 0);
+    }
+
+    for (level = 1; level < pif->mipLevels; level++) {
+        parsed.tSize[level] = parsed.tSize[level - 1] >> 2;
+        parsed.pTex[level] = (char *)parsed.pTex[level - 1] + parsed.tSize[level - 1];
+    }
+
+    for (level = 0; level < pif->mipLevels; level++) {
+        parsed.tbw[level] = pif->uSize >> (level + 6);
+        if (parsed.tbw[level] <= 0)
+            parsed.tbw[level] = 1;
+
+        parsed.tPos[level] = GSloc >> 8;
+        sceGsSetDefLoadImage(&packet, parsed.tPos[level], parsed.tbw[level], pif->texFormat, 0, 0, pif->uSize >> level, pif->vSize >> level);
+        FlushCache(0);
+        sceGsExecLoadImage(&packet, (u_long128 *)parsed.pTex[level]);
+        sceGsSyncPath(0, 0);
+
+        size = parsed.tSize[0] >> (level * 2);
+        if (size <= 0xFF)
+            size = 0x100;
+
+        GSloc += size;
+    }
+
+    tex0 = (unsigned long long)parsed.tPos[0];
+    tex0 |= (unsigned long long)parsed.tbw[0] << 14;
+    tex0 |= (unsigned long long)pif->texFormat << 20;
+    tex0 |= (unsigned long long)parsed.uLog << 26;
+    tex0 |= (unsigned long long)parsed.vLog << 30;
+    clut = (unsigned long long)parsed.cPos << 37;
+    clut |= (unsigned long long)1 << 34;
+    tex0 |= clut;
+    tex0 |= (unsigned long long)pif->clutFormat << 51;
+    tex0 |= (unsigned long long)1 << 63;
+    gsRegisters[0] = tex0;
+
+    mip = (unsigned long long)parsed.tPos[1];
+    mip |= (unsigned long long)parsed.tbw[1] << 14;
+    mip |= (unsigned long long)parsed.tPos[2] << 20;
+    mip |= (unsigned long long)parsed.tbw[2] << 34;
+    lod = (unsigned long long)(pif->mipLevels - 1) << 2;
+    mip |= (unsigned long long)parsed.tPos[3] << 40;
+    mip |= (unsigned long long)parsed.tbw[3] << 54;
+    gsRegisters[1] = lod | 0xFFA0000000E0ULL;
+    gsRegisters[2] = mip;
+    return -1;
+}
 
 TEXT_PADDING(0x27BD0060, 0x00000000);
 
