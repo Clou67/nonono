@@ -95,6 +95,8 @@ segments:
     - [0x3228, .sdata, game/vendor]  # timer labels, bolt formats, arrows, dude state
     - [0x32a0, .sdata, game/vuchain]  # VifChainFlags
     - [0x32a4, lit4]
+    - [0x32e0, .sdata, game/walk]  # jump distance debug format
+    - [0x32f0, lit4]
     - [0x3438, .sdata, movie/movie]  # movie error format, decoder state
     - [0x3458, .sdata, movie/videodec]  # sequence end code, error format
     - [0x3468, lit4]
@@ -140,6 +142,7 @@ segments:
     - [0xac5e0, data]
     - [0xac690, .rodata, game/vuchain]
     - [0xac718, data]
+    - [0xac7d0, .rodata, game/walk]  # walk_UpdateStateMachine jump tables
     - [0xac860, .rodata, movie/movie]  # open error
     - [0xac878, .rodata, movie/read]  # pts overflow message
     - [0xac890, .rodata, movie/vibuf]  # inactive DMA message

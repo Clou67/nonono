@@ -283,6 +283,12 @@ void InitMobyInstance(MobyInstance *moby, int oClass);
 void PostUpdateMoby(MobyInstance *moby);
 void SetMobyLights(MobyInstance *moby, int color, int a, int b, int c);
 void MB_SetAnimationNoBlend(MobyInstance *moby, int animation, int frame);
+
+// Plays an animation from a frame, blending from the current pose over blend frames.
+void MB_SetAnimation(MobyInstance *moby, int animation, int frame, int blend);
+
+// The frame the moby is currently showing, including the blend fraction.
+float MB_BlendAnimFrame(MobyInstance *moby);
 void Map_RegisterLevelObject(MobyInstance *moby, int object);
 void SetupSpaceShipVars(MobyInstance *moby);
 void UpdateMoby_Spaceship(MobyInstance *moby);
