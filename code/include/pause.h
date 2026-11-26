@@ -113,4 +113,6 @@ int ItemView_OnExit(ItemViewWidget *widget);
 
 void Menu_InitSpriteRect(FontWindow *window, MenuClipWidget *widget);
 
+void Respawn_IncCounter(void);
+
 #endif

@@ -97,6 +97,9 @@ struct COLL_DAM_OUT {
     MobyInstance *pMoby;
 };
 
+// Invalidates cached collision counters when changing levels.
+#define COLLISION_COUNTER_INVALIDATE 0x80000000
+
 // The result of the last collision query.
 struct COLLOUTPUT {
     char *grid;               // 0x00: the env collision grid

@@ -559,4 +559,6 @@ struct GoldWeaponGif {
     unsigned long miptbp1Register;
 };
 
+int ReadFileEntryWithRetry(int entry);
+
 #endif

@@ -93,4 +93,13 @@ int sound_GetFadeChannel(SoundData *channel, Vec4 *position);
 
 void sound_KillChannel(int handle);
 int sound_PlayMobySound(int sound, int flags, MobyInstance *moby);
+extern SoundDef *LevelSounds;
+extern unsigned int levelSoundBank;
+
+void snd_SetReverbEx(int cores, int type, int depth, int delay, int feedback);
+void snd_ResetStateAndFlushCommands(void);
+void snd_StreamSafeCdCallback(void (*callback)(int reason));
+int snd_StreamSafeCdSync(int wait);
+void sound_StopAllSounds(void);
+
 #endif

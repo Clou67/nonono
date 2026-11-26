@@ -15,6 +15,10 @@
 #include "path.h"
 #include "pause.h"
 #include "sound.h"
+#include "space.h"
+#include "mcstate.h"
+#include "galaxymap.h"
+#include "framebuf.h"
 #include "viewcontext.h"
 #include "vuchain.h"
 
@@ -824,6 +828,182 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", LoadSpacePlate);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", PlaySpacePlate);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", DoSpaceTransition);
+void DoSpaceTransition(void)
+{
+    int languageIndex;
+    int markLevelVisited;
+    int loadComplete;
+
+    languageIndex = gameLanguage - 1;
+    if (languageIndex < 0)
+        languageIndex = 0;
+
+    CollOutput.collCount |= COLLISION_COUNTER_INVALIDATE;
+    gameMode = GAME_MODE_SPACE;
+    bootSpaceTransitionState.shipVariant = SPACE_SHIP_INITIAL;
+    if (g_SeenPlanets[LEVEL_BATALIA] != 0 || g_newlevelnum >= LEVEL_BATALIA)
+        bootSpaceTransitionState.shipVariant = SPACE_SHIP_BATALIA;
+    if (g_SeenPlanets[LEVEL_OLTANIS] != 0 || g_newlevelnum >= LEVEL_OLTANIS)
+        bootSpaceTransitionState.shipVariant = SPACE_SHIP_OLTANIS;
+
+    FlushCache(0);
+    snd_SetReverbEx(2, 0, 0, 0, 0);
+    snd_ResetStateAndFlushCommands();
+    snd_FlushSoundCommands();
+    sound_StopAllSounds();
+    music_Stop();
+
+    musicTransition.updatesSuspended = 1;
+    if (LevelSounds != 0) {
+        snd_UnloadBank(LevelSounds->bank_index);
+        snd_ResolveBankXREFS();
+        printf_stub(SpaceUnloadBankFormat, LevelSounds->bank_index);
+    }
+
+    levelSoundBank = 0;
+    snd_StreamSafeCdCallback(0);
+    snd_StreamSafeCdSync(0);
+
+    VC.fogB = 16;
+    VC.fogFarDist = 524288.0f;
+    VC.fogNearIntensity = 255.0f;
+    VC.fogR = 0;
+    VC.fogG = 0;
+    VC.fogNearDist = 0;
+    VC.fogFarIntensity = 128.0f;
+    SetBackgroundColor(0, 0, 0);
+
+    if (g_newlevelnum < 0) {
+        while (g_memcard.stage >= MC_STAGE_FORMAT || g_memcard.nextstage >= MC_STAGE_GET_INFO) {
+            memcard_Update();
+            UpdateMCState();
+        }
+        FadeToBlack(FastScaleRoundInt(6));
+        Level = g_newlevelnum;
+        SetupLevelWadBuffer();
+        sceCdSync(0);
+        musicTransition.updatesSuspended = 0;
+        DMAC_VIF1_Disable();
+        return;
+    }
+
+    if (g_newlevelnum == LEVEL_VELDIN && LevelVisited[LEVEL_VELDIN] == 0) {
+        FadeToBlack(FastScaleRoundInt(6));
+        PlaySpacePlate(languageIndex, 0, 1, FastScaleRoundInt(240), 0);
+        DisplayLoadingScreen(0);
+        PlaySpacePlate(languageIndex, 2, 2, FastScaleRoundInt(180), 0);
+        DisplayLoadingScreen(1);
+        Level = g_newlevelnum;
+        PlaySpacePlate(languageIndex, 3, 4, FastScaleRoundInt(240), 1);
+        DisplayLoadingScreen(2);
+    }
+
+    else if (Level == LEVEL_VELDIN && g_newlevelnum == LEVEL_NOVALIS &&
+             LevelVisited[LEVEL_NOVALIS] == 0) {
+        FadeToBlack(FastScaleRoundInt(6));
+        PlaySpacePlate(languageIndex, 5, 6, FastScaleRoundInt(240), 0);
+        DisplayLoadingScreen(3);
+        DisplayLoadingScreen(4);
+        PlaySpacePlate(languageIndex, 7, 7, FastScaleRoundInt(180), 0);
+        DisplayLoadingScreen(5);
+        LevelVisited[Level] = 2;
+        Level = g_newlevelnum;
+        PlaySpacePlate(languageIndex, 8, 8, FastScaleRoundInt(240), 1);
+    }
+
+    else {
+
+        if (g_newlevelnum == LEVEL_EUDORA && LevelVisited[LEVEL_EUDORA] == 0) {
+            FadeToBlack(FastScaleRoundInt(12));
+            PlaySpacePlate(languageIndex, 9, 10, FastScaleRoundInt(240), 0);
+            DisplayLoadingScreen(6);
+        }
+
+        if (Level == LEVEL_UMBRIS && LevelVisited[LEVEL_UMBRIS] != 2 &&
+            g_SeenPlanets[LEVEL_BATALIA] != 0) {
+            FadeToBlack(FastScaleRoundInt(12));
+            PlaySpacePlate(languageIndex, 11, 11, FastScaleRoundInt(240), 0);
+            DisplayLoadingScreen(7);
+        }
+
+        if (g_newlevelnum == LEVEL_GEMLIK && LevelVisited[LEVEL_GEMLIK] == 0) {
+            FadeToBlack(FastScaleRoundInt(12));
+            PlaySpacePlate(languageIndex, 12, 13, FastScaleRoundInt(240), 0);
+            DisplayLoadingScreen(8);
+        }
+
+        if (Level == LEVEL_OLTANIS && LevelVisited[LEVEL_OLTANIS] != 2 &&
+            g_SeenPlanets[LEVEL_QUARTU] != 0) {
+            FadeToBlack(FastScaleRoundInt(12));
+            PlaySpacePlate(languageIndex, 14, 14, FastScaleRoundInt(240), 0);
+            DisplayLoadingScreen(9);
+        }
+
+        if (g_newlevelnum == LEVEL_KALEBO_3 && LevelVisited[LEVEL_KALEBO_3] == 0) {
+            FadeToBlack(FastScaleRoundInt(12));
+            PlaySpacePlate(languageIndex, 15, 16, FastScaleRoundInt(240), 0);
+            DisplayLoadingScreen(10);
+        }
+
+        if ((unsigned int)Level < LEVEL_COUNT) {
+            markLevelVisited = 1;
+            if (Level == LEVEL_UMBRIS && g_SeenPlanets[LEVEL_BATALIA] == 0)
+                markLevelVisited = 0;
+            if (Level == LEVEL_OLTANIS && g_SeenPlanets[LEVEL_QUARTU] == 0)
+                markLevelVisited = 0;
+            if (markLevelVisited)
+                LevelVisited[Level] = 2;
+        }
+
+        LevelLoad.hold = 1;
+        loadComplete = 0;
+        Level = g_newlevelnum;
+        LevelLoad.stage = 0;
+        SpaceTransition_LoadWad();
+        ReadFileEntryWithRetry(Level);
+
+        while (CutscenePlaying == 0) {
+            VU1_sendChain();
+            VU1_swapChain();
+            PutDrawBufferSmall();
+            ((void (*)(
+                void))AA_DisplayPass)(); // Retail passes no argument to this unused parameter.
+            PutDrawBufferLarge();
+            UpdatePad();
+            UpdateSpace();
+            space_DefaultDraw();
+            memcard_Update();
+            UpdateMCState();
+            VU1_syncChain(1);
+            sceGsSyncV(0);
+            gsFrame++;
+            Respawn_IncCounter();
+            if (!loadComplete)
+                loadComplete = LoadLevelFiles();
+        }
+
+        if (!loadComplete) {
+            do {
+                FlushCache(0);
+                sceGsSyncV(0);
+                memcard_Update();
+                UpdateMCState();
+                Respawn_IncCounter();
+            } while (LoadLevelFiles() == 0);
+        }
+
+        while (g_memcard.stage != MC_STAGE_IDLE || g_memcard.nextstage >= MC_STAGE_GET_INFO) {
+            FlushCache(0);
+            sceGsSyncV(0);
+            memcard_Update();
+            UpdateMCState();
+            Respawn_IncCounter();
+        }
+    }
+
+    sceCdSync(0);
+    musicTransition.updatesSuspended = 0;
+    DMAC_VIF1_Disable();
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DrawTransitionOverlay);

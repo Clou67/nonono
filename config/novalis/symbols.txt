@@ -1487,7 +1487,7 @@ DisplayLoadingScreen = 0x002A5F10; // type:func size:0xE0
 SpacePlate_DrawQuad = 0x002A5FF0; // type:func size:0x18C
 LoadSpacePlate = 0x002A6180; // type:func size:0x35C
 PlaySpacePlate = 0x002A64E0; // type:func size:0x418
-DoSpaceTransition = 0x002A68F8; // type:func size:0x7B0
+DoSpaceTransition__Fv = 0x002A68F8; // type:func size:0x7B0
 Space_DrawTransitionOverlay = 0x002A70A8; // type:func size:0x540
 Stash_Init__Fv = 0x002A75E8; // type:func size:0x1C
 Stash_InitOnce__Fv = 0x002A7608; // type:func size:0x13C
@@ -2470,3 +2470,5 @@ ShipTakeoffSkipFrames = 0x001605D0; // size:0xC
 ShipTrailOffsets = 0x001BDF30; // size:0x60
 ShipRatchetOffsets = 0x001BE200; // size:0x30
 ShipClankOffsets = 0x001BE230; // size:0x30
+
+SpaceUnloadBankFormat = 0x0020A488; // size:0x1C
