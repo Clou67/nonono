@@ -150,5 +150,7 @@ void UpdatePart_073(PartInstance *part);
 
 PartInstance *SpawnPart_040(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
 void UpdatePart_041(PartInstance *particle);
+PartInstance *SpawnPart_042(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
+void UpdatePart_043(PartInstance *particle);
 
 #endif

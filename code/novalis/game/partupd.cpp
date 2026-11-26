@@ -409,7 +409,142 @@ void UpdatePart_042(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_042);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_043);
+void UpdatePart_043(PartInstance *particle)
+{
+    Vec4 nextPosition, probeStart;
+    COLL_DAM_IN damage;
+    PartSplittingMotion *motion = &particle->splittingMotion;
+    PartInstance *spawnedParticle;
+    float positionSpread, minPositionSpread, alpha, factor;
+    int hitCollision;
+    unsigned char motionFlags;
+
+    if (particle->timer != 0 && FastDecTimer(particle->timer)) {
+        motion->flags |= PART_SPLIT_FADING | PART_SPLIT_CHILD;
+        positionSpread = particle->scale / 900000.0f;
+        particle->scale *= 0.8f;
+        minPositionSpread = -positionSpread;
+        FastVec3Scale(&nextPosition, &motion->velocity, MB_randRangeFloat(0.5f, 0.7f));
+        probeStart.x = particle->pos.x + MB_randRangeFloat(minPositionSpread, positionSpread);
+        probeStart.y = particle->pos.y + MB_randRangeFloat(minPositionSpread, positionSpread);
+        probeStart.z = particle->pos.z + MB_randRangeFloat(minPositionSpread, positionSpread);
+        nextPosition.x += MB_randRangeFloat(-motion->velocity.x * 0.2f, motion->velocity.x * 0.2f);
+        nextPosition.y += MB_randRangeFloat(-motion->velocity.y * 0.2f, motion->velocity.y * 0.2f);
+        nextPosition.z += MB_randRangeFloat(-motion->velocity.z * 0.2f, 0.0f);
+        spawnedParticle = SpawnPart_042(&probeStart, &nextPosition,
+                                        PART_SPLIT_FADING | PART_SPLIT_CHILD, motion->owner);
+        if (spawnedParticle) {
+            spawnedParticle->timer = FastScaleRoundInt(2);
+            spawnedParticle->scale = particle->scale;
+        }
+        FastVec3Scale(&motion->velocity, &motion->velocity, MB_randRangeFloat(0.5f, 0.7f));
+        motion->velocity.x +=
+            MB_randRangeFloat(-motion->velocity.x * 0.2f, motion->velocity.x * 0.2f);
+        motion->velocity.y +=
+            MB_randRangeFloat(-motion->velocity.y * 0.2f, motion->velocity.y * 0.2f);
+        motion->velocity.z += MB_randRangeFloat(-motion->velocity.z * 0.2f, 0.0f);
+        particle->pos.x += MB_randRangeFloat(minPositionSpread, positionSpread);
+        particle->pos.y += MB_randRangeFloat(minPositionSpread, positionSpread);
+        particle->pos.z += MB_randRangeFloat(minPositionSpread, positionSpread);
+    }
+
+    particle->tex =
+        PartTextures[PART_TEXTURE_SPLITTING]
+                    [(particle->timer + motion->fadeFrames +
+                      ((unsigned char)particle->tex - PartTextures[PART_TEXTURE_SPLITTING][0])) &
+                     7];
+    FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
+    hitCollision = 0;
+    if (motion->age > FastScaleRoundInt(3))
+        FastSubVec3(&probeStart, &particle->pos, &motion->velocity);
+
+    else
+        CopyVec4(&probeStart, &particle->pos);
+
+    // Retail scales this scratch vector before filling the damage record.
+    FastVec3Scale(&damage.momentum, &damage.momentum, 0.01f);
+    motionFlags = motion->flags;
+    if (motionFlags & PART_SPLIT_FADING) {
+        if (!(particle->rgba & 0xFF000000)) {
+            DeletePart(particle);
+            return;
+        }
+        motion->flags = motionFlags | PART_SPLIT_FADING;
+        if (!MB_randInt(3))
+            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->owner, 0) != 0;
+    }
+
+    else {
+        damage.pMoby = motion->owner;
+        damage.damageHp = 1.0f;
+        CopyVec4(&damage.momentum, &motion->velocity);
+        damage.damageFlags = 1;
+        damage.flags = 1;
+        if (!MB_randInt(3))
+            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->owner, &damage) != 0;
+    }
+
+    if (hitCollision)
+        motion->flags |= PART_SPLIT_FADING;
+
+    else
+        CopyVec4Inline(&particle->pos, &nextPosition);
+
+    if (motion->flags & PART_SPLIT_FADING) {
+        motion->fadeFrames++;
+        particle->scale -=
+            260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale * 1.25f;
+        if (particle->scale <= 0.0f) {
+            DeletePart(particle);
+            return;
+        }
+    }
+
+    else
+        particle->scale +=
+            260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale;
+
+    factor = FastIntToFloat(motion->age);
+    {
+        float divisor = (float)(int)(8.0f / (transStepScale * 0.443f));
+        alpha = 0.08f / divisor * transStepScale * (factor / divisor) + 0.08f;
+    }
+    if (alpha < 0.0f)
+        alpha = 0.0f;
+    if (0.08f < alpha)
+        alpha = 0.08f;
+    if (motion->flags & PART_SPLIT_FADING)
+        alpha /= (float)motion->fadeFrames / 7.0f + 1.0f;
+
+    particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(alpha * 256.0f) << 24);
+    motion->velocity.z += transStepScaleSq * 0.008f;
+    if (motion->age > FastScaleRoundInt(0x19) || (motion->flags & PART_SPLIT_FADING)) {
+        motion->velocity.x *= 0.95f;
+        motion->velocity.y *= 0.95f;
+    }
+
+    {
+        unsigned char rotationFlags = motion->flags;
+        factor = -1.0f;
+        if (rotationFlags & PART_SPLIT_REVERSE_ROTATION)
+            factor = 1.0f;
+        if (rotationFlags & PART_SPLIT_FADING) {
+            motion->velocity.z += transStepScaleSq * 0.008f;
+            motion->rotation +=
+                factor * (transStepScale * -0.01f) / FastIntToFloat(motion->fadeFrames);
+        }
+
+        else
+            motion->rotation += factor * (transStepScale * -0.01f);
+    }
+
+    if (1.0f < motion->rotation)
+        motion->rotation -= 1.0f;
+    if (motion->rotation < 0.0f)
+        motion->rotation += 1.0f;
+
+    particle->rot = (int)(motion->rotation * 256.0f);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_044);
 
