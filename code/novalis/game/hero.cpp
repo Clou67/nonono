@@ -761,6 +761,7 @@ void Hero_DoBehavior(void)
     moby = Hero.moby;
     prevState = Hero.subState;
     prevAnim = moby->animationId;
+
     switch (Hero.state) {
     case HERO_STATE_IDLE:
     case HERO_STATE_LOOK:
@@ -777,12 +778,13 @@ void Hero_DoBehavior(void)
     case HERO_STATE_ELECTRIC_DEATH: {
         float speed;
 
-        if (Hero.wading != 0) {
+        if (Hero.wading != 0)
             Hero_SpawnWaterRings(0xF, 0x1E);
-        }
+
         Hero_ThrustToMotion(0.5f, frameTime * 2.0f);
         Hero_EdgeStop(3.7f, 0.0f);
         Hero_GetIdealThrustFromPad(1.0f, 0);
+
         if (Hero.state == HERO_STATE_LOOK || Hero.state == HERO_STATE_WEAPON_FIRST_PERSON_VIEW) {
             if (Hero.invisible != 0) {
                 ClearVec4(&scratch.look.cameraAxis);
@@ -791,16 +793,17 @@ void Hero_DoBehavior(void)
                                 (Mtx4 *)&GameCamera.orientMtx);
                 Hero.idealRotZ = GameCamera.rot.radius;
                 Hero_Turn(transStepScaleSq, transStepScaleSq * 0.0f, frameTime * 174.53293f, 0);
+
                 if (HelpHintTimer > 0) {
                     if (FastDecTimer_220e78(&HelpHintTimer)) {
-                        if (ActionUsageStats[18].count < 0xFFFF) {
+                        if (ActionUsageStats[18].count < 0xFFFF)
                             ActionUsageStats[18].count++;
-                        }
+
                         if (FastScaleRoundInt(TotalPlayTime) / 600 >
-                            ActionUsageStats[18].latestTimeBucket) {
+                            ActionUsageStats[18].latestTimeBucket)
                             ActionUsageStats[18].latestTimeBucket =
                                 FastScaleRoundInt(TotalPlayTime) / 600;
-                        }
+
                         ActionUsageStats[18].levelMask =
                             ActionUsageStats[18].levelMask | (1 << Level) | 0x80000000;
                         HelpHintTimer = -1;
@@ -809,104 +812,126 @@ void Hero_DoBehavior(void)
                 }
             }
         }
+
         if (Hero.state == HERO_STATE_SKID) {
-            if (Hero_CheckGadgetReady() != 0) {
+            if (Hero_CheckGadgetReady() != 0)
                 break;
-            }
         }
+
         if (Hero.state == HERO_STATE_CROUCH || Hero.state == HERO_STATE_ITEM_BUTTON_RELEASE_WAIT) {
             if (Hero.padMagnitude > 0.2f || Hero.moby->animationId == HERO_ANIM_CROUCH_MOVE_RIGHT ||
                 Hero.moby->animationId == HERO_ANIM_CROUCH_MOVE_LEFT) {
-                if (Hero.state == HERO_STATE_CROUCH) {
+                if (Hero.state == HERO_STATE_CROUCH)
                     Hero_Turn(transStepScaleSq * 0.002f, transStepScaleSq * 0.07f,
                               frameTime * 6.981317f, 0);
-                } else if (Hero.state == HERO_STATE_ITEM_BUTTON_RELEASE_WAIT) {
+
+                else if (Hero.state == HERO_STATE_ITEM_BUTTON_RELEASE_WAIT)
                     Hero_GunTurnWalk();
-                }
+
                 if (FastAbsF(Hero.turnSpeed) > frameTime * 0.34906584f) {
                     int neg;
                     int anim;
 
                     neg = 1;
-                    if (!(Hero.turnSpeed < 0.0f)) {
+
+                    if (!(Hero.turnSpeed < 0.0f))
                         neg = 0;
-                    }
+
                     anim = neg + HERO_ANIM_CROUCH_MOVE_RIGHT;
-                    if (Hero.moby->animationId != anim) {
+
+                    if (Hero.moby->animationId != anim)
                         Hero_TransAnim(anim, 0, FastScaleRoundInt(5));
-                    }
+
                     Hero.animSpeed = FastAbsF(Hero.turnSpeed) / (frameTime * 3.3161256f);
-                    if (Hero.animSpeed < 0.55f) {
+
+                    if (Hero.animSpeed < 0.55f)
                         Hero.animSpeed = 0.55f;
-                    }
-                    if (Hero.animSpeed > 2.5f) {
+
+                    if (Hero.animSpeed > 2.5f)
                         Hero.animSpeed = 2.5f;
-                    }
-                } else if (Hero.turnSpeed == 0.0f) {
+                }
+
+                else if (Hero.turnSpeed == 0.0f) {
                     int anim;
 
                     anim = HERO_ANIM_CROUCH;
-                    if (Hero.state == HERO_STATE_ITEM_BUTTON_RELEASE_WAIT) {
+
+                    if (Hero.state == HERO_STATE_ITEM_BUTTON_RELEASE_WAIT)
                         anim = Hero_GetIdleAnim(0);
-                    }
-                    if (Hero.moby->animationId != anim) {
+
+                    if (Hero.moby->animationId != anim)
                         Hero_TransAnim(anim, 0, FastScaleRoundInt(7));
-                    }
                 }
             }
         }
+
         Hero.idealSpeed = 0.0f;
+
         if (Hero.state == HERO_STATE_SKID) {
             float slopeScale;
 
             slopeScale = Hero.moveSlope + 1.0f;
-            if (slopeScale > 1.0f) {
+
+            if (slopeScale > 1.0f)
                 slopeScale = 1.0f;
-            }
+
             speed = frameTimeSq * 12.0f * slopeScale;
             Hero.skidDecel = speed;
+
             if (Hero.moby->updateId == Hero.moby->animationId && Hero.moby->updateId != HERO_ANIM_SLIDE) {
                 float animRatio;
 
                 animRatio = Hero.flatSpeed / speed;
+
                 if (FastScaleRoundInt(5) < animRatio && Hero.moby->animationFrame < 5.5f) {
                     Hero_GetAnimFrameBlend(13.0f, animRatio, 0.5f, -1.0f);
-                    if (Hero.animSpeed > 1.1f) {
+
+                    if (Hero.animSpeed > 1.1f)
                         Hero.animSpeed = 1.1f;
-                    }
-                } else if (Hero.moby->animationFrame > 6.5f) {
-                    Hero.animSpeed = 1.0f;
                 }
-            }
-        } else {
-            if (Hero.state == HERO_STATE_CROUCH) {
-                speed = frameTimeSq * 6.48f;
-            } else {
-                speed = frameTimeSq * 12.6f;
+
+                else if (Hero.moby->animationFrame > 6.5f)
+                    Hero.animSpeed = 1.0f;
             }
         }
+
+        else {
+            if (Hero.state == HERO_STATE_CROUCH)
+                speed = frameTimeSq * 6.48f;
+
+            else
+                speed = frameTimeSq * 12.6f;
+        }
+
         Hero_ThrustModeAccel(0.0f, speed);
         FastVecZero(&Hero.velocity);
         Hero_ApplyFriction(speed);
+
         if (Hero.onMagnetGround != 0 && UnlockableItems[ITEM_MAGNEBOOTS] != 0) {
-            if (Hero.groundDist > 0.2f) {
+            if (Hero.groundDist > 0.2f)
                 Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocity, frameTimeSq * 24.0f);
-            } else {
+
+            else {
                 Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
+
                 if (Hero.standingOnMoby != 0) {
                     CopyVec4Inline(&Hero.position, &Hero.groundPoint);
                     Hero.groundDist = 0.0f;
                     Hero.framesNotGrounded = 0;
                 }
             }
-        } else {
+        }
+
+        else {
             Hero_KneeBumpMotion(0);
+
             if (Hero.framesNotGrounded != 0) {
                 Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
                 Hero_WallSloopMotion();
-            } else {
-                Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
             }
+
+            else
+                Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
     } break;
     case HERO_STATE_ICEWATER_FREEZE:
@@ -915,6 +940,7 @@ void Hero_DoBehavior(void)
 
             itemMoby = CreateMoby(0x52A);
             Hero.sinkEffectMoby = itemMoby;
+
             if (Hero.sinkEffectMoby != 0) {
                 CopyVec4Inline(&itemMoby->pos, &Hero.position);
                 CopyVec4Inline(&itemMoby->rotation, &Hero.rotation);
@@ -927,11 +953,13 @@ void Hero_DoBehavior(void)
                 sound_PlayMobySound(0, 0, Hero.sinkEffectMoby);
             }
         }
+
         if (Hero.sinkEffectMoby != 0) {
             Hero.sinkEffectMoby->alpha += FastFloatToInt(transStepScale * 5.0f);
-            if (Hero.sinkEffectMoby->alpha > 0x80) {
+
+            if (Hero.sinkEffectMoby->alpha > 0x80)
                 Hero.sinkEffectMoby->alpha = 0x80;
-            }
+
             {
                 MobyInstance *sinkFollowerMoby = Hero.sinkEffectMoby;
                 MobyInstance *heroMoby = Hero.moby;
@@ -941,6 +969,7 @@ void Hero_DoBehavior(void)
                 PostUpdateMoby(sinkFollowerMoby);
             }
         }
+
         Hero.velocity.z = 0.0f;
         {
             float len;
@@ -949,6 +978,7 @@ void Hero_DoBehavior(void)
             FastVecNormalizeScaled(transStepScale * -0.07999998f * len + len, &Hero.velocity,
                                    &Hero.velocity);
         }
+
         Hero_SurfBob();
         break;
     case HERO_STATE_SWIMUNDER:
@@ -964,52 +994,58 @@ void Hero_DoBehavior(void)
         float swimVelocityPitch;
         float lean;
 
-        if (Hero.state == HERO_STATE_CHARGEUNDER) {
+        if (Hero.state == HERO_STATE_CHARGEUNDER)
             Hero_PlayLoopSound(5, Hero.moby, 0x13);
-        } else {
+
+        else {
             if (Hero.loopSounds[5] != -1) {
                 SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[5]];
 
                 if (voiceRow[1].pMoby == Hero.moby) {
-                    if (voiceRow[1].inUse != 0) {
+                    if (voiceRow[1].inUse != 0)
                         sound_KillChannel(Hero.loopSounds[5]);
-                    }
                 }
             }
+
             Hero.loopSounds[5] = -1;
         }
+
         if (Hero.splashEffectTimer != 0) {
             int bubbleCount;
 
             FastDecTimer_220ea8(&Hero.splashEffectTimer);
             bubbleCount = Hero.splashEffectTimer >> 2;
-            if (bubbleCount > 8) {
+
+            if (bubbleCount > 8)
                 bubbleCount = 8;
-            }
+
             Hero_SpawnWaterBubbles(bubbleCount, 0);
         }
+
         if (Hero.state == HERO_STATE_SWIMUNDER && Hero.animChanging == 0) {
-            if (Hero.animFrame > 0.0f && Hero.animFrame < 10.0f) {
+            if (Hero.animFrame > 0.0f && Hero.animFrame < 10.0f)
                 Hero_SpawnWaterBubbles(4, 1);
-            }
         }
+
         if (Hero.state == HERO_STATE_IDLEUNDER && Hero.prevState == HERO_STATE_CHARGEUNDER &&
-            Hero.stateTimer < FastScaleRoundInt(0xF)) {
+            Hero.stateTimer < FastScaleRoundInt(0xF))
             Hero_SpawnWaterBubbles((FastScaleRoundInt(0x14) - Hero.stateTimer) / 3 + 1, 1);
-        }
+
         if (Hero.subState == 1) {
             if (Hero.stateTimer == 1) {
                 Hero_SpawnWaterSplash(3, 0x10, 0);
-                if (WaterTiles != 0) {
+
+                if (WaterTiles != 0)
                     WaterTile_PutDrop(WaterTiles, WaterTileCnt, 0, Hero.position.x, Hero.position.y,
                                       0.4f, -0.3f);
-                }
+
                 Hero.splashEffectTimer = FastScaleRoundInt(0x46);
             }
-            if (++Hero.swimEntryFrames > FastScaleRoundInt(0x28)) {
+
+            if (++Hero.swimEntryFrames > FastScaleRoundInt(0x28))
                 Hero.subState = 0;
-            }
         }
+
         lim = frameTime * 0.6981317f;
         turn = 0.0f;
         trig =
@@ -1017,90 +1053,106 @@ void Hero_DoBehavior(void)
         bankDamping = transStepScaleSq * 0.2f;
         bankSpring = transStepScaleSq * 0.015f;
         lim = lim + (frameTime * 1.2217305f - lim) * trig;
+
         if (((padState.bits & PAD_SQUARE) && !(padState.bits & PAD_CROSS)) || Hero.subState == 1) {
             float turnStrength;
 
             turnStrength = padState.analog[11] * 1.5f;
-            if (turnStrength > 1.0f) {
+
+            if (turnStrength > 1.0f)
                 turnStrength = 1.0f;
-            }
-            if (turnStrength < 0.2f) {
+
+            if (turnStrength < 0.2f)
                 turnStrength = 0.2f;
-            }
+
             if (padState.term_id != 0x79) {
                 Hero.cwTurnFrames = 0;
                 Hero.swimSquareHoldFrames++;
                 turnStrength = Hero.swimSquareHoldFrames * 0.5f / FastScaleRoundInt(0x14) + 0.5f;
-                if (turnStrength > 1.0f) {
+
+                if (turnStrength > 1.0f)
                     turnStrength = 1.0f;
-                }
             }
-            if (Hero.subState == 1 && turnStrength < 0.35f) {
+
+            if (Hero.subState == 1 && turnStrength < 0.35f)
                 turnStrength = 0.35f;
-            }
+
             turn = turnStrength * 1.3613569f;
-        } else if (padState.bits & PAD_CROSS) {
+        }
+
+        else if (padState.bits & PAD_CROSS) {
             float turnStrength;
 
             turnStrength = padState.analog[10] * 1.5f;
-            if (turnStrength > 1.0f) {
+
+            if (turnStrength > 1.0f)
                 turnStrength = 1.0f;
-            }
-            if (turnStrength < 0.2f) {
+
+            if (turnStrength < 0.2f)
                 turnStrength = 0.2f;
-            }
+
             if (padState.term_id != 0x79) {
                 Hero.swimSquareHoldFrames = 0;
                 Hero.cwTurnFrames++;
                 turnStrength = Hero.cwTurnFrames * 0.5f / FastScaleRoundInt(0x14) + 0.5f;
-                if (turnStrength > 1.0f) {
+
+                if (turnStrength > 1.0f)
                     turnStrength = 1.0f;
-                }
             }
-            if (Hero.oxygen < 1500.0f) {
+
+            if (Hero.oxygen < 1500.0f)
                 turnStrength = 1.0f;
-            }
+
             turn = turnStrength * -1.3613569f;
-        } else {
+        }
+
+        else {
             Hero.cwTurnFrames = 0;
             Hero.swimSquareHoldFrames = 0;
         }
+
         if (padState.bits & PAD_CROSS) {
             Hero.jumpButtonFrames++;
+
             if (padState.analog[10] > 0.75f) {
                 if (++Hero.swimHardPressFrames > FastScaleRoundInt(0x5A)) {
-                    if (ActionUsageStats[11].count < 0xFFFF) {
+                    if (ActionUsageStats[11].count < 0xFFFF)
                         ActionUsageStats[11].count++;
-                    }
                 }
+
                 if (FastScaleRoundInt(TotalPlayTime) / 600 >
-                    ActionUsageStats[11].latestTimeBucket) {
+                    ActionUsageStats[11].latestTimeBucket)
                     ActionUsageStats[11].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
-                }
+
                 ActionUsageStats[11].levelMask =
                     ActionUsageStats[11].levelMask | (1 << Level) | 0x80000000;
-            } else {
-                Hero.swimHardPressFrames = 0;
             }
-        } else {
+
+            else
+                Hero.swimHardPressFrames = 0;
+        }
+
+        else {
             Hero.jumpButtonFrames = 0;
             Hero.swimHardPressFrames = 0;
         }
+
         if (padState.bitsOn & PAD_CROSS) {
-            if (worldUpdateTime - Hero.lastCrossPressFrame < FastScaleRoundInt(0x46)) {
+            if (worldUpdateTime - Hero.lastCrossPressFrame < FastScaleRoundInt(0x46))
                 Hero.swimCrossTapCount++;
-            }
+
             Hero.lastCrossPressFrame = worldUpdateTime;
         }
-        if (Hero.jumpButtonFrames > FastScaleRoundInt(0x46)) {
+
+        if (Hero.jumpButtonFrames > FastScaleRoundInt(0x46))
             Hero.swimCrossTapCount = 0;
-        }
-        if (padState.bits & PAD_SQUARE) {
+
+        if (padState.bits & PAD_SQUARE)
             Hero.swimCrossTapCount = 0;
-        }
-        if (Hero.state == HERO_STATE_IDLEUNDER) {
+
+        if (Hero.state == HERO_STATE_IDLEUNDER)
             turn = 0.0f;
-        }
+
         old = Hero.rotation.y;
         AccelDeltAng(Hero.rotation.y, turn, Hero.swimBankSpeed, bankSpring, bankDamping, lim, 0);
         roll = FastSubRots(Hero.rotation.y, old);
@@ -1108,41 +1160,47 @@ void Hero_DoBehavior(void)
         Hero_Turn(transStepScaleSq * 0.007f, transStepScaleSq * 0.08f, frameTime * 5.2359877f, 0);
         Hero.swimYawSpeed = Hero.turnSpeed;
         FastDecTimer_220e78(&Hero.swimThrustTimer);
-        if (Hero.subState == 1) {
+
+        if (Hero.subState == 1)
             Hero.idealSpeed = frameTime * 6.0f;
-        } else if (Hero.state == HERO_STATE_CHARGEUNDER) {
-            if (padState.bits & (PAD_R2 | PAD_R1)) {
+
+        else if (Hero.state == HERO_STATE_CHARGEUNDER) {
+            if (padState.bits & (PAD_R2 | PAD_R1))
                 Hero.idealSpeed = frameTime * 7.0f;
-            } else {
+
+            else
                 Hero.idealSpeed = frameTime * 7.0f * 0.4f;
-            }
-        } else {
-            Hero.idealSpeed = frameTime * 3.0f;
         }
+
+        else
+            Hero.idealSpeed = frameTime * 3.0f;
+
         {
             float speedScale;
 
             speedScale = Hero.padMagnitude;
+
             if ((padState.bits & (PAD_CROSS | PAD_SQUARE)) || Hero.subState == 1) {
-                if (speedScale < 1.0f) {
+                if (speedScale < 1.0f)
                     speedScale = 1.0f;
-                }
             }
+
             if (Hero.padMagnitude > 0.15f) {
                 float minScale;
 
                 minScale = 0.35f;
-                if (Hero.state == HERO_STATE_CHARGEUNDER) {
+
+                if (Hero.state == HERO_STATE_CHARGEUNDER)
                     minScale = 0.4f;
-                }
-                if (speedScale < minScale) {
+
+                if (speedScale < minScale)
                     speedScale = minScale;
-                }
             }
-            if (Hero.state != HERO_STATE_CHARGEUNDER || !(padState.bits & (PAD_R2 | PAD_R1))) {
+
+            if (Hero.state != HERO_STATE_CHARGEUNDER || !(padState.bits & (PAD_R2 | PAD_R1)))
                 Hero.idealSpeed *= speedScale;
-            }
         }
+
         if (FastDecTimer_220e78(&Hero.swimBubbleTimer)) {
             MB_GetBonePos(Hero.moby, 4, &scratch.particle.bonePos);
             ClearVec4(&scratch.particle.offset);
@@ -1157,18 +1215,21 @@ void Hero_DoBehavior(void)
                         &scratch.particle.offset);
             scratch.particle.velocity.z += frameTime * 2.0f;
             SpawnPart_034(&scratch.particle.bonePos, &scratch.particle.velocity, 25200.0f, -1.0f);
-            if (MB_randInt(0x64) < 40.0f) {
+
+            if (MB_randInt(0x64) < 40.0f)
                 Hero.swimBubbleTimer = MB_randRange(FastScaleRoundInt(4), FastScaleRoundInt(0xB));
-            } else {
+
+            else
                 Hero.swimBubbleTimer =
                     MB_randRange(FastScaleRoundInt(0x28), FastScaleRoundInt(0x5A));
-            }
         }
+
         if (Hero.state == HERO_STATE_CHARGEUNDER) {
             if (FastDecTimer_220ea8(&Hero.packParticleTimer)) {
                 MobyInstance *itemMoby;
 
                 itemMoby = Hero.items[3].moby;
+
                 if (itemMoby != 0 && (short)itemMoby->oClass == 0x261) {
                     int partIndex;
 
@@ -1195,39 +1256,49 @@ void Hero_DoBehavior(void)
                 }
             }
         }
-        if (Hero.state == HERO_STATE_CHARGEUNDER) {
+
+        if (Hero.state == HERO_STATE_CHARGEUNDER)
             Hero_ThrustModeAccel(frameTimeSq * 13.0f, frameTimeSq * 8.0f);
-        } else {
+
+        else
             Hero_ThrustModeAccel(frameTimeSq * 7.0f, frameTimeSq * 4.0f);
-        }
+
         swimVelocityPitch = FastAddRots(-Hero.rotation.y, 0.0f);
-        if (Hero.state == HERO_STATE_CHARGEUNDER) {
+
+        if (Hero.state == HERO_STATE_CHARGEUNDER)
             MB_SphericalToVector(&Hero.velocity, Hero.storedNeutralSpeed, Hero.rotation.z,
                                  swimVelocityPitch);
-        } else if (Hero.state == HERO_STATE_SWIMUNDER) {
+
+        else if (Hero.state == HERO_STATE_SWIMUNDER) {
             float swimSpeed;
 
             swimSpeed = Hero.storedNeutralSpeed * Hero_GetLoopedAnimFrame(HeroSwimSpeedWeights, 0x1E) *
                 5.0f;
+
             if (Hero.prevState == HERO_STATE_CHARGEUNDER &&
                 Hero.stateTimer < FastScaleRoundInt(0xF)) {
-                if (swimSpeed < frameTime * 4.5f) {
+                if (swimSpeed < frameTime * 4.5f)
                     swimSpeed = frameTime * 4.5f;
-                }
             }
+
             MB_SphericalToVector(&Hero.velocity, swimSpeed, Hero.rotation.z, swimVelocityPitch);
-        } else if (Hero.state == HERO_STATE_IDLEUNDER) {
+        }
+
+        else if (Hero.state == HERO_STATE_IDLEUNDER) {
             float len;
 
             len = FastVec3Length2(&Hero.externalMomentum);
-            if (Hero.prevState == HERO_STATE_CHARGEUNDER) {
+
+            if (Hero.prevState == HERO_STATE_CHARGEUNDER)
                 Delt(len, 0.0f, frameTimeSq * 8.0f);
-            } else {
+
+            else
                 Delt(len, 0.0f, frameTimeSq * 4.0f);
-            }
+
             FastVec3Normalize(&Hero.externalMomentum, &Hero.externalMomentum, len);
             CopyVec4Inline(&Hero.velocity, &Hero.externalMomentum);
         }
+
         Hero_KneeBumpMotion(0);
         lean = Hero.swimYawSpeed * FastAngleSinF(swimVelocityPitch) * -7.0f;
         AccelDeltAng(Hero.rotation.x, lean, Hero.swimPitchSpeed, 0.007f, 0.17f,
@@ -1238,11 +1309,13 @@ void Hero_DoBehavior(void)
         HeroTweaks[1].target.y = roll * 47.0f;
         HeroTweaks[1].target.z = lean * 1.5f;
         HeroTweaks[1].target.x = lean * 1.4f;
-        if (HeroTweaks[1].target.y > 0.87266463f) {
+
+        if (HeroTweaks[1].target.y > 0.87266463f)
             HeroTweaks[1].target.y = 0.87266463f;
-        } else if (HeroTweaks[1].target.y < -0.87266463f) {
+
+        else if (HeroTweaks[1].target.y < -0.87266463f)
             HeroTweaks[1].target.y = -0.87266463f;
-        }
+
         {
             float tweakRotY;
             float tweakRotZ;
@@ -1263,9 +1336,10 @@ void Hero_DoBehavior(void)
         int bubbleCount;
 
         bubbleCount = 0xA - Hero.stateTimer / 3;
-        if (bubbleCount > 8) {
+
+        if (bubbleCount > 8)
             bubbleCount = 8;
-        }
+
         Hero_SpawnWaterBubbles(bubbleCount, 0);
         Hero.velocity.z = 0.0f;
         {
@@ -1275,6 +1349,7 @@ void Hero_DoBehavior(void)
             FastVecNormalizeScaled(transStepScale * -0.07999998f * len + len, &Hero.velocity,
                                    &Hero.velocity);
         }
+
         Hero_KneeBumpMotion(0);
     } break;
     case HERO_STATE_GET_HIT_SURF:
@@ -1287,6 +1362,7 @@ void Hero_DoBehavior(void)
             FastVecNormalizeScaled(transStepScale * -0.07999998f * len + len, &Hero.velocity,
                                    &Hero.velocity);
         }
+
         Hero_KneeBumpMotion(0);
         Hero_SurfBob();
         break;
@@ -1298,6 +1374,7 @@ void Hero_DoBehavior(void)
         Delt(len, 0.0f, frameTimeSq * 4.0f);
         FastVec3Normalize(&Hero.externalMomentum, &Hero.externalMomentum, len);
         CopyVec4Inline(&Hero.velocity, &Hero.externalMomentum);
+
         if (FastDecTimer_220e78(&Hero.swimBubbleTimer) == 2) {
             MB_GetBonePos(Hero.moby, 4, &scratch.particle.bonePos);
             ClearVec4(&scratch.particle.offset);
@@ -1312,73 +1389,82 @@ void Hero_DoBehavior(void)
                         &scratch.particle.offset);
             scratch.particle.velocity.z += frameTime * 2.0f;
             SpawnPart_034(&scratch.particle.bonePos, &scratch.particle.velocity, 25200.0f, -1.0f);
-            if (Hero.stateTimer < FastScaleRoundInt(0x28)) {
+
+            if (Hero.stateTimer < FastScaleRoundInt(0x28))
                 Hero.swimBubbleTimer =
                     MB_randRange(FastScaleRoundInt(2), FastScaleRoundInt(5)) + Hero.stateTimer / 5;
-            } else if (Hero.stateTimer > FastScaleRoundInt(0x46)) {
+
+            else if (Hero.stateTimer > FastScaleRoundInt(0x46))
                 Hero.swimBubbleTimer =
                     MB_randRange(FastScaleRoundInt(0xA), FastScaleRoundInt(0x14));
-            }
         }
-        if (Hero.drownSinkSpeed > 0.0f) {
+
+        if (Hero.drownSinkSpeed > 0.0f)
             Hero.drownSinkSpeed = 0.0f;
-        }
+
         Delt(Hero.drownSinkSpeed, -(frameTime * 1.5f), frameTimeSq * 1.5f);
         Hero.velocity.z = Hero.drownSinkSpeed;
     } break;
     case HERO_STATE_SWIMSURF:
     case HERO_STATE_IDLESURF:
-        if (Hero.state == HERO_STATE_IDLESURF) {
+        if (Hero.state == HERO_STATE_IDLESURF)
             Hero_SpawnWaterRings(0xF, 0x1E);
-        }
-        if (Hero.flatSpeed > frameTime * 1.5f) {
+
+        if (Hero.flatSpeed > frameTime * 1.5f)
             Hero_SpawnWaterDrops(4, 0xC);
-        }
-        if (Hero.state == HERO_STATE_SWIMSURF && Hero.flatSpeed > frameTime) {
+
+        if (Hero.state == HERO_STATE_SWIMSURF && Hero.flatSpeed > frameTime)
             Hero_SpawnWaterWake(0, 1);
-        }
+
         if (Hero.splashEffectTimer != 0) {
             int bubbleCount;
 
             Hero.splashEffectTimer--;
             bubbleCount = Hero.splashEffectTimer >> 3;
-            if (bubbleCount > 6) {
+
+            if (bubbleCount > 6)
                 bubbleCount = 6;
-            }
+
             Hero_SpawnWaterBubbles(bubbleCount, 0);
         }
+
         Hero.animSpeed = 0.6f;
         Hero_GetIdealThrustFromPad(frameTime * 3.0f, 0);
+
         if (padState.handsOffStick == 0) {
-            if (Hero.idealSpeed < frameTime * 3.0f * 0.5f) {
+            if (Hero.idealSpeed < frameTime * 3.0f * 0.5f)
                 Hero.idealSpeed = frameTime * 3.0f * 0.5f;
-            }
         }
+
         Hero_Turn(transStepScaleSq * 0.007f, transStepScaleSq * 0.08f, frameTime * 5.2359877f, 0);
         FastDecTimer_220e78(&Hero.swimStrokeTimer);
+
         if (Hero.state == HERO_STATE_SWIMSURF) {
             float swimSpeed;
 
-            if (padState.handsOffStick != 0 && Hero.swimStrokeTimer != 0) {
+            if (padState.handsOffStick != 0 && Hero.swimStrokeTimer != 0)
                 Hero.idealSpeed = frameTime * 3.0f;
-            }
-            if (FastAbsF(Hero.turnDelta) > 0.7853982f) {
+
+            if (FastAbsF(Hero.turnDelta) > 0.7853982f)
                 Hero.idealSpeed = 0.0f;
-            }
+
             Hero_ThrustModeAccel(frameTimeSq * 4.0f, frameTimeSq * 5.0f);
             swimSpeed = Hero.storedNeutralSpeed * Hero_GetLoopedAnimFrame(HeroSwimSpeedWeights, 0x1E) *
                 5.5f;
             Hero.velocity.x = FastAngleSinF(Hero.rotation.z) * swimSpeed;
             Hero.velocity.y = FastAngleCosF(Hero.rotation.z) * swimSpeed;
             Hero.velocity.z = 0.0f;
-        } else {
+        }
+
+        else {
             Hero.storedNeutralSpeed = 0.0f;
             FastVecZero(&Hero.velocity);
         }
+
         if (Hero.state == HERO_STATE_SWIMSURF && Hero.animChanging == 0 && Hero.animFrame > 0.0f &&
-            Hero.animFrame < 10.0f) {
+            Hero.animFrame < 10.0f)
             Hero_SpawnWaterBubbles(4, 1);
-        }
+
         Hero_ApplyFriction(frameTimeSq * 4.2f);
         Hero_KneeBumpMotion(0);
         Hero_SurfBob();
@@ -1389,27 +1475,32 @@ void Hero_DoBehavior(void)
 
         anim = -1;
         frames = 0;
-        if (Hero.onIceGround != 0) {
+
+        if (Hero.onIceGround != 0)
             Hero_ThrustToMotion(0.7f, frameTime * 0.0f);
-        } else {
+
+        else
             Hero_ThrustToMotion(0.5f, frameTime * 2.0f);
-        }
+
         Hero_EdgeStop(3.7f, 0.0f);
         Hero_GetIdealThrustFromPad(1.0f, 0);
         Hero_ThrustModeAccel(frameTimeSq * 12.6f, frameTimeSq * 12.6f);
         FastVecZero(&Hero.velocity);
         Hero_ApplyFriction(frameTimeSq * 12.6f);
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.displacement, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
+        }
+
+        else
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
-        }
-        if (anim != -1 && Hero.moby->updateId != HERO_ANIM_SHOOT_C) {
+
+        if (anim != -1 && Hero.moby->updateId != HERO_ANIM_SHOOT_C)
             Hero_TransAnim(anim, 0, frames);
-        } else if ((Hero.moby->unk70 & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C) {
+
+        else if ((Hero.moby->unk70 & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C)
             Hero_TransAnim(Hero_GetIdleAnim(0), 0, FastScaleRoundInt(5));
-        }
     } break;
     case HERO_STATE_ROCKET_STOMP: {
         int windowStart;
@@ -1424,18 +1515,22 @@ void Hero_DoBehavior(void)
         targetVelocityZ = frameTime * 5.7f;
         stepSize = frameTimeSq * 70.0f;
         windowEnd = FastScaleRoundInt(0x21);
+
         if (Hero.stateTimer < windowStart) {
             float velocityZ;
 
             velocityZ = Hero_RelativeZComponent(&Hero.velocity);
             Delt(velocityZ, targetVelocityZ, stepSize);
             Hero_ToHeroRelative(&Hero.velocity, &Hero.velocity, velocityZ);
-        } else if (Hero.stateTimer > windowEnd) {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, Hero.riseFallGravity);
-            if (Hero_RelativeZComponent(&Hero.velocity) < 0.0f) {
-                Hero.pastApex = 1.0f;
-            }
         }
+
+        else if (Hero.stateTimer > windowEnd) {
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, Hero.riseFallGravity);
+
+            if (Hero_RelativeZComponent(&Hero.velocity) < 0.0f)
+                Hero.pastApex = 1.0f;
+        }
+
         if (Hero.pastApex != 0.0f) {
             if (Hero.framesNotGrounded != 0) {
                 CopyVec4Inline(&scratch.rocketStomp.hitPos, &Hero.position);
@@ -1449,12 +1544,14 @@ void Hero_DoBehavior(void)
                                &scratch.rocketStomp.hit);
             }
         }
+
         if (Hero.pastApex != 0.0f) {
             if (Hero.framesNotGrounded == 0) {
                 if (Hero.riseFallLandFrames == 0) {
                     GameCamera.shake.strength = 0.2f;
                     GameCamera.shake.time = FastScaleRoundInt(0x28);
                 }
+
                 Hero.riseFallLandFrames++;
             }
         }
@@ -1466,39 +1563,49 @@ void Hero_DoBehavior(void)
         float acc;
 
         if (Hero.animChanging != 0 ||
-            Hero.animFrame < HeroAttackTable[Hero.attackRecord].endFrame) {
+            Hero.animFrame < HeroAttackTable[Hero.attackRecord].endFrame)
             Hero.items[0].timer = 2;
-        }
+
         Hero.idealSpeed = 0.0f;
+
         if (Hero.meleeTarget != 0) {
             float targetDistance;
 
             targetDistance = FastVec3DistLen(&Hero.position, &Hero.meleeTarget->pos);
-            if (targetDistance > 2.0f && targetDistance < 5.0f) {
+
+            if (targetDistance > 2.0f && targetDistance < 5.0f)
                 Hero.idealSpeed = frameTime * 4.5f;
-            }
+
             Hero_ThrustModeAccel(frameTimeSq * 25.0f, frameTimeSq * 25.0f);
             Hero.velocity.x = FastAngleSinF(Hero.rotation.z) * Hero.storedNeutralSpeed;
             Hero.velocity.y = FastAngleCosF(Hero.rotation.z) * Hero.storedNeutralSpeed;
-        } else {
+        }
+
+        else {
             Hero_ThrustModeAccel(frameTimeSq * 15.0f, frameTimeSq * 15.0f);
             Hero_SetRelativeZ(&Hero.velocity, &Hero.velocity, Hero.storedNeutralSpeed);
         }
+
         if (Hero.headingLocked != 0 || Hero.meleeTarget != 0) {
             Hero.idealRotZ = Hero.attackTargetYaw;
             Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f, frameTime * 15.009831f, 0);
-        } else if (Hero.animFrame < 25.0f) {
-            Hero_UpdateAutoTargetAim(8.0f, 1.0471976f, 1.0471976f);
         }
+
+        else if (Hero.animFrame < 25.0f)
+            Hero_UpdateAutoTargetAim(8.0f, 1.0471976f, 1.0471976f);
+
         windowStart = FastScaleRoundInt(9);
         targetVelocityZ = frameTime * 7.7f;
-        if (Hero.groundDist > 2.25f) {
+
+        if (Hero.groundDist > 2.25f)
             targetVelocityZ *= 0.5f;
-        } else if (Hero.groundDist > 1.8f) {
+
+        else if (Hero.groundDist > 1.8f)
             targetVelocityZ *= 0.7f;
-        }
+
         acc = frameTimeSq * 150.0f;
         windowEnd = FastScaleRoundInt(0xE);
+
         if (Hero.animChanging == 0 && Hero.animFrame > 23.5f && Hero.displacement.z < 0.0f &&
             Hero.framesNotGrounded != 0) {
             CopyVec4Inline(&scratch.jumpAttack.hitPos, &Hero.position);
@@ -1515,97 +1622,112 @@ void Hero_DoBehavior(void)
             CollMobySphere(0.4f, &scratch.jumpAttack.hitPos, 0x10, Hero.moby,
                            &scratch.jumpAttack.hit);
         }
+
         Hero_AnimFrameInWindow(27.0f);
+
         if (Hero.stateTimer < windowStart) {
             float velocityZ;
 
             velocityZ = Hero_RelativeZComponent(&Hero.velocity);
             Delt(velocityZ, targetVelocityZ, acc);
             Hero_ToHeroRelative(&Hero.velocity, &Hero.velocity, velocityZ);
-        } else if (Hero.stateTimer > windowEnd) {
+        }
+
+        else if (Hero.stateTimer > windowEnd) {
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 130.0f);
-            if (Hero_RelativeZComponent(&Hero.velocity) < 0.0f) {
+
+            if (Hero_RelativeZComponent(&Hero.velocity) < 0.0f)
                 Hero.slamDescending = 1.0f;
-            }
-            if (Hero_RelativeZComponent(&Hero.velocity) < frameTime * -37.0f) {
+
+            if (Hero_RelativeZComponent(&Hero.velocity) < frameTime * -37.0f)
                 Hero_ToHeroRelative(&Hero.velocity, &Hero.velocity, frameTime * -37.0f);
-            }
         }
     } break;
     case HERO_STATE_THROW_ATTACK: {
         int skip;
 
         Hero.idealSpeed = 0.0f;
+
         if (Hero.animChanging != 0 ||
-            Hero.animFrame < HeroAttackTable[Hero.attackRecord].endFrame) {
+            Hero.animFrame < HeroAttackTable[Hero.attackRecord].endFrame)
             Hero.items[0].timer = 2;
-        }
+
         skip = 0;
-        if (Hero.prevState == 1 && FastScaleRoundInt(0x14) < Hero.prevStateTimer) {
+
+        if (Hero.prevState == 1 && FastScaleRoundInt(0x14) < Hero.prevStateTimer)
             skip = 1;
-        }
+
         if (!skip) {
             if (Hero.headingLocked != 0 || Hero.meleeTarget != 0) {
                 int near;
 
                 near = 1;
+
                 if (Hero.onMagnerail == 0) {
                     float yawDelta;
                     float turnAngle;
 
                     yawDelta = FastSubRots(Hero.attackTargetYaw, Hero.rotation.z);
                     turnAngle = SubRots(Hero.attackTargetYaw, Hero.rotation.z, 1);
-                    if (turnAngle > 4.363323f) {
+
+                    if (turnAngle > 4.363323f)
                         near = 0;
-                    }
-                    if (yawDelta > 0.0f) {
+
+                    if (yawDelta > 0.0f)
                         Hero.animSpeed = 1.0f / (turnAngle + 1.0f);
-                    }
-                } else {
-                    near = 0;
                 }
+
+                else
+                    near = 0;
+
                 Hero.idealRotZ = Hero.attackTargetYaw;
-                if (near) {
+
+                if (near)
                     Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f,
                               frameTime * 15.009831f, 1);
-                } else {
+
+                else
                     Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f,
                               frameTime * 15.009831f, 0);
-                }
-            } else {
+            }
+
+            else {
                 int canAutoAim;
 
                 canAutoAim = 1;
-                if (Hero.animChanging == 0 && Hero.animFrame > 6.0f) {
+
+                if (Hero.animChanging == 0 && Hero.animFrame > 6.0f)
                     canAutoAim = 0;
-                }
+
                 if (canAutoAim) {
-                    if (Hero.gravityMode == HERO_GRAVITY_WORLD_DOWN) {
+                    if (Hero.gravityMode == HERO_GRAVITY_WORLD_DOWN)
                         Hero_UpdateAutoTargetAim(14.0f, 0.5235988f, 0.7853982f);
-                    }
                 }
             }
         }
-        if (Hero.animChanging == 0 && Hero_AnimFrameInWindow(33.0f)) {
+
+        if (Hero.animChanging == 0 && Hero_AnimFrameInWindow(33.0f))
             Hero_ThrowWrench();
-        }
+
         Hero_ThrustModeAccel(frameTimeSq * 37.0f, frameTimeSq * 28.0f);
         Hero_ThrustToMotionFwd(99999.0f);
-        if (Hero.framesNotGrounded != 0) {
+
+        if (Hero.framesNotGrounded != 0)
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
-        } else {
+
+        else
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
-        }
     } break;
     case HERO_STATE_COMBO_ATTACK: {
         HeroAttackRow *attackRow;
 
         if (Hero.animChanging != 0 ||
-            Hero.animFrame < HeroAttackTable[Hero.attackRecord].hitEndFrame) {
+            Hero.animFrame < HeroAttackTable[Hero.attackRecord].hitEndFrame)
             Hero.items[0].timer = 2;
-        }
+
         Hero.idealSpeed = 0.0f;
         attackRow = &HeroAttackTable[Hero.attackRecord];
+
         if (Hero.meleeTarget != 0 && Hero.stateTimer < FastScaleRoundInt(4)) {
             float targetDistance;
             float attackKindDistanceOffset;
@@ -1614,90 +1736,108 @@ void Hero_DoBehavior(void)
             float distanceError;
 
             targetDistance = FastVec3DistLen(&Hero.meleeTarget->pos, &Hero.position) - 0.5f;
-            if (targetDistance < 0.0f) {
+
+            if (targetDistance < 0.0f)
                 targetDistance = 0.0f;
-            }
+
             if (attackRow->kind == HERO_COMBO_FORWARD_ADVANCE) {
                 attackKindDistanceOffset = 0.75f;
                 range = 0.8f;
                 cap = 4.0f;
-            } else if (attackRow->kind == HERO_COMBO_FORWARD_DECELERATION) {
+            }
+
+            else if (attackRow->kind == HERO_COMBO_FORWARD_DECELERATION) {
                 attackKindDistanceOffset = 0.6f;
                 range = 1.7f;
                 cap = 4.0f;
-            } else {
+            }
+
+            else {
                 attackKindDistanceOffset = 1.3f;
                 range = 1.7f;
                 cap = 1.9f;
             }
+
             distanceError = targetDistance - attackKindDistanceOffset;
+
             if (FastAbsF(distanceError) < range + 3.0f) {
                 float approachSpeedScale;
 
                 approachSpeedScale = distanceError / 0.9f;
-                if (approachSpeedScale > cap) {
+
+                if (approachSpeedScale > cap)
                     approachSpeedScale = cap;
-                }
-                if (approachSpeedScale > 1.0f) {
+
+                if (approachSpeedScale > 1.0f)
                     Hero.speedScale = approachSpeedScale;
-                }
             }
         }
+
         switch (attackRow->kind) {
         case HERO_COMBO_FORWARD_ADVANCE:
-            if (Hero.animFrame < 18.0f) {
+            if (Hero.animFrame < 18.0f)
                 Hero.idealSpeed = frameTime * 4.4f * Hero.speedScale;
-            }
+
             break;
         case HERO_COMBO_FORWARD_DECELERATION:
             if (Hero.animChanging != 0 || Hero.animFrame < 9.0f) {
-                if (Hero.animFrame > 8.0f) {
+                if (Hero.animFrame > 8.0f)
                     Hero.idealSpeed = frameTime * 3.0f * Hero.speedScale;
-                } else if (Hero.animFrame > 7.0f) {
+
+                else if (Hero.animFrame > 7.0f)
                     Hero.idealSpeed = frameTime * 4.5f * Hero.speedScale;
-                } else {
+
+                else
                     Hero.idealSpeed = frameTime * 5.7f * Hero.speedScale;
-                }
             }
+
             break;
         case HERO_COMBO_CONDITIONAL_FORWARD_ADVANCE:
-            if (Hero.animChanging != 0 || Hero.animFrame < 12.0f) {
+            if (Hero.animChanging != 0 || Hero.animFrame < 12.0f)
                 Hero.idealSpeed = frameTime * 3.7f * Hero.speedScale;
-            }
+
             break;
         }
+
         Delt(Hero.animSpeed, 1.0f, 0.2f);
+
         if (Hero.headingLocked != 0 || Hero.meleeTarget != 0) {
             if (attackRow->kind == HERO_COMBO_FORWARD_DECELERATION &&
-                FastSubRots(Hero.attackTargetYaw, Hero.rotation.z) > 0.0f) {
+                FastSubRots(Hero.attackTargetYaw, Hero.rotation.z) > 0.0f)
                 Hero.animSpeed =
                     1.0f / (FastDiffRots(Hero.attackTargetYaw, Hero.rotation.z) + 1.0f);
-            }
+
             Hero.idealRotZ = Hero.attackTargetYaw;
             Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f, frameTime * 15.009831f, 0);
-        } else {
+        }
+
+        else {
             int canAutoAim;
 
             canAutoAim = 1;
+
             if (attackRow->kind == HERO_COMBO_FORWARD_DECELERATION && Hero.animChanging == 0 &&
-                Hero.animFrame > 7.0f) {
+                Hero.animFrame > 7.0f)
                 canAutoAim = 0;
-            }
-            if (canAutoAim) {
+
+            if (canAutoAim)
                 Hero_UpdateAutoTargetAim(5.0f, 0.7853982f, 0.7853982f);
-            }
         }
+
         Hero_ThrustModeAccel(frameTimeSq * 37.0f, frameTimeSq * 28.0f);
-        if (Hero.headingLocked != 0) {
+
+        if (Hero.headingLocked != 0)
             Hero_ThrustToMotionFwd(Hero.attackTargetYaw);
-        } else {
+
+        else
             Hero_ThrustToMotionFwd(99999.0f);
-        }
-        if (Hero.framesNotGrounded != 0) {
+
+        if (Hero.framesNotGrounded != 0)
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
-        } else {
+
+        else
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
-        }
+
         Hero_EdgeStop(3.7f, 0.0f);
     } break;
     case HERO_STATE_UNK_BONK:
@@ -1705,11 +1845,13 @@ void Hero_DoBehavior(void)
         Delt(Hero.storedNeutralSpeed, 0.0f, frameTimeSq * 24.0f);
         Hero.velocity.x = FastAngleSinF(Hero.pushbackYaw) * Hero.storedNeutralSpeed;
         Hero.velocity.y = FastAngleCosF(Hero.pushbackYaw) * Hero.storedNeutralSpeed;
-        if (Hero.groundDist > 0.0f) {
+
+        if (Hero.groundDist > 0.0f)
             Hero.velocity.z = Hero.resolvedVelocity.z - frameTimeSq * 25.0f;
-        } else {
+
+        else
             Hero.velocity.z = 0.0f;
-        }
+
         Hero.idealRotZ = FastAddRots(Hero.pushbackYaw, 3.1415927f);
         Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f, frameTime * 15.009831f, 0);
         break;
@@ -1721,39 +1863,47 @@ void Hero_DoBehavior(void)
         if (Hero.headingLocked != 0 || Hero.meleeTarget != 0) {
             Hero.idealRotZ = Hero.attackTargetYaw;
             Hero_Turn(transStepScaleSq * 0.05f, transStepScaleSq * 0.2f, frameTime * 15.009831f, 0);
-        } else if (Hero.stateTimer < FastScaleRoundInt(4)) {
-            Hero_UpdateAutoTargetAim(11.0f, 0.87266463f, -1.0f);
         }
+
+        else if (Hero.stateTimer < FastScaleRoundInt(4))
+            Hero_UpdateAutoTargetAim(11.0f, 0.87266463f, -1.0f);
+
         windowStart = FastScaleRoundInt(0xA);
         Hero.idealSpeed = 0.0f;
         windowEnd = windowStart + FastScaleRoundInt(8);
-        if (Hero.stateTimer > windowStart && Hero.stateTimer < windowEnd) {
+
+        if (Hero.stateTimer > windowStart && Hero.stateTimer < windowEnd)
             Hero.idealSpeed = frameTime * 18.0f;
-        }
+
         if (Hero.stateTimer == FastScaleRoundInt(8)) {
             CreateMotionBlur(Hero.moby, &Hero.trail);
             AddMotionBlurElem(&Hero.trail, 0x30, 2);
             AddMotionBlurElem(&Hero.trail, 0x17, 4);
             AddMotionBlurElem(&Hero.trail, 0xC, 6);
         }
+
         trailMode = 5;
-        if (!(Hero.stateTimer > windowEnd)) {
+
+        if (!(Hero.stateTimer > windowEnd))
             trailMode = 0;
-        }
+
         UpdateMotionBlur(&Hero.trail, trailMode);
-        if (Hero.stateTimer > windowStart) {
+
+        if (Hero.stateTimer > windowStart)
             Hero_ThrustModeAccel(frameTimeSq * 190.0f, frameTimeSq * 90.0f);
-        }
-        if (Hero.headingLocked != 0) {
+
+        if (Hero.headingLocked != 0)
             Hero_ThrustToMotionFwd(Hero.attackTargetYaw);
-        } else {
+
+        else
             Hero_ThrustToMotionFwd(99999.0f);
-        }
+
         if (Hero.state == HERO_STATE_WALLOPER_ATTACK && Hero.stateTimer > windowStart) {
             if (Hero.stateTimer < windowEnd + FastScaleRoundInt(4)) {
                 MobyInstance *attackItemMoby;
 
                 attackItemMoby = Hero.items[0].moby;
+
                 if (attackItemMoby != 0) {
                     float yaw;
 
@@ -1795,33 +1945,42 @@ void Hero_DoBehavior(void)
                 }
             }
         }
-        if (Hero.stateTimer > FastScaleRoundInt(0xA)) {
+
+        if (Hero.stateTimer > FastScaleRoundInt(0xA))
             Hero_EdgeStop(3.7f, 0.0f);
-        }
+
         Hero_KneeBumpMotion(1);
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocity, frameTimeSq * 24.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
     } break;
     case HERO_STATE_THROWING_ITEM:
         Hero.idealSpeed = 0.0f;
+
         if (Hero.headingLocked != 0) {
             Hero.idealRotZ = Hero.attackTargetYaw;
             Hero_Turn(transStepScaleSq * 0.04f, transStepScaleSq * 0.2f, frameTime * 15.009831f, 0);
-        } else {
-            Hero_UpdateAutoTargetAim(11.0f, 0.87266463f, -1.0f);
         }
+
+        else
+            Hero_UpdateAutoTargetAim(11.0f, 0.87266463f, -1.0f);
+
         Hero_ThrustModeAccel(frameTimeSq * 30.0f, frameTimeSq * 35.0f);
         Hero_ThrustToMotionFwd(99999.0f);
+
         if (Hero.framesNotGrounded != 0) {
             Hero.velocity.z = Hero.displacement.z - frameTimeSq * 25.0f;
             Hero_WallSloopMotion();
-        } else {
-            Hero.velocity.z -= frameTimeSq * 54.0f;
         }
+
+        else
+            Hero.velocity.z -= frameTimeSq * 54.0f;
+
         break;
     case HERO_STATE_WALK:
     case HERO_STATE_WADE: {
@@ -1831,63 +1990,74 @@ void Hero_DoBehavior(void)
         float down;
 
         quiet = 0;
-        if (Hero.hotSpotWater != 0 && Hero.waterDepth < 0.25f) {
+
+        if (Hero.hotSpotWater != 0 && Hero.waterDepth < 0.25f)
             quiet = 1;
-        }
+
         if (Hero.wading != 0 || quiet) {
-            if (Hero.flatSpeed > frameTime) {
+            if (Hero.flatSpeed > frameTime)
                 Hero_SpawnWaterWake(0, 2);
-            }
-            if (Hero.flatSpeed > frameTime * 0.5f) {
+
+            if (Hero.flatSpeed > frameTime * 0.5f)
                 Hero_SpawnWaterDrops(2, 4);
-            }
+
             Hero_SpawnWaterBubbles(5, 2);
         }
-        if (Hero.flatSpeed < frameTime * 0.3f && Hero.padMagnitude > 0.85f) {
+
+        if (Hero.flatSpeed < frameTime * 0.3f && Hero.padMagnitude > 0.85f)
             Hero.moveAlongStick = 1;
-        }
+
         if (FastAbsF(Hero.turnDelta) < 0.05235988f || Hero.itemAnimActive != 0 ||
-            Hero.subState == 1) {
+            Hero.subState == 1)
             Hero.moveAlongStick = 0;
-        }
+
         if (Hero.sharpTurn != 0) {
-            if (FastAbsF(Hero.turnDelta) < 0.06981317f || Hero.itemAnimActive != 0) {
+            if (FastAbsF(Hero.turnDelta) < 0.06981317f || Hero.itemAnimActive != 0)
                 Hero.sharpTurn = 0;
-            }
         }
+
         Hero_GetIdealThrustForWalk();
+
         if (Hero.pushLength > 0.0f) {
             Hero_ThrustToMotion(0.7f, 0.0f);
             CopyVec4(&scratch.wade.impulse, &Hero.moveImpulse);
             Hero.idealSpeed = Hero.idealSpeed + Hero_SinCosDot(&scratch.wade.impulse);
-            if (Hero.idealSpeed < frameTime * 0.7f) {
+
+            if (Hero.idealSpeed < frameTime * 0.7f)
                 Hero.idealSpeed = frameTime * 0.7f;
-            }
+
             FastVecZero(&Hero.moveImpulse);
         }
+
         thrustScale = 1.0f;
-        if (Hero.subState == 1 && Hero.sharpTurn == 0) {
+
+        if (Hero.subState == 1 && Hero.sharpTurn == 0)
             Hero_Turn(transStepScaleSq * 0.008f, transStepScaleSq * 0.15f, frameTime * 9.948377f,
                       0);
-        } else {
+
+        else {
             float stickMagnitude;
             float remainingTurnAngle;
 
             stickMagnitude = Hero.padMagnitude;
             remainingTurnAngle = Hero.turnDelta;
+
             if (Hero.itemAnimActive != 0) {
                 thrustScale = 1.0f - remainingTurnAngle * 0.55f;
-                if (thrustScale < 0.0f) {
+
+                if (thrustScale < 0.0f)
                     thrustScale = 0.0f;
-                }
-            } else if (stickMagnitude < 0.8f) {
-                if (remainingTurnAngle > 0.5235988f) {
-                    thrustScale = 0.0f;
-                }
             }
-            if (stickMagnitude > HeroJumpSpeeds.minRunSpeed) {
+
+            else if (stickMagnitude < 0.8f) {
+                if (remainingTurnAngle > 0.5235988f)
+                    thrustScale = 0.0f;
+            }
+
+            if (stickMagnitude > HeroJumpSpeeds.minRunSpeed)
                 Hero_TurnWalk();
-            } else {
+
+            else {
                 float turnScale;
 
                 turnScale = Hero.padMagnitude + 0.35f;
@@ -1895,46 +2065,55 @@ void Hero_DoBehavior(void)
                           frameTime * 4.712389f * turnScale, 0);
             }
         }
+
         Hero_SetBankTwistSway();
         Hero_SetBackpackSway();
         upThrust = frameTimeSq * 7.5f * thrustScale;
         down = frameTimeSq * 8.5f;
+
         if (Hero.sharpTurn != 0) {
             float speedScale;
 
             speedScale = 2.6179938f - Hero.turnDelta;
-            if (speedScale > 1.0f) {
+
+            if (speedScale > 1.0f)
                 speedScale = 1.0f;
-            }
-            if (speedScale < 0.2f) {
+
+            if (speedScale < 0.2f)
                 speedScale = 0.2f;
-            }
+
             Hero.idealSpeed *= speedScale;
             down = frameTimeSq * 17.0f;
         }
+
         Hero_ThrustModeAccel(upThrust, down);
-        if (Hero.moveAlongStick != 0 && Hero.onMagnerail == 0) {
+
+        if (Hero.moveAlongStick != 0 && Hero.onMagnerail == 0)
             Hero_ThrustToMotionFwd(Hero.idealRotZ);
-        } else {
+
+        else
             Hero_ThrustToMotionFwd(99999.0f);
-        }
+
         Hero_KneeBumpMotion(1);
-        if (Hero.edgeStop != 0) {
+
+        if (Hero.edgeStop != 0)
             Hero_EdgeStop(5.0f, 0.2f);
-        }
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
     } break;
     case HERO_STATE_SLIDE:
-        if (Level == LEVEL_QUARTU) {
+        if (Level == LEVEL_QUARTU)
             Hero_PlayLoopSound(2, Hero.moby, 0x1D);
-        } else {
+
+        else
             Hero_PlayLoopSound(2, Hero.moby, 6);
-        }
+
         if (Level != LEVEL_QUARTU) {
             Hero_SpawnWaterBubbles(4, 2);
             scratch.slide.bubblePos.x = Hero.position.x + MB_randRangeFloat(-0.25f, 0.25f);
@@ -1949,6 +2128,7 @@ void Hero_DoBehavior(void)
             SpawnPart_047(&scratch.slide.bubblePos, &scratch.slide.bubbleVelocity,
                           MB_randRangeFloat(37800.0f, 75600.0f));
         }
+
         {
             float platformSpeed;
             float old;
@@ -1956,11 +2136,13 @@ void Hero_DoBehavior(void)
             float lean;
 
             platformSpeed = FastVec3Length2(&Hero.platformDelta);
-            if (platformSpeed > frameTime * 0.5f) {
+
+            if (platformSpeed > frameTime * 0.5f)
                 Hero.idealRotZ = FastArcTan(Hero.platformDelta.x, Hero.platformDelta.y);
-            } else {
+
+            else
                 Hero.idealRotZ = Hero.rotation.z;
-            }
+
             old = Hero.rotation.z;
             Hero_Turn(platformSpeed * 0.125f * transStepScaleSq, transStepScaleSq * 0.2f,
                       frameTime * 4.1887903f, 0);
@@ -1968,26 +2150,29 @@ void Hero_DoBehavior(void)
             FastVecZero(&Hero.velocity);
             Hero_ApplyFriction(frameTimeSq * 5.0f);
             Hero.velocity.z = Hero.displacement.z - frameTimeSq * 50.0f;
-            if (Hero.velocity.z > frameTimeSq * -40.0f) {
+
+            if (Hero.velocity.z > frameTimeSq * -40.0f)
                 Hero.velocity.z = frameTimeSq * -40.0f;
-            }
-            if (yawChange > frameTime * 1.3962634f) {
+
+            if (yawChange > frameTime * 1.3962634f)
                 yawChange = frameTime * 1.3962634f;
-            }
+
             lean = yawChange * 9.0f;
             AccelDeltAng(Hero.rotation.x, lean * 0.5f, Hero.rollSpringVelocity, 0.007f, 0.17f,
                          frameTime * 1.2217305f, 0);
-            if (Hero.stateTimer > FastScaleRoundInt(0x64)) {
+
+            if (Hero.stateTimer > FastScaleRoundInt(0x64))
                 AccelDeltAng(Hero.rotation.y, -Hero.railRidePitch, Hero.railRidePitchVelocity,
                              transStepScaleSq * 0.035f, transStepScaleSq * 0.3f,
                              frameTime * 1.9198622f, 0);
-            }
+
             Hero_SetTweaker1(0.009f, 0.22f);
             Hero_SetTweaker2(0.04f, 0.2f);
             Hero_SetTweaker3(0.02f, 0.2f);
             HeroTweaks[1].target.z = lean * 2.1f;
             HeroTweaks[1].target.x = lean * 3.5f;
         }
+
         break;
     case HERO_STATE_LEDGE_GRAB:
     case HERO_STATE_LEDGE_IDLE:
@@ -2007,31 +2192,38 @@ void Hero_DoBehavior(void)
         Hero.velocity.y = 0.0f;
         Hero.velocity.z = 0.0f;
         CopyVec4Inline(&scratch.ledge.position, &Hero.position);
+
         if (Hero.state == HERO_STATE_LEDGE_TRAVERSE_LEFT) {
             scratch.ledge.sideStep.x =
                 FastAngleSinF(FastAddRots(Hero.rotation.z, 1.5707964f)) * 0.3f;
             scratch.ledge.sideStep.y =
                 FastAngleCosF(FastAddRots(Hero.rotation.z, 1.5707964f)) * 0.3f;
             scratch.ledge.sideStep.z = 0.0f;
-        } else {
+        }
+
+        else {
             scratch.ledge.sideStep.x =
                 FastAngleSinF(FastAddRots(Hero.rotation.z, -1.5707964f)) * 0.3f;
             scratch.ledge.sideStep.y =
                 FastAngleCosF(FastAddRots(Hero.rotation.z, -1.5707964f)) * 0.3f;
             scratch.ledge.sideStep.z = 0.0f;
         }
+
         FastVec3Add(&scratch.ledge.offsetPosition, &scratch.ledge.position,
                     &scratch.ledge.sideStep);
         Hero_CheckLedgeGrab();
+
         if (Hero.ledgeFound != 0) {
             CopyVec4Inline(&scratch.ledge.grabA, &Hero.ledgeGrabPos);
             originalProbeYaw = FastAddRots(Hero.ledgeWallAngZ, 3.1415927f);
             CopyVec4Inline(&Hero.position, &scratch.ledge.offsetPosition);
             Hero_CheckLedgeGrab();
             CopyVec4Inline(&Hero.position, &scratch.ledge.position);
+
             if (Hero.ledgeFound != 0) {
                 CopyVec4Inline(&scratch.ledge.grabB, &Hero.ledgeGrabPos);
                 offsetProbeYaw = FastAddRots(Hero.ledgeWallAngZ, 3.1415927f);
+
                 if (!(FastDiffRots(originalProbeYaw, offsetProbeYaw) > 0.5235988f)) {
                     float mid;
                     float spd;
@@ -2063,15 +2255,17 @@ void Hero_DoBehavior(void)
     case HERO_STATE_FALL:
     case HERO_STATE_SWING_FALL:
         Hero_GetIdealThrustForWalk();
-        if (Hero.moveLockTimer == 0) {
+
+        if (Hero.moveLockTimer == 0)
             Hero_JumpTurnTrans();
-        }
+
         Hero_SetBankTwistSway();
         Hero_ThrustToMotion(0.7f, frameTime * 0.0f);
         Hero_AddGravity(&Hero.velocity, &Hero.velocity, Hero.fallStateGravity);
-        if (Hero_RelativeZComponent(&Hero.velocity) < -(frameTime * 50.0f)) {
+
+        if (Hero_RelativeZComponent(&Hero.velocity) < -(frameTime * 50.0f))
             Hero_ToHeroRelative(&Hero.velocity, &Hero.velocity, -(frameTime * 50.0f));
-        }
+
         break;
     case HERO_STATE_DEATH_FALL:
         Hero.itemUseLocked = 1;
@@ -2085,10 +2279,12 @@ void Hero_DoBehavior(void)
             FastVecNormalizeScaled(transStepScale * -0.100000024f * len + len, &Hero.velocity,
                                    &Hero.velocity);
         }
+
         Hero_AddGravity(&Hero.velocity, &Hero.velocity, Hero.fallStateGravity);
-        if (Hero_RelativeZComponent(&Hero.velocity) < -(frameTime * 50.0f)) {
+
+        if (Hero_RelativeZComponent(&Hero.velocity) < -(frameTime * 50.0f))
             Hero_ToHeroRelative(&Hero.velocity, &Hero.velocity, -(frameTime * 50.0f));
-        }
+
         break;
     case HERO_STATE_ROCKET_HOVER: {
         float airAccel;
@@ -2097,19 +2293,22 @@ void Hero_DoBehavior(void)
 
         fast = 1;
         Hero_PlayLoopSound(4, Hero.moby, 0x12);
-        if (!(Hero.groundDist > 0.7f)) {
+
+        if (!(Hero.groundDist > 0.7f))
             fast = 0;
-        }
+
         airAccel = frameTime * 4.0f;
         airStickSpeed = frameTime * 5.75f;
-        if (fast) {
+
+        if (fast)
             airStickSpeed = airAccel;
-        }
+
         Hero_GetIdealThrustFromPad(Hero.padMagnitude * airStickSpeed, 0);
-        if (Hero.padMagnitude > 0.2f && !(padState.bits & (PAD_L2 | PAD_R2))) {
+
+        if (Hero.padMagnitude > 0.2f && !(padState.bits & (PAD_L2 | PAD_R2)))
             Hero_Turn(transStepScaleSq * 0.027f, transStepScaleSq * 0.3f,
                       frameTime * 5.934119f * Hero.padMagnitude, 0);
-        }
+
         if (padState.bits & (PAD_L2 | PAD_R2)) {
             float keep;
 
@@ -2118,21 +2317,25 @@ void Hero_DoBehavior(void)
             Hero_Turn(transStepScaleSq * 0.017f, transStepScaleSq * 0.3f, frameTime * 4.712389f, 0);
             Hero.idealRotZ = keep;
         }
+
         jumpAccel = frameTimeSq * 7.0f;
-        if (Hero.padMagnitude < 0.2f) {
+
+        if (Hero.padMagnitude < 0.2f)
             jumpAccel = frameTimeSq * 3.5f;
-        }
+
         Hero_JumpTranslation(jumpAccel);
         Hero_SetBankTwistSway();
         Hero_KneeBumpMotion(1);
+
         if (fast) {
             Hero_ForwardComponent(&Hero.velocity, &Hero.velocity);
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, airAccel * 0.72f);
             Hero.groundSpringVelocity = Hero.velocity.z;
-        } else {
+        }
+
+        else
             AccelDelt(Hero.position.z, Hero.groundHeight + 0.17f, Hero.groundSpringVelocity,
                       transStepScaleSq * 0.02f, transStepScaleSq * 0.35f, frameTime * 2.5f);
-        }
     } break;
     case HERO_STATE_LAND: {
         float airSpeed;
@@ -2141,27 +2344,31 @@ void Hero_DoBehavior(void)
             if (Hero.loopSounds[4] != -1) {
                 SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[4]];
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0) {
+                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
                     sound_KillChannel(Hero.loopSounds[4]);
-                }
             }
+
             Hero.loopSounds[4] = -1;
             Hero_PlayLoopSound(3, Hero.moby, 2);
-        } else {
+        }
+
+        else {
             if (Hero.loopSounds[3] != -1) {
                 SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[3]];
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0) {
+                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
                     sound_KillChannel(Hero.loopSounds[3]);
-                }
             }
+
             Hero.loopSounds[3] = -1;
             Hero_PlayLoopSound(4, Hero.moby, 0x12);
         }
+
         airSpeed = frameTime * 3.0f;
-        if (Hero.items[3].itemId == 3) {
+
+        if (Hero.items[3].itemId == 3)
             airSpeed = frameTime * 5.0f;
-        }
+
         Hero_GetIdealThrustFromPad(airSpeed, 0);
         Hero_Turn(transStepScaleSq * 0.025f, transStepScaleSq * 0.3f, frameTime * 12.566371f, 0);
         Hero_ThrustModeAccel(frameTimeSq * 15.0f, frameTimeSq * 7.0f);
@@ -2169,9 +2376,10 @@ void Hero_DoBehavior(void)
         Hero_SetBankTwistSway();
         Hero_ForwardComponent(&Hero.velocity, &Hero.velocity);
         Hero_AddGravity(&Hero.velocity, &Hero.velocity, airSpeed * 0.72f);
-        if (Hero.position.z < Hero.smoothedGroundZ) {
+
+        if (Hero.position.z < Hero.smoothedGroundZ)
             Delt(Hero.smoothedGroundZ, Hero.position.z, frameTime * 4.0f);
-        }
+
         Hero_UpdateLedge();
     } break;
     case HERO_STATE_JUMP:
@@ -2193,39 +2401,43 @@ void Hero_DoBehavior(void)
     case HERO_STATE_QUICKSAND_JUMP:
         if (Hero.state == HERO_STATE_LEDGE_JUMP && Hero.hasClank == 0 &&
             Hero.items[3].itemId == 3) {
-            if (Hero_AnimFrameInWindow(10.0f)) {
+            if (Hero_AnimFrameInWindow(10.0f))
                 Hero_PlaySound(4, 0);
-            }
         }
-        if (Hero.tookOffFromIce != 0 && Hero.onIceGround != 0) {
+
+        if (Hero.tookOffFromIce != 0 && Hero.onIceGround != 0)
             Hero.idealSpeed = Hero.storedNeutralSpeed;
-        } else {
-            if (Hero.dustHoverState != 0) {
+
+        else {
+            if (Hero.dustHoverState != 0)
                 Hero_GetIdealThrustFromPad(frameTime * 5.7f, 0);
-            }
+
             Hero_GetIdealThrustFromPad(Hero.airStickSpeed, 0);
         }
+
         if (Hero.state == HERO_STATE_WATER_JUMP) {
             if (Hero.stateTimer == FastScaleRoundInt(0x14)) {
                 Hero_SpawnWaterSplash(3, 0x10, 1);
-                if (WaterTiles != 0) {
+
+                if (WaterTiles != 0)
                     WaterTile_PutDrop(WaterTiles, WaterTileCnt, 0, Hero.position.x, Hero.position.y,
                                       0.4f, 0.35f);
-                }
             }
-            if (Hero.animFrame >= 4.0f && Hero.animFrame <= 7.0f) {
+
+            if (Hero.animFrame >= 4.0f && Hero.animFrame <= 7.0f)
                 Hero_SpawnWaterBubbles(7, 0);
-            }
         }
+
         {
             int timer;
             int lim;
 
             timer = Hero.stateTimer;
             lim = Hero.takeoffFrame;
-            if (timer == lim) {
+
+            if (timer == lim)
                 CopyVec4Inline(&Hero.takeoffPos, &Hero.position);
-            }
+
             if (Hero.dustHoverState != 0 ||
                 (timer < lim && Hero.state != HERO_STATE_FLIP_JUMP &&
                  Hero.state != HERO_STATE_THRUSTER_PACK_FORWARD_JUMP &&
@@ -2237,83 +2449,93 @@ void Hero_DoBehavior(void)
                 Hero_Turn(transStepScaleSq * 0.015f, transStepScaleSq * 0.2f,
                           frameTime * 15.009831f, 0);
                 keep = Hero.storedNeutralSpeed;
-                if (Hero.dustHoverState > 1) {
+
+                if (Hero.dustHoverState > 1)
                     Hero.storedNeutralSpeed = keep * 0.4f;
-                }
+
                 Hero_ThrustToMotionFwd(99999.0f);
                 Hero.storedNeutralSpeed = keep;
-                if (Hero.dustHoverState != 1) {
+
+                if (Hero.dustHoverState != 1)
                     Hero_ThrustModeAccel(Hero.airSpeedStepUp, Hero.jumpDecel);
-                }
-                if (Hero.onMagnerail != 0) {
+
+                if (Hero.onMagnerail != 0)
                     Hero.storedNeutralSpeed = 0.0f;
-                }
+
                 if (Hero.dustHoverState != 0) {
                     if (padState.handsOffStick != 0) {
-                        if (Hero.onFlaggedGroundMoby != 0) {
+                        if (Hero.onFlaggedGroundMoby != 0)
                             Hero.storedNeutralSpeed = 0.0f;
-                        }
                     }
                 }
-                if (Hero.dustHoverState != 0) {
+
+                if (Hero.dustHoverState != 0)
                     Hero_ApplyFriction(Hero.jumpDecel);
-                }
+
                 Hero_ThrustToMotion(0.5f, frameTime * 2.0f);
+
                 if (Hero.state == HERO_STATE_RUN_JUMP &&
-                    Hero.stateTimer < Hero.takeoffFrame + FastScaleRoundInt(4)) {
+                    Hero.stateTimer < Hero.takeoffFrame + FastScaleRoundInt(4))
                     Hero_ToWorldVector(&Hero.velocity, &Hero.velocity,
                                        frameTimeSq * 16.0f * Hero.stateTimer);
-                }
+
                 if (Hero.state == HERO_STATE_HELI_PACK_FWD_JUMP) {
-                    if (Hero.stateTimer < FastScaleRoundInt(0x22)) {
+                    if (Hero.stateTimer < FastScaleRoundInt(0x22))
                         Hero_ToWorldVector(&Hero.velocity, &Hero.velocity,
                                            frameTimeSq * 53.0f * Hero.stateTimer);
-                    }
                 }
+
                 if (Hero.stateTimer < FastScaleRoundInt(0xA) && Hero.padMagnitude > 0.2f) {
                     CopyVec4Inline(&scratch.jumpProbe.start, &Hero.position);
                     Hero_ToWorldPos(&scratch.jumpProbe.start, &scratch.jumpProbe.start, 0.5f);
                     CopyVec4Inline(&scratch.jumpProbe.end, &scratch.jumpProbe.start);
                     scratch.jumpProbe.end.x += FastAngleSinF(Hero.rotation.z) * 0.85f;
                     scratch.jumpProbe.end.y += FastAngleCosF(Hero.rotation.z) * 0.85f;
+
                     if (CollLine(&scratch.jumpProbe.start, &scratch.jumpProbe.end, 4, Hero.moby,
-                                 0)) {
+                                 0))
                         Hero.jumpBlockedAhead = 1;
-                    }
                 }
-            } else {
+            }
+
+            else {
                 Hero_JumpTurnTrans();
+
                 if (Hero.state == HERO_STATE_WATER_JUMP) {
                     float len;
 
                     len = FastVec3Length(&Hero.velocity);
-                    if (len > frameTime * 3.7f) {
+
+                    if (len > frameTime * 3.7f)
                         len = frameTime * 3.7f;
-                    }
+
                     FastVec3RSqrtScale(&Hero.velocity, &Hero.velocity, len);
                 }
             }
         }
+
         if (Hero.groundHeight > Hero.smoothedGroundZ) {
             Hero.smoothedGroundZ = Hero.smoothedGroundZ + frameTime * 6.0f;
-            if (Hero.smoothedGroundZ > Hero.groundHeight) {
+
+            if (Hero.smoothedGroundZ > Hero.groundHeight)
                 Hero.smoothedGroundZ = Hero.groundHeight;
-            }
         }
-        if (Hero.position.z < Hero.smoothedGroundZ) {
+
+        if (Hero.position.z < Hero.smoothedGroundZ)
             Hero.smoothedGroundZ = Hero.position.z;
-        }
+
         if (Hero.stateTimer > Hero.takeoffFrame &&
             Hero_RelativeZComponent(&Hero.velocity) < 0.001f &&
             (Hero.velocityKeysActive == 0 || Hero.stateTimer > Hero.velocityKeysEndFrame)) {
             Hero.pastJumpApex = 1;
-            if (Hero.fallGravity != 0.0f) {
+
+            if (Hero.fallGravity != 0.0f)
                 Hero.jumpGravity = Hero.fallGravity;
-            }
         }
-        if (Hero.type == HERO_TYPE_RATCHET) {
+
+        if (Hero.type == HERO_TYPE_RATCHET)
             Hero_SetBankTwistSway();
-        }
+
         if (Hero.state == HERO_STATE_THRUSTER_PACK_FORWARD_JUMP ||
             Hero.state == HERO_STATE_ROCKET_JUMP) {
             int late;
@@ -2321,6 +2543,7 @@ void Hero_DoBehavior(void)
             late = Hero.stateTimer > FastScaleRoundInt(0xC);
             UpdateMotionBlur(&Hero.trail, late * 2);
         }
+
         if (Hero.state == HERO_STATE_THRUSTER_PACK_FORWARD_JUMP &&
             Hero.stateTimer > FastScaleRoundInt(8)) {
             if (Hero.animFrame < 28.0f) {
@@ -2328,19 +2551,21 @@ void Hero_DoBehavior(void)
 
                 Hero_GetHeroRelativePos(&scratch.crateSmash.center, 0.8f, 0.0f, 0.3f);
                 hitCount = CollMobySphere(0.9f, &scratch.crateSmash.center, 0, Hero.moby, 0);
+
                 if (hitCount != 0) {
                     int crateIndex;
 
                     FastVec3Scale(&scratch.crateSmash.shove, &Hero.displacement, 7.0f);
+
                     for (crateIndex = 0; crateIndex < hitCount; crateIndex++) {
-                        if (MB_isCrate(HeroSphereQueryResults[crateIndex])) {
+                        if (MB_isCrate(HeroSphereQueryResults[crateIndex]))
                             CollDamageMobyDirect_2(HeroSphereQueryResults[crateIndex], Hero.moby, 0x10000,
                                                    &Hero.position, &scratch.crateSmash.shove, 1.0f);
-                        }
                     }
                 }
             }
         }
+
         Hero_JumpThrustGrav();
         Hero_UpdateLedge();
         break;
@@ -2350,16 +2575,18 @@ void Hero_DoBehavior(void)
 
         len = FastVec3Length(&Hero.velocity);
         dec = frameTimeSq * 4.0f;
-        if (Hero.framesNotGrounded == 0 && Hero.stateTimer > FastScaleRoundInt(0xA)) {
+
+        if (Hero.framesNotGrounded == 0 && Hero.stateTimer > FastScaleRoundInt(0xA))
             dec = frameTimeSq * 10.0f;
-        }
+
         len -= dec;
-        if (len < 0.0f) {
+
+        if (len < 0.0f)
             len = 0.0f;
-        }
-        if (Hero.onMagnetGround != 0) {
+
+        if (Hero.onMagnetGround != 0)
             Hero_EdgeStop(3.7f, 0.0f);
-        }
+
         FastVec3RSqrtScale(&Hero.velocity, &Hero.velocity, len);
         Hero_AddGravity(&Hero.velocity, &Hero.velocity, 0.004f);
     } break;
@@ -2370,67 +2597,82 @@ void Hero_DoBehavior(void)
         FastSubVec3(&scratch.walk.toTarget, &Hero.targetPose, &Hero.position);
         Hero.idealRotZ = FastArcTan(scratch.walk.toTarget.x, scratch.walk.toTarget.y);
         len = FastVec3Length(&scratch.walk.toTarget);
+
         if (len > 0.2f) {
             Hero.padMagnitude = 1.0f;
             Hero.idealRotZ = FastArcTan(scratch.walk.toTarget.x, scratch.walk.toTarget.y);
             Hero.idealSpeed = len;
-            if (len < HeroJumpSpeeds.minRunSpeed) {
+
+            if (len < HeroJumpSpeeds.minRunSpeed)
                 Hero.idealSpeed = HeroJumpSpeeds.lowStepSpeed * frameTime;
-            } else {
+
+            else
                 Hero.idealSpeed = HeroJumpSpeeds.stepSpeed * frameTime;
-            }
-            if (Hero.type == 3) {
+
+            if (Hero.type == 3)
                 Hero.idealSpeed = frameTime * 1.5f;
-            } else if (Hero.type == HERO_TYPE_CLANK) {
+
+            else if (Hero.type == HERO_TYPE_CLANK)
                 Hero.idealSpeed = frameTime * 0.9f;
-            }
-        } else {
+        }
+
+        else {
             Hero.padMagnitude = 0.5f;
             Hero.idealRotZ = Hero.targetPose.w;
             Hero.idealSpeed = 0.0f;
         }
+
         thrustScale = 1.0f;
-        if (Hero.type == 3) {
+
+        if (Hero.type == 3)
             Hero_Turn(transStepScaleSq * 0.03f, transStepScaleSq * 0.3f, frameTime * 5.5850534f, 0);
-        } else if (Hero.type == HERO_TYPE_CLANK) {
+
+        else if (Hero.type == HERO_TYPE_CLANK)
             Hero_Turn(transStepScaleSq * 0.03f, transStepScaleSq * 0.3f, frameTime * 7.8539815f, 0);
-        } else if (Hero.type == HERO_TYPE_RATCHET) {
-            if (Hero.subState == 1) {
+
+        else if (Hero.type == HERO_TYPE_RATCHET) {
+            if (Hero.subState == 1)
                 Hero_Turn(transStepScaleSq * 0.016f, transStepScaleSq * 0.15f,
                           frameTime * 9.948377f, 0);
-            } else {
+
+            else
                 Hero_TurnWalk();
-            }
         }
-        if (Hero.type == HERO_TYPE_RATCHET) {
+
+        if (Hero.type == HERO_TYPE_RATCHET)
             Hero_SetBankTwistSway();
-        }
+
         Hero_ThrustModeAccel(frameTimeSq * 7.5f * thrustScale, frameTimeSq * 8.5f);
         Hero_ThrustToMotionFwd(99999.0f);
-        if (Hero.type == HERO_TYPE_RATCHET) {
+
+        if (Hero.type == HERO_TYPE_RATCHET)
             Hero_KneeBumpMotion(1);
-        }
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.displacement, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
     } break;
     case HERO_STATE_SKID_TO_POS: {
         FastSubVec3(&scratch.skid.toTarget, &Hero.targetPose, &Hero.position);
-        if (FastVec3Dot(&scratch.skid.toTarget, &Hero.externalMomentum) < 0.0f) {
+
+        if (FastVec3Dot(&scratch.skid.toTarget, &Hero.externalMomentum) < 0.0f)
             FastVecZero(&Hero.externalMomentum);
-        }
+
         FastVecZero(&Hero.velocity);
         Hero_ApplyFriction(frameTimeSq * 12.0f);
         Hero_KneeBumpMotion(0);
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.displacement, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
     } break;
     case HERO_STATE_FIDGET:
     case HERO_STATE_IDLE_TO_POS:
@@ -2446,12 +2688,15 @@ void Hero_DoBehavior(void)
         FastVecZero(&Hero.velocity);
         Hero_ApplyFriction(frameTimeSq * 12.6f);
         Hero_KneeBumpMotion(0);
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
+
         break;
     case HERO_STATE_HOLOGUISE_SLIP:
         Hero.idealRotZ = Hero.groundAngZ;
@@ -2461,13 +2706,15 @@ void Hero_DoBehavior(void)
         break;
     case HERO_STATE_HOLOGUISE_FALLING:
         Hero_GetIdealThrustFromPad(frameTime * 1.5f, 0);
-        if (Hero.moveLockTimer == 0) {
+
+        if (Hero.moveLockTimer == 0)
             Hero_JumpTurnTrans();
-        }
+
         Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 21.0f);
-        if (Hero.velocity.z < frameTime * -15.0f) {
+
+        if (Hero.velocity.z < frameTime * -15.0f)
             Hero.velocity.z = frameTime * -15.0f;
-        }
+
         break;
     case HERO_STATE_HOLOGUISE_WALKING: {
         float yawDifference;
@@ -2476,30 +2723,36 @@ void Hero_DoBehavior(void)
 
         yawDifference = FastDiffRots(Hero.rotation.z, Hero.idealRotZ);
         Hero_GetIdealThrustFromPad(frameTime * 1.5f, 0);
-        if (Hero.idealSpeed < frameTime * 1.5f * 0.55f) {
+
+        if (Hero.idealSpeed < frameTime * 1.5f * 0.55f)
             Hero.idealSpeed = frameTime * 1.5f * 0.55f;
-        }
+
         thrustScale = 1.0f;
         thrustScale -= yawDifference * 0.3f;
         turnScale = Hero.padMagnitude + 0.35f;
-        if (thrustScale < 0.0f) {
+
+        if (thrustScale < 0.0f)
             thrustScale = 0.0f;
-        }
+
         Hero_Turn(transStepScaleSq * 0.035f * turnScale, transStepScaleSq * 0.1f, frameTime * 2.268928f * turnScale,
                   0);
         Hero_ThrustModeAccel(frameTimeSq * 7.5f * thrustScale, frameTimeSq * 8.5f);
-        if (Hero.moveAlongStick != 0 && Hero.onMagnerail == 0) {
+
+        if (Hero.moveAlongStick != 0 && Hero.onMagnerail == 0)
             Hero_ThrustToMotionFwd(Hero.idealRotZ);
-        } else {
+
+        else
             Hero_ThrustToMotionFwd(99999.0f);
-        }
+
         Hero_KneeBumpMotion(1);
+
         if (Hero.framesNotGrounded != 0) {
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocityZ, frameTimeSq * 25.0f);
             Hero_WallSloopMotion();
-        } else {
-            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
         }
+
+        else
+            Hero_AddGravity(&Hero.velocity, &Hero.velocity, frameTimeSq * 54.0f);
     } break;
     case HERO_STATE_HOLOGUISE_DAMAGE: {
         float len;
@@ -2512,23 +2765,24 @@ void Hero_DoBehavior(void)
                                    len,
                                &Hero.velocity, &Hero.velocity);
         Hero.velocity.z = 0.0f;
-        if (Hero.framesNotGrounded != 0) {
+
+        if (Hero.framesNotGrounded != 0)
             Hero_AddGravity(&Hero.velocity, &Hero.resolvedVelocity, frameTimeSq * 24.0f);
-        } else {
+
+        else
             Hero_AddGravity(&Hero.velocity, &Hero.velocity, 0.004f);
-        }
     } break;
     case HERO_STATE_NPC:
     case HERO_STATE_CUSTOM_UI:
         FastVecZero(&Hero.velocity);
         break;
     }
-    if (prevState != Hero.subState) {
+
+    if (prevState != Hero.subState)
         Hero.stepFrames = 0;
-    }
-    if (prevAnim != moby->animationId) {
+
+    if (prevAnim != moby->animationId)
         Hero.animSeqFrames = 0;
-    }
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/hero", Hero_UpdateGroundCollision);
@@ -2670,6 +2924,7 @@ int Hero_InitBodyState(int state, int animMode)
             else
                 Hero_TransAnim(Hero_GetIdleAnim(0), 0, -1.0f);
         }
+
         break;
     }
 
@@ -2689,6 +2944,7 @@ int Hero_InitBodyState(int state, int animMode)
             else
                 Hero_TransAnim(Hero_GetIdleAnim(0), 0, -1.0f);
         }
+
         break;
     }
 
@@ -2703,6 +2959,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (hero->fidgetPropMoby != 0)
                 MB_SetAnimation(hero->fidgetPropMoby, 0, 0, blendFrames);
         }
+
         break;
     }
 
@@ -2715,6 +2972,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_DEATH_FALL, 0, (float)FastScaleRoundInt(0xC));
+
         break;
     }
 
@@ -2729,6 +2987,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(0x7C, 0, (float)FastScaleRoundInt(0xC));
+
         break;
     }
 
@@ -2743,12 +3002,14 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (hero->swimBobVelocity < frameTime * -7.0f)
             hero->swimBobVelocity = frameTime * -7.0f;
+
         hero->itemSelectBlocked = 1;
         hero->swimWaterLevelVelocity = 0;
         hero->swimBobOffset = hero->position.z - hero->swimWaterLevel;
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_FACE_SHOCKED, 0, (float)FastScaleRoundInt(0xB));
+
         break;
     }
 
@@ -2765,7 +3026,6 @@ int Hero_InitBodyState(int state, int animMode)
             hero->subState = 1;
         }
 
-
         else
             hero->swimThrustTimer = FastScaleRoundInt(0x2D);
 
@@ -2780,6 +3040,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (animMode)
                 Hero_TransAnim(HERO_ANIM_SWIM_FORWARD, 0, (float)blendFrames);
         }
+
         break;
     }
 
@@ -2806,6 +3067,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_HYDRO_PACK_SWIM, 0, (float)blendFrames);
+
         break;
     }
 
@@ -2825,6 +3087,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_UNDERWATER_IDLE, 0, (float)blendFrames);
+
         break;
     }
 
@@ -2849,7 +3112,6 @@ int Hero_InitBodyState(int state, int animMode)
                             0.3f);
         }
 
-
         else if (hero->displacement.z < frameTime * -0.5f) {
             int splashCount = FastFloatToInt(FastAbsF(hero->displacement.z) * 300.0f);
 
@@ -2863,6 +3125,7 @@ int Hero_InitBodyState(int state, int animMode)
                             hero->position.y,
                             0.5f,
                             -0.4f);
+
             hero->splashEffectTimer = FastScaleRoundInt(0x4B);
         }
 
@@ -2899,6 +3162,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (hero->swimBobVelocity < frameTime * -7.0f)
                 hero->swimBobVelocity = frameTime * -7.0f;
+
             hero->swimWaterLevel = hero->waterHeight;
             hero->swimWaterLevelVelocity = 0;
             hero->swimBobOffset = hero->position.z - hero->swimWaterLevel - -0.12f;
@@ -2910,6 +3174,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (animMode)
                 Hero_TransAnim(HERO_ANIM_WATER_IDLE, 0, (float)FastScaleRoundInt(0x16));
         }
+
         break;
     }
 
@@ -2917,6 +3182,7 @@ int Hero_InitBodyState(int state, int animMode)
 
     case HERO_STATE_GET_HIT_UNDER: {
         HeroState *hero = &Hero;
+
         COLL_DAM_OUT *damage;
 
         hero->stateType = HERO_STATE_TYPE_HURT;
@@ -2953,6 +3219,7 @@ int Hero_InitBodyState(int state, int animMode)
                 }
             }
         }
+
         break;
     }
 
@@ -2968,6 +3235,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_SWIM_SLIDE, 0, (float)FastScaleRoundInt(0x11));
+
         break;
     }
 
@@ -3010,6 +3278,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (FastScaleRoundInt(TotalPlayTime) / 600 > stats[USAGE_DROWN_FLAIL].latestTimeBucket)
                 stats[USAGE_DROWN_FLAIL].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
+
             stats[USAGE_DROWN_FLAIL].levelMask =
                 stats[USAGE_DROWN_FLAIL].levelMask | (1 << Level) | USAGE_STAT_USED;
         }
@@ -3018,6 +3287,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_DROWNING, 0, (float)FastScaleRoundInt(0xA));
+
         break;
     }
 
@@ -3032,6 +3302,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(0x80, 0, (float)FastScaleRoundInt(0xA));
+
         break;
     }
 
@@ -3049,6 +3320,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (hero->moby->animationId != idleAnimation && animMode)
                 Hero_TransAnim(idleAnimation, 0, (float)FastScaleRoundInt(0x12));
         }
+
         break;
     }
 
@@ -3097,15 +3369,15 @@ int Hero_InitBodyState(int state, int animMode)
         hero->requestedCamType = 0;
 
         if (hero->prevStateType != HERO_STATE_TYPE_JUMP &&
-            hero->prev2StateType != HERO_STATE_TYPE_JUMP) {
+            hero->prev2StateType != HERO_STATE_TYPE_JUMP)
             hero->storedNeutralSpeed = FastVec3Length(&hero->resolvedVelocity.x);
-        }
 
         {
             HeroState *hero = &Hero;
 
             if (frameTime * 7.0f < hero->storedNeutralSpeed)
                 hero->storedNeutralSpeed = frameTime * 7.0f;
+
             hero->sharpTurn = 0;
             Hero_GetIdealThrustFromPad(1.0f, 0);
 
@@ -3138,7 +3410,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->state = HERO_STATE_WADE;
                 Hero_TransAnim(HERO_ANIM_WADE_STRUGGLE, 0, (float)FastScaleRoundInt(8));
             }
-
 
             else {
                 int blendFrames;
@@ -3173,6 +3444,7 @@ int Hero_InitBodyState(int state, int animMode)
                 }
             }
         }
+
         break;
     }
 
@@ -3198,6 +3470,7 @@ int Hero_InitBodyState(int state, int animMode)
                 Hero_TransAnim(
                     hero->subState + 3, HeroSlideAnimFrames[hero->subState], (float)FastScaleRoundInt(8));
         }
+
         break;
     }
 
@@ -3212,6 +3485,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_WATER_SLIDE, 0, (float)FastScaleRoundInt(0xF));
+
         break;
     }
 
@@ -3234,6 +3508,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (Hero_InitBodyState(HERO_STATE_IDLE, 0))
                 Hero_TransAnim(
                     Hero_GetIdleAnim(0), 0, (float)FastScaleRoundInt(0x12));
+
             return 0;
         }
 
@@ -3244,8 +3519,10 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (Hero_GetAnim(moby->updateId) == HERO_ANIM_RUN && 3.0f < frame && frame < 16.0f)
                 animation = 5;
+
             Hero_TransAnim(animation, 4, (float)FastScaleRoundInt(9));
         }
+
         break;
     }
 
@@ -3263,8 +3540,10 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (Hero_GetAnim(moby->updateId) == HERO_ANIM_RUN && 3.0f < frame && frame < 16.0f)
                 animation = 5;
+
             Hero_TransAnim(animation, 4, (float)FastScaleRoundInt(9));
         }
+
         break;
     }
 
@@ -3299,9 +3578,11 @@ int Hero_InitBodyState(int state, int animMode)
 
                 else
                     Hero_TransAnim(HERO_ANIM_CROUCH, 2, (float)FastScaleRoundInt(0xE));
+
                 Hero_SetNextAnimFrame(3, 0x12);
             }
         }
+
         break;
     }
 
@@ -3317,6 +3598,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_GROUND_POUND_DOWN, 0, (float)FastScaleRoundInt(6));
+
         break;
     }
 
@@ -3342,6 +3624,7 @@ int Hero_InitBodyState(int state, int animMode)
             else
                 Hero_TransAnim(HERO_ANIM_LEDGE_GRAB, 1, (float)(FastScaleRoundInt(9) + 2));
         }
+
         break;
     }
 
@@ -3355,6 +3638,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_LEDGE_HANG, 0, (float)FastScaleRoundInt(6));
+
         break;
     }
 
@@ -3367,6 +3651,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_LEDGE_MOVE_RIGHT_HAND, 0, (float)FastScaleRoundInt(6));
+
         break;
     }
 
@@ -3379,6 +3664,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_LEDGE_MOVE_LEFT_HAND, 0, (float)FastScaleRoundInt(6));
+
         break;
     }
 
@@ -3391,6 +3677,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_FALL, 0, (float)FastScaleRoundInt(0xC));
+
         break;
     }
 
@@ -3407,6 +3694,7 @@ int Hero_InitBodyState(int state, int animMode)
         if (hero->state == HERO_STATE_DEATH_FALL) {
             if (hero->type == HERO_TYPE_RATCHET)
                 hero->fallVoiceSlot = Hero_PlaySound(0x17, 0x20);
+
             hero->pivotRotXTarget =
                 MB_randRangeSigned(frameTime * 3.1415927f, frameTime * 4.3633232f);
             hero->fatalFallTumbleTargetY =
@@ -3431,11 +3719,11 @@ int Hero_InitBodyState(int state, int animMode)
                     hero->subState = 1;
                 }
 
-
                 else
                     Hero_TransAnim(HERO_ANIM_FALL_STATIC, 0, (float)FastScaleRoundInt(0xA));
             }
         }
+
         break;
     }
 
@@ -3450,10 +3738,12 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (frameTime * 4.5f < hero->speedXY)
             Hero_ScaleMotion(frameTime * 4.5f / hero->speedXY);
+
         CopyVec4Inline(&hero->velocity, &hero->resolvedVelocity);
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_GLIDE, 0, (float)animation_timing_override);
+
         break;
     }
 
@@ -3467,10 +3757,12 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (frameTime * 4.5f < hero->speedXY)
             Hero_ScaleMotion(frameTime * 4.5f / hero->speedXY);
+
         CopyVec4Inline(&hero->velocity, &hero->displacement);
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_GLIDE, 0, (float)animation_timing_override);
+
         break;
     }
 
@@ -3506,10 +3798,8 @@ int Hero_InitBodyState(int state, int animMode)
         hero->stateType = HERO_STATE_TYPE_JUMP;
 
         if (state >= HERO_STATE_GRIND_JUMP &&
-            state <= HERO_STATE_GRIND_SWITCH_JUMP) {
+            state <= HERO_STATE_GRIND_SWITCH_JUMP)
             hero->requestedCamType = 3;
-        }
-
 
         else
             hero->requestedCamType = 0x50;
@@ -3564,7 +3854,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->fallGravity = hero->jumpGravity * 1.17f;
             }
 
-
             else if (hero->state == HERO_STATE_WATER_JUMP) {
                 hero->jumpHeight = 0.1f;
                 hero->takeoffFrame = FastScaleRoundInt(2);
@@ -3582,7 +3871,6 @@ int Hero_InitBodyState(int state, int animMode)
                     hero->jumpHeightTarget = 1.98f;
                     hero->jumpHeight = 1.95f;
                 }
-
 
                 else {
                     Hero_ToHeroRelative(&hero->velocity, &hero->velocity, 0.0f);
@@ -3603,7 +3891,6 @@ int Hero_InitBodyState(int state, int animMode)
                 }
             }
 
-
             else if (hero->state == HERO_STATE_RUN_JUMP) {
                 hero->jumpHeight = 1.0f;
                 hero->takeoffFrame = FastScaleRoundInt(5);
@@ -3619,7 +3906,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->canChainHighJump = 1;
                 hero->canDoubleJump = 1;
             }
-
 
             else if (hero->state == HERO_STATE_HELI_PACK_FWD_JUMP) {
                 hero->jumpHeight = 1.9f;
@@ -3637,7 +3923,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->fallDelayFrames = FastScaleRoundInt(0x5A);
                 hero->packGlideDelay = FastScaleRoundInt(0x46);
             }
-
 
             else if (hero->state == HERO_STATE_THRUSTER_PACK_FORWARD_JUMP) {
                 MotionBlur *trail = &hero->trail;
@@ -3663,11 +3948,11 @@ int Hero_InitBodyState(int state, int animMode)
 
                 if (1.4f < hero->groundDist)
                     hero->longJumpSpeed = frameTime * 5.7f;
+
                 hero->jumpGravity = frameTimeSq * 8.5f;
                 hero->airSpeedStepUp = frameTimeSq * 44.0f;
                 hero->jumpDecel = frameTimeSq * 50.0f;
             }
-
 
             else if (hero->state == HERO_STATE_LEDGE_JUMP) {
                 hero->jumpHeight = 2.0f;
@@ -3686,7 +3971,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->canChainHighJump = 1;
             }
 
-
             else if (hero->state == HERO_STATE_WALL_JUMP) {
                 hero->jumpHeight = 3.3f;
                 hero->takeoffFrame = FastScaleRoundInt(9);
@@ -3704,7 +3988,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->itemSelectBlocked = 1;
                 hero->canUseItemInJump = 1;
             }
-
 
             else if (hero->state == HERO_STATE_ROCKET_JUMP) {
                 MotionBlur *trail = &hero->trail;
@@ -3733,7 +4016,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->velocityKeys = HeroTrailJumpKeys;
                 hero->canChainHighJump = 1;
             }
-
 
             else if (hero->state == HERO_STATE_HELI_JUMP) {
                 hero->jumpHeight = 1.9f;
@@ -3771,12 +4053,12 @@ int Hero_InitBodyState(int state, int animMode)
                 }
             }
 
-
             else if (hero->state == HERO_STATE_DOUBLE_JUMP) {
                 float jumpHeightBase = 0.7f;
 
                 if (hero->groundDist < 2.0f)
                     jumpHeightBase = (2.5f - hero->groundDist) * 0.5f + 0.7f;
+
                 hero->airCapsuleBottom = 0.6f;
                 hero->apexAnimFrame = 32.0f;
                 hero->targetAnimFrame = 43.0f;
@@ -3790,7 +4072,6 @@ int Hero_InitBodyState(int state, int animMode)
                 hero->airStickSpeed = frameTime * 3.5f;
                 hero->packGlideDelay = FastScaleRoundInt(0x1E);
             }
-
 
             else if (hero->state == HERO_STATE_FLIP_JUMP) {
                 hero->jumpHeight = 3.2f;
@@ -3846,9 +4127,9 @@ int Hero_InitBodyState(int state, int animMode)
 
                     if (Hero_GetAnim(moby->updateId) == HERO_ANIM_RUN)
                         animation = HeroRunJumpAnims[frameIndex];
+
                     Hero_TransAnim(animation, 0, (float)FastScaleRoundInt(5));
                 }
-
 
                 else if (currentState == HERO_STATE_HELI_PACK_FWD_JUMP)
                     Hero_TransAnim(HERO_ANIM_LONG_JUMP_HELI, 0, (float)FastScaleRoundInt(5));
@@ -3860,11 +4141,9 @@ int Hero_InitBodyState(int state, int animMode)
                         hero->takeoffFrame += FastScaleRoundInt(3);
                     }
 
-
                     else
                         Hero_TransAnim(HERO_ANIM_THRUSTER_PACK_FORWARD, 0, (float)FastScaleRoundInt(5));
                 }
-
 
                 else if (currentState == HERO_STATE_LEDGE_JUMP)
                     Hero_TransAnim(HERO_ANIM_LEDGE_PULL_UP, 0, (float)FastScaleRoundInt(4));
@@ -3880,7 +4159,6 @@ int Hero_InitBodyState(int state, int animMode)
                     hero->animSpeed = transStepScale * 0.8f;
                 }
 
-
                 else if (currentState == HERO_STATE_HELI_JUMP)
                     Hero_TransAnim(HERO_ANIM_HIGH_JUMP_HELI, 0, (float)FastScaleRoundInt(5));
 
@@ -3889,6 +4167,7 @@ int Hero_InitBodyState(int state, int animMode)
 
                     if (hero->jumpStickDirection == 2)
                         hero->jumpStickDirection = 0;
+
                     animation = hero->jumpStickDirection + 0x1C;
 
                     if (optMirrorAnim != 0) {
@@ -3907,13 +4186,13 @@ int Hero_InitBodyState(int state, int animMode)
                             hero->takeoffFrame = FastScaleRoundInt(1);
                         }
 
-
                         else
                             Hero_TransAnim(animation, 0, (float)FastScaleRoundInt(5));
                     }
                 }
             }
         }
+
         break;
     }
 
@@ -3943,6 +4222,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (FastScaleRoundInt(TotalPlayTime) / 600 > stats[USAGE_HYPER_STRIKE].latestTimeBucket)
                 stats[USAGE_HYPER_STRIKE].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
+
             stats[USAGE_HYPER_STRIKE].levelMask =
                 stats[USAGE_HYPER_STRIKE].levelMask | (1 << Level) | USAGE_STAT_USED;
             hero = &Hero;
@@ -3959,12 +4239,14 @@ int Hero_InitBodyState(int state, int animMode)
 
                 if (hero->prevState == HERO_STATE_FLIP_JUMP && FastScaleRoundInt(0x2A) > hero->prevStateTimer)
                     blendFrames = FastScaleRoundInt(0x11);
+
                 Hero_TransAnim(HERO_ANIM_HYPERSTRIKE, 4, (float)blendFrames);
                 gadget = Hero_HandGadgetID(0);
 
                 if (Hero_isMobyWrench(gadget))
                     MB_SetAnimation(gadget, 0xA, 4, blendFrames + 2);
             }
+
             break;
         }
 
@@ -3978,6 +4260,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (FastScaleRoundInt(TotalPlayTime) / 600 > stats[USAGE_WRENCH_THROW].latestTimeBucket)
                 stats[USAGE_WRENCH_THROW].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
+
             stats[USAGE_WRENCH_THROW].levelMask =
                 stats[USAGE_WRENCH_THROW].levelMask | (1 << Level) | USAGE_STAT_USED;
             itemUsage = UsageStats;
@@ -3986,9 +4269,8 @@ int Hero_InitBodyState(int state, int animMode)
                 itemUsage[ITEM_COUNT].count = itemUsage[ITEM_COUNT].count + 1;
 
             if (FastScaleRoundInt(TotalPlayTime) / 600 >
-                itemUsage[ITEM_COUNT].latestTimeBucket) {
+                itemUsage[ITEM_COUNT].latestTimeBucket)
                 itemUsage[ITEM_COUNT].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
-            }
 
             itemUsage[ITEM_COUNT].levelMask =
                 itemUsage[ITEM_COUNT].levelMask | (1 << Level) | USAGE_STAT_USED;
@@ -4006,9 +4288,11 @@ int Hero_InitBodyState(int state, int animMode)
 
                 if (hero->prevState == HERO_STATE_LOOK)
                     blendFrames = FastScaleRoundInt(0x11);
+
                 Hero_TransAnim(HERO_ANIM_WRENCH_THROW, 0, (float)blendFrames);
                 Hero_SetNextAnimFrame(6, 0x15);
             }
+
             break;
         }
 
@@ -4017,6 +4301,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (hero->items[0].moby == 0)
                 break;
+
             if (animMode) {
                 Hero_TransAnim(HERO_ANIM_WALLOPER_PUNCH, 4, -1.0f);
                 MB_SetAnimation(hero->items[0].moby, 3, 4, -1);
@@ -4037,6 +4322,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (FastScaleRoundInt(TotalPlayTime) / 600 > stats[ITEM_WRENCH].latestTimeBucket)
                 stats[ITEM_WRENCH].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
+
             hero = &Hero;
             stats[ITEM_WRENCH].levelMask =
                 stats[ITEM_WRENCH].levelMask | (1 << Level) | USAGE_STAT_USED;
@@ -4045,9 +4331,8 @@ int Hero_InitBodyState(int state, int animMode)
             comboKind = 0;
 
             if (hero->prevStateType == HERO_STATE_TYPE_ATTACK && attack->comboEnds == 0 &&
-                hero->animFrame < (float)attack->chainBeforeFrame) {
+                hero->animFrame < (float)attack->chainBeforeFrame)
                 comboKind = (attack->kind + 1) % 3;
-            }
 
             {
                 HeroState *hero = &Hero;
@@ -4070,7 +4355,6 @@ int Hero_InitBodyState(int state, int animMode)
                     blendFrames = FastScaleRoundInt(7);
                 }
 
-
                 else {
                     animOffset = 4;
                     blendFrames = FastScaleRoundInt(7);
@@ -4092,6 +4376,7 @@ int Hero_InitBodyState(int state, int animMode)
                 if (Hero_isMobyWrench(gadget))
                     MB_SetAnimation(gadget, comboKind + 3, animOffset, blendFrames);
             }
+
             break;
         }
 
@@ -4100,6 +4385,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (animMode)
                 Hero_TransAnim(HERO_ANIM_THROW, 7, (float)FastScaleRoundInt(9));
+
             hero = &Hero;
 
             if (hero->items[0].itemId == 0xA && hero->throwTarget != 0) {
@@ -4108,9 +4394,11 @@ int Hero_InitBodyState(int state, int animMode)
                     FastArcTan(hero->throwTarget->pos.x - hero->position.x,
                                hero->throwTarget->pos.y - hero->position.y);
             }
+
             break;
         }
         }
+
         break;
     }
 
@@ -4129,6 +4417,7 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (attack->comboEnds == 1)
                 comboKind = 2;
+
             blendFrames = FastScaleRoundInt(5);
             Hero_TransAnim(comboKind + HERO_ANIM_BONK_0, 5, (float)blendFrames);
             gadget = Hero_HandGadgetID(0);
@@ -4136,6 +4425,7 @@ int Hero_InitBodyState(int state, int animMode)
             if (Hero_isMobyWrench(gadget))
                 MB_SetAnimation(gadget, comboKind + 7, 5, blendFrames);
         }
+
         break;
     }
 
@@ -4149,11 +4439,13 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_BONK_2, 5, (float)FastScaleRoundInt(8));
+
         break;
     }
 
     case HERO_STATE_GET_HIT: {
         HeroState *hero = &Hero;
+
         COLL_DAM_OUT *damage;
 
         hero->stateType = HERO_STATE_TYPE_HURT;
@@ -4181,6 +4473,7 @@ int Hero_InitBodyState(int state, int animMode)
                     HeroAnimBlendCurves[hero->animBlendCurve][(hero->animBlendStep)++];
             }
         }
+
         break;
     }
 
@@ -4192,6 +4485,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_IDLE, 0, (float)FastScaleRoundInt(0xE));
+
         break;
     }
 
@@ -4205,6 +4499,7 @@ int Hero_InitBodyState(int state, int animMode)
             Hero_TransAnim(HERO_ANIM_RUN, 0, (float)FastScaleRoundInt(7));
             Hero_SetNextAnimFrame(0xE, 0x22);
         }
+
         break;
     }
 
@@ -4217,6 +4512,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_SKID_LEFT, 0, (float)FastScaleRoundInt(0xC));
+
         break;
     }
 
@@ -4231,6 +4527,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_SKID_LEFT, 0, (float)FastScaleRoundInt(7));
+
         break;
     }
 
@@ -4247,11 +4544,13 @@ int Hero_InitBodyState(int state, int animMode)
 
             if (frameTime * 1.5f < planarSpeed)
                 hero->storedNeutralSpeed = frameTime * 1.5f;
+
             hero->moveAlongStick = 0;
 
             if (animMode)
                 Hero_TransAnim(HERO_ANIM_LOOK_RIGHT, 0, (float)FastScaleRoundInt(8));
         }
+
         break;
     }
 
@@ -4264,6 +4563,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_WALK, 0, (float)FastScaleRoundInt(0xC));
+
         break;
     }
 
@@ -4283,6 +4583,7 @@ int Hero_InitBodyState(int state, int animMode)
             hero->moby->animationBlend =
                 HeroAnimBlendCurves[hero->animBlendCurve][(hero->animBlendStep)++];
         }
+
         break;
     }
 
@@ -4294,11 +4595,13 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (hero->railOffFrames == 0)
             TakeDamage(1);
+
         hero->postHitInvinc = FastScaleRoundInt(0x4D);
         hero->grindRecoverySpeed = frameTime * 2.5f;
 
         if (frameTime * 2.5f < hero->grindBaseSpeed)
             hero->grindBaseSpeed = frameTime * 2.5f;
+
         hero->grindSpeedBoost = 0;
         FastVecZero(&hero->velocity);
         FastVecZero(&hero->displacement);
@@ -4306,6 +4609,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_HIT, 2, -3.0f);
+
         break;
     }
 
@@ -4326,9 +4630,9 @@ int Hero_InitBodyState(int state, int animMode)
         hero->stateType = HERO_STATE_TYPE_IDLE;
 
         if (Hero_GetAnim(hero->moby->animationId) !=
-            Hero_GetIdleAnim(1)) {
+            Hero_GetIdleAnim(1))
             Hero_TransAnim(Hero_GetIdleAnim(1), 0, (float)FastScaleRoundInt(5));
-        }
+
         break;
     }
 
@@ -4372,6 +4676,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(Hero_GetIdleAnim(0), 0, -1.0f);
+
         break;
     }
 
@@ -4386,6 +4691,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(HERO_ANIM_FALL, 0, -1.0f);
+
         break;
     }
 
@@ -4403,6 +4709,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (Hero_isMobyWrench(gadget))
             MB_SetAnimation(gadget, 0xB, 2, blendFrames + FastScaleRoundInt(5));
+
         break;
     }
 
@@ -4417,6 +4724,7 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (animMode)
             Hero_TransAnim(Hero_GetIdleAnim(0), 0, -1.0f);
+
         break;
     }
     }
@@ -4439,9 +4747,8 @@ int Hero_InitBodyState(int state, int animMode)
         HeroState *hero = &Hero;
 
         if (hero->stateType != HERO_STATE_TYPE_GRIND && hero->items[1].itemId == 0x1D &&
-            hero->savedItem[1] != 0) {
+            hero->savedItem[1] != 0)
             hero->restoreItem[1] = 1;
-        }
     }
 
     if (Hero_IsInSpecialMovementState() == 0) {
@@ -4461,11 +4768,13 @@ int Hero_InitBodyState(int state, int animMode)
 
         if (hero->stateType != hero->prevStateType)
             Hero_KillLoopingSounds();
+
         hero->stateTimer = 0;
         hero->stepFrames = 0;
 
         if (hero->stateType != hero->prevStateType)
             hero->controlModeTimer = 0;
+
         hero->animSeqFrames = 0;
     }
 
@@ -4593,9 +4902,8 @@ void Hero_Transitions(void)
 
     if (Hero_HandleDamage(1) == 0) {
         if (Hero.health <= 0 && Hero.stateType != HERO_STATE_TYPE_DYING &&
-            (Hero.state == HERO_STATE_IDLE || Hero.state == HERO_STATE_WALK)) {
+            (Hero.state == HERO_STATE_IDLE || Hero.state == HERO_STATE_WALK))
             Hero_InitBodyState(HERO_STATE_DEATH, 1);
-        }
 
         else if (Hero_GadgetTransitions() == 0 && Hero_SwimSurfTransition() == 0 &&
                  Hero_UnderwaterTransitions() == 0 && Hero_IdleCycleFiringTransition() == 0) {
@@ -4614,6 +4922,7 @@ void Hero_Transitions(void)
 
                     else
                         Hero.itemSelectorTimer = FastScaleRoundInt(0xF);
+
                     RegisterHUDCallback(3, 0, QuickSelectHud_Init, UpdateQuickSelect, Draw_QuickSelectHud, 0,
                                         0);
                     hudHandle = Hero_RegisterHealthHud();
@@ -4649,10 +4958,9 @@ void Hero_Transitions(void)
                             ActionUsageStats[31].count++;
 
                         if (FastScaleRoundInt(TotalPlayTime) / 600 >
-                            ActionUsageStats[31].latestTimeBucket) {
+                            ActionUsageStats[31].latestTimeBucket)
                             ActionUsageStats[31].latestTimeBucket =
                                 FastScaleRoundInt(TotalPlayTime) / 600;
-                        }
 
                         ActionUsageStats[31].levelMask = ActionUsageStats[31].levelMask |
                                                           (1 << Level) | 0x80000000;
@@ -4664,9 +4972,8 @@ void Hero_Transitions(void)
             }
 
             if (HeroDeathHeight > Hero.position.z && Hero.groundDist > 2.0f &&
-                Hero.type != HERO_TYPE_GIANT_CLANK && Hero.state != HERO_STATE_DEATH_FALL) {
+                Hero.type != HERO_TYPE_GIANT_CLANK && Hero.state != HERO_STATE_DEATH_FALL)
                 Hero_InitBodyState(HERO_STATE_DEATH_FALL, 1);
-            }
 
             else {
                 switch (Hero.state) {
@@ -4694,9 +5001,8 @@ void Hero_Transitions(void)
 
                         if (Hero_GetGadgetMoby(0) == ITEM_METAL_DETECTOR) {
                             if (Hero.moby->animationId !=
-                                Hero_GetIdleAnim(0)) {
+                                Hero_GetIdleAnim(0))
                                 Hero_TransAnim(Hero_GetIdleAnim(0), 0, -2.0f);
-                            }
 
                             canFidget = 0;
                         }
@@ -4706,6 +5012,7 @@ void Hero_Transitions(void)
 
                             if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(7));
+
                             backpackMoby = Hero.items[3].moby2;
 
                             if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
@@ -4718,6 +5025,7 @@ void Hero_Transitions(void)
 
                             if (backpackMoby != 0 && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(0xC));
+
                             backpackMoby = Hero.items[3].moby2;
 
                             if (backpackMoby != 0 && backpackMoby->animationId != 1)
@@ -4749,9 +5057,8 @@ void Hero_Transitions(void)
 
                             if (Hero.itemAnimActive != 0 && Hero.weaponUp != 0) {
                                 if (Hero.moby->animationId == Hero.itemHoldAnim ||
-                                    Hero.heldItemAnimMoby[0] != 0) {
+                                    Hero.heldItemAnimMoby[0] != 0)
                                     keepHoldAnimation = 1;
-                                }
                             }
 
                             if (!keepHoldAnimation) {
@@ -4795,6 +5102,7 @@ void Hero_Transitions(void)
                             if (Hero.moby->animationId != gadgetAnimation) {
                                 if (Hero.heldItemAnimMoby[0] != 0)
                                     Hero.armLayerFade = 1;
+
                                 Hero.itemHoldAnim = gadgetAnimation;
                                 Hero_TransAnim(Hero.itemHoldAnim, 0, FastScaleRoundInt(0xB));
                             }
@@ -4817,6 +5125,7 @@ void Hero_Transitions(void)
 
                             if (FastScaleRoundInt(0xF) > Hero.stateTimer)
                                 break;
+
                             Hero_InitBodyState(HERO_STATE_FALL, 1);
                             break;
                         }
@@ -4824,6 +5133,7 @@ void Hero_Transitions(void)
 
                     if (Hero.moveLockTimer != 0)
                         break;
+
                     {
                         int holdAllowed = 1;
 
@@ -4869,9 +5179,8 @@ void Hero_Transitions(void)
                                 Hero_GetIdealThrustFromPad(1.0f, 0);
 
                                 if (FastDiffRots(
-                                        Hero.idealRotZ, HeroYawReference[0]) > 1.2217305f) {
+                                        Hero.idealRotZ, HeroYawReference[0]) > 1.2217305f)
                                     walkAllowed = 0;
-                                }
                             }
                         }
 
@@ -4886,6 +5195,7 @@ void Hero_Transitions(void)
                             Hero_InitBodyState(HERO_STATE_WALK, 1);
                         }
                     }
+
                     break;
 
                 case HERO_STATE_FIDGET:
@@ -4920,6 +5230,7 @@ void Hero_Transitions(void)
                         Hero_CleanupAttachedMobys();
                         Hero_InitBodyState(HERO_STATE_IDLE, 1);
                     }
+
                     break;
 
                 case HERO_STATE_FIDGET_ALT:
@@ -4933,6 +5244,7 @@ void Hero_Transitions(void)
 
                         if (Hero_JumpCheckHeld(FastScaleRoundInt(7), 0))
                             break;
+
                         if (padState.bits & (PAD_R2 | PAD_R1)) {
                             Hero_InitBodyState(HERO_STATE_CROUCH, 1);
                             break;
@@ -4947,6 +5259,7 @@ void Hero_Transitions(void)
 
                         Hero_InitBodyState(HERO_STATE_IDLE, 1);
                     }
+
                     break;
 
                 case HERO_STATE_DEATH:
@@ -4960,6 +5273,7 @@ void Hero_Transitions(void)
                         HandleHeroDeath();
                         return;
                     }
+
                     break;
 
                 case HERO_STATE_ICEWATER_FREEZE:
@@ -4967,6 +5281,7 @@ void Hero_Transitions(void)
                         HandleHeroDeath();
                         return;
                     }
+
                     break;
 
                 case HERO_STATE_SWIMUNDER:
@@ -5007,9 +5322,9 @@ void Hero_Transitions(void)
 
                     if (Hero.state == HERO_STATE_CHARGEUNDER && !(padState.bits & (PAD_CROSS | PAD_SQUARE)) &&
                         Hero.subState != 1 && Hero.padMagnitude < 0.7f &&
-                        !(padState.bits & (PAD_R2 | PAD_R1))) {
+                        !(padState.bits & (PAD_R2 | PAD_R1)))
                         Hero_InitBodyState(HERO_STATE_IDLEUNDER, 1);
-                    }
+
                     break;
 
                 case HERO_STATE_IDLEUNDER:
@@ -5027,6 +5342,7 @@ void Hero_Transitions(void)
 
                         Hero_InitBodyState(HERO_STATE_SWIMUNDER, 1);
                     }
+
                     break;
 
                 case HERO_STATE_IDLESURF:
@@ -5065,6 +5381,7 @@ void Hero_Transitions(void)
                         if (FastScaleRoundInt(0xA) < Hero.stateTimer)
                             Hero_InitBodyState(HERO_STATE_SWIMSURF, 1);
                     }
+
                     break;
 
                 case HERO_STATE_SWIMSURF:
@@ -5095,9 +5412,9 @@ void Hero_Transitions(void)
                     }
 
                     if (0.1f > Hero.padMagnitude && Hero.storedNeutralSpeed == 0.0f &&
-                        Hero.swimStrokeTimer == 0) {
+                        Hero.swimStrokeTimer == 0)
                         Hero_InitBodyState(HERO_STATE_IDLESURF, 1);
-                    }
+
                     break;
 
                 case HERO_STATE_GET_HIT_UNDER:
@@ -5120,6 +5437,7 @@ void Hero_Transitions(void)
 
                     if (FastScaleRoundInt(0x32) < Hero.stateTimer)
                         Hero_InitBodyState(HERO_STATE_IDLEUNDER, 0);
+
                     break;
 
                 case HERO_STATE_GET_HIT_SURF:
@@ -5131,6 +5449,7 @@ void Hero_Transitions(void)
 
                     if (FastScaleRoundInt(0x32) < Hero.stateTimer)
                         Hero_InitBodyState(HERO_STATE_IDLESURF, 0);
+
                     break;
 
                 case HERO_STATE_LOOK:
@@ -5159,6 +5478,7 @@ void Hero_Transitions(void)
 
                         if (padState.bits & (PAD_L2 | PAD_L1))
                             break;
+
                         if (!idleAllowed)
                             break;
                     }
@@ -5181,21 +5501,26 @@ void Hero_Transitions(void)
                         if (Hero.moby->animationId != idleAnimation)
                             Hero_TransAnim(idleAnimation, 0, FastScaleRoundInt(8));
                     }
+
                     break;
 
                 case HERO_STATE_ITEM_BUTTON_RELEASE_WAIT:
                     if (padState.bits & Hero.items[0].buttonMask)
                         break;
+
                     if (Hero.idleReturnDelay != 0)
                         break;
+
                     Hero_InitBodyState(HERO_STATE_IDLE, 1);
                     break;
 
                 case HERO_STATE_WAIT_FOR_ITEM_RELEASE_THEN_IDLE:
                     if (padState.bits & Hero.items[0].buttonMask)
                         break;
+
                     if (Hero.idleReturnDelay != 0)
                         break;
+
                     if (Hero.moby->animationId == 0x36) {
                         Hero_InitBodyState(HERO_STATE_IDLE, 0);
                         break;
@@ -5284,12 +5609,14 @@ void Hero_Transitions(void)
                             Hero.nextAnimationFrame = 0x1A;
                         }
                     }
+
                     break;
 
                 case HERO_STATE_UNK_BONK:
                 case HERO_STATE_JUMP_BOUNCE:
                     if (Hero.animFlags & 2)
                         Hero_InitBodyState(HERO_STATE_IDLE, 1);
+
                     break;
 
                 case HERO_STATE_WALK:
@@ -5297,9 +5624,8 @@ void Hero_Transitions(void)
                 case HERO_STATE_WADE:
                 case 126:
                     if (Hero.runStartBlending != 0 &&
-                        (moby->animationBlend > 0.9f || moby->updateId != 0xFF)) {
+                        (moby->animationBlend > 0.9f || moby->updateId != 0xFF))
                         Hero.runStartBlending = 0;
-                    }
 
                     if (Hero.onSlipGround != 0 && Hero.framesOffGround == 0) {
                         Hero_InitBodyState(HERO_STATE_SLOPESLIDE, 1);
@@ -5329,6 +5655,7 @@ void Hero_Transitions(void)
 
                                 if (Hero_JumpCheckHeld(jumpBufferFrames, 1))
                                     break;
+
                                 if (Hero.subState <= 0) {
                                     Hero_InitBodyState(HERO_STATE_JUMP, 1);
                                     break;
@@ -5351,6 +5678,7 @@ void Hero_Transitions(void)
 
                     if (Hero.framesNotGrounded != 0)
                         break;
+
                     if (Hero.onIceGround == 0 || (frameTime * 2.0f > Hero.flatSpeed &&
                                                     Hero.groundSlope < 0.08726646f)) {
                         if (padState.bits & (PAD_L2 | PAD_L1)) {
@@ -5388,6 +5716,7 @@ void Hero_Transitions(void)
                                     PadRingAng(4) < 0.8f) {
                                     if (Hero_InitBodyState(HERO_STATE_SKID, 0) == 0)
                                         break;
+
                                     if (Hero_GetIdleAnim(0) == 0x54)
                                         Hero_TransAnim(Hero_GetIdleAnim(0),
                                                            0,
@@ -5395,6 +5724,7 @@ void Hero_Transitions(void)
 
                                     else
                                         Hero_TransAnim(HERO_ANIM_SLIDE, 7, FastScaleRoundInt(9));
+
                                     break;
                                 }
 
@@ -5404,16 +5734,20 @@ void Hero_Transitions(void)
 
                             if (!(Hero.stateTimer > FastScaleRoundInt(0x19)))
                                 break;
+
                             if (Hero_CheckGadgetReady())
                                 break;
+
                             if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                                 break;
+
                             if (Hero_GetIdleAnim(0) == 0x54)
                                 Hero_TransAnim(
                                     Hero_GetIdleAnim(0), 0, FastScaleRoundInt(0x12));
 
                             else
                                 Hero_TransAnim(Hero_GetIdleAnim(0), 0, -1.0f);
+
                             break;
                         }
 
@@ -5439,6 +5773,7 @@ void Hero_Transitions(void)
                         if (Hero.animSpeed > 1.05f)
                             Hero.animSpeed = 1.05f;
                     }
+
                     break;
 
                 case HERO_STATE_WALK_TO_POS:
@@ -5452,9 +5787,9 @@ void Hero_Transitions(void)
                         }
 
                         if (Hero.type != HERO_TYPE_RATCHET &&
-                            frameTime * 2.7f <= Hero.speedXY) {
+                            frameTime * 2.7f <= Hero.speedXY)
                             Hero_InitBodyState(HERO_STATE_SKID_TO_POS, 1);
-                        }
+
                         break;
                     }
 
@@ -5464,6 +5799,7 @@ void Hero_Transitions(void)
                 case HERO_STATE_SKID_TO_POS:
                     if (Hero.animFlags & 2)
                         Hero_InitBodyState(HERO_STATE_WALK_TO_POS, 1);
+
                     break;
 
                 case HERO_STATE_IDLE_TO_POS:
@@ -5472,26 +5808,29 @@ void Hero_Transitions(void)
 
                     if (0.2f < FastVec3DistLen(&Hero.position, &Hero.targetPose))
                         Hero_InitBodyState(HERO_STATE_WALK_TO_POS, 1);
+
                     break;
 
                 case HERO_STATE_SLIDE:
                     if (Hero.selector4 != 0)
                         break;
+
                     if (Hero.sinkingFloorHold != 0)
                         break;
+
                     if (Hero.loopSounds[2] != -1) {
                         SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[2]];
 
                         if (voiceRow[1].pMoby == Hero.moby &&
-                            voiceRow[1].inUse != 0) {
+                            voiceRow[1].inUse != 0)
                             sound_KillChannel(Hero.loopSounds[2]);
-                        }
                     }
 
                     Hero.loopSounds[2] = -1;
 
                     if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                         break;
+
                     Hero_TransAnim(
                         Hero_GetIdleAnim(0), 0, FastScaleRoundInt(0x11));
                     CopyVec4Inline(&Hero.externalMomentum, &Hero.frameMove);
@@ -5527,6 +5866,7 @@ void Hero_Transitions(void)
 
                     if (!(Hero.padMagnitude > 0.2f))
                         break;
+
                     if (Hero_GetIdleAnim(0) != 0x54) {
                         if (Hero.storedNeutralSpeed == 0.0f) {
                             Hero_InitBodyState(HERO_STATE_IDLE, 0);
@@ -5542,6 +5882,7 @@ void Hero_Transitions(void)
 
                     if (0.5f < Hero.padMagnitude)
                         Hero_InitBodyState(HERO_STATE_WALK, 1);
+
                     break;
 
                 case HERO_STATE_CROUCH:
@@ -5571,6 +5912,7 @@ void Hero_Transitions(void)
 
                     else if (Hero_CrouchJumpTransitions())
                         break;
+
                     if (PadRingBitsOn(PAD_SQUARE, FastScaleRoundInt(0xF), 0)) {
                         if (Hero.items[0].itemId == 8)
                             Hero_InitBodyState(HERO_STATE_THROW_ATTACK, 1);
@@ -5584,8 +5926,10 @@ void Hero_Transitions(void)
 
                         if (FastScaleRoundInt(0xF) > Hero.stateTimer)
                             break;
+
                         Hero_InitBodyState(HERO_STATE_FALL, 1);
                     }
+
                     break;
 
                 case HERO_STATE_ROCKET_STOMP:
@@ -5594,9 +5938,8 @@ void Hero_Transitions(void)
                          (Hero.prevState != HERO_STATE_LAND && Hero.prevState != HERO_STATE_FALL)) &&
                         Hero.prevState != HERO_STATE_HELI_JUMP && Hero.prevState != HERO_STATE_HELI_PACK_FWD_JUMP &&
                         Hero.prevState != HERO_STATE_THRUSTER_PACK_FORWARD_JUMP && Hero.prevState != HERO_STATE_WATER_JUMP &&
-                        Hero.prevState != HERO_STATE_TAKING_DAMAGE_LAVA && (padState.bitsOn & PAD_CROSS)) {
+                        Hero.prevState != HERO_STATE_TAKING_DAMAGE_LAVA && (padState.bitsOn & PAD_CROSS))
                         Hero_InitBodyState(HERO_STATE_THRUSTER_PACK_FORWARD_JUMP, 1);
-                    }
 
                     {
                         int riseFallInterceptFrames =
@@ -5608,6 +5951,7 @@ void Hero_Transitions(void)
                             riseFallInterceptFrames != 0) {
                             if (riseFallInterceptFrames == 2)
                                 FastScaleRoundInt(0xA);
+
                             Hero_GetAnimFrameBlend(
                                 Hero.riseFallTargetFrame,
                                 Hero.predictedLandFrames,
@@ -5621,16 +5965,19 @@ void Hero_Transitions(void)
 
                     if (Hero.animFlags & 2)
                         Hero_InitBodyState(HERO_STATE_IDLE, 1);
+
                     break;
 
                 case HERO_STATE_LEDGE_GRAB:
                     if (13.5f < Hero.animFrame)
                         Hero_InitBodyState(HERO_STATE_LEDGE_IDLE, 0);
+
                     break;
 
                 case HERO_STATE_LEDGE_IDLE:
                     if ((Hero.animFlags & 2) && Hero.moby->animationId == 0x20)
                         Hero_TransAnim(HERO_ANIM_LEDGE_HANG, 0, FastScaleRoundInt(6));
+
                     Hero_GetIdealThrustFromPad(1.0f, 0);
                     CopyVec4Inline(&ledgeProbePosition, &Hero.position);
                     ledgeHoldProbeYaw = Hero.rotation.z;
@@ -5668,9 +6015,9 @@ void Hero_Transitions(void)
                         positiveShimmyProbeYaw = Hero.rotation.z;
 
                         if (Hero_CheckLedgeAhead(&shimmyEntryProbePosition,
-                                                  &positiveShimmyProbeYaw)) {
+                                                  &positiveShimmyProbeYaw))
                             Hero_InitBodyState(HERO_STATE_LEDGE_TRAVERSE_LEFT, 1);
-                        }
+
                         break;
                     }
 
@@ -5686,10 +6033,10 @@ void Hero_Transitions(void)
                         negativeShimmyProbeYaw = Hero.rotation.z;
 
                         if (Hero_CheckLedgeAhead(&shimmyEntryProbePosition,
-                                                  &negativeShimmyProbeYaw)) {
+                                                  &negativeShimmyProbeYaw))
                             Hero_InitBodyState(HERO_STATE_LEDGE_TRAVERSE_RIGHT, 1);
-                        }
                     }
+
                     break;
 
                 case HERO_STATE_LEDGE_TRAVERSE_LEFT:
@@ -5702,6 +6049,7 @@ void Hero_Transitions(void)
 
                     if (Hero.state == HERO_STATE_LEDGE_TRAVERSE_RIGHT)
                         shimmyYawOffset = -1.5707964f;
+
                     ledgeProbePosition.x +=
                         FastAngleSinF(FastAddRots(Hero.rotation.z, shimmyYawOffset)) *
                         0.3f;
@@ -5736,6 +6084,7 @@ void Hero_Transitions(void)
 
                     if (PadRingBitsOn(PAD_CROSS, FastScaleRoundInt(9), 0))
                         Hero_InitBodyState(HERO_STATE_LEDGE_JUMP, 1);
+
                     break;
 
                 case HERO_STATE_SLOPESLIDE:
@@ -5744,6 +6093,7 @@ void Hero_Transitions(void)
 
                     if (Hero.onSlipGround != 0)
                         break;
+
                     if (Hero.framesNotGrounded != 0) {
                         Hero_InitBodyState(HERO_STATE_FALL, 1);
                         break;
@@ -5795,6 +6145,7 @@ void Hero_Transitions(void)
 
                             if (landedOffMoby)
                                 Hero.moveLockTimer = FastScaleRoundInt(0x16);
+
                             Hero_SetTiltWobbleParams(0.022f, 0.004f, 0xA, 4, 0, 1);
                             break;
                         }
@@ -5802,6 +6153,7 @@ void Hero_Transitions(void)
                         if (Hero.subState == heavyLandSubState) {
                             if (Hero_InitBodyState(HERO_STATE_IDLE, 0))
                                 Hero_TransAnim(HERO_ANIM_LAND, 9, -1.0f);
+
                             Hero_ToHeroRelative(&Hero.externalMomentum, &Hero.externalMomentum, 0.0f);
                             ClampVec3Magnitude(&Hero.externalMomentum, frameTime * 7.0f);
                             Hero.moveLockTimer = FastScaleRoundInt(7);
@@ -5827,6 +6179,7 @@ void Hero_Transitions(void)
                         if (frameTime * 3.0f < Hero.flatSpeed) {
                             if (Hero_InitBodyState(HERO_STATE_SKID, 0) == 0)
                                 break;
+
                             Hero_TransAnim(HERO_ANIM_SKID_LEFT, 0, FastScaleRoundInt(0xC));
                             ClampVec3Magnitude(&Hero.externalMomentum, frameTime * 7.7f);
                             break;
@@ -5839,6 +6192,7 @@ void Hero_Transitions(void)
 
                     if (Hero.health <= 0)
                         break;
+
                     if ((padState.bits & PAD_CROSS) && UnlockableItems[ITEM_HELI_PACK] != 0 &&
                         Hero_GetGadgetMoby(3) != ITEM_HYDRO_PACK && Hero.hasClank == 0 &&
                         Hero.moveLockTimer == 0 && Hero.groundDist > 0.6f) {
@@ -5871,6 +6225,7 @@ void Hero_Transitions(void)
 
                     if (Hero.ledgeFound != 0)
                         Hero_InitBodyState(HERO_STATE_LEDGE_GRAB, 1);
+
                     break;
 
                 case HERO_STATE_DEATH_FALL:
@@ -5884,6 +6239,7 @@ void Hero_Transitions(void)
                         HandleHeroDeath();
                         return;
                     }
+
                     break;
 
                 case HERO_STATE_ROCKET_HOVER:
@@ -5909,6 +6265,7 @@ void Hero_Transitions(void)
 
                         if (!(Hero.stateTimer > FastScaleRoundInt(0x14)))
                             break;
+
                         if (!(padState.bitsOn & PAD_CROSS) && !r1Repeated)
                             break;
                     }
@@ -5919,6 +6276,7 @@ void Hero_Transitions(void)
                     if (Hero.framesNotGrounded != 0) {
                         if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                             break;
+
                         Hero_TransAnim(HERO_ANIM_JUMP, 0x17, FastScaleRoundInt(9));
                         Hero_SetTiltWobbleParams(0.016f, 0.002f, 5, 2, 0, 1);
                         break;
@@ -5926,6 +6284,7 @@ void Hero_Transitions(void)
 
                     if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                         break;
+
                     Hero_TransAnim(Hero_GetIdleAnim(0), 0, -2.0f);
                     Hero_SetTiltWobbleParams(0.016f, 0.002f, 5, 2, 0, 1);
                     break;
@@ -5936,12 +6295,12 @@ void Hero_Transitions(void)
                             int wasAirborne = 0;
 
                             if (Hero.prevState == HERO_STATE_JUMP || Hero.prevState == HERO_STATE_RUN_JUMP ||
-                                Hero.prevState == HERO_STATE_DOUBLE_JUMP || Hero.prevState == HERO_STATE_WALL_JUMP) {
+                                Hero.prevState == HERO_STATE_DOUBLE_JUMP || Hero.prevState == HERO_STATE_WALL_JUMP)
                                 wasAirborne = 1;
-                            }
 
                             if (wasAirborne)
                                 Hero_InitBodyState(HERO_STATE_WALL_JUMP, 1);
+
                             break;
                         }
                     }
@@ -5959,17 +6318,18 @@ void Hero_Transitions(void)
                     }
 
                     if (Hero.framesNotGrounded != 0 &&
-                        !(Hero.position.z - Hero.groundHeight < 0.4f)) {
+                        !(Hero.position.z - Hero.groundHeight < 0.4f))
                         break;
-                    }
 
                     if (FastScaleRoundInt(0xA) > Hero.stateTimer)
                         Hero.jumpBufferLockout = FastScaleRoundInt(0xC) - Hero.stateTimer;
+
                     Hero_GetIdealThrustFromPad(1.0f, 0);
 
                     if (Hero.prevState == HERO_STATE_THRUSTER_PACK_FORWARD_JUMP && FastScaleRoundInt(4) > Hero.stateTimer) {
                         if (Hero_InitBodyState(HERO_STATE_SKID, 0) == 0)
                             break;
+
                         Hero_TransAnim(HERO_ANIM_SKID_RIGHT, 0, -1.0f);
                         Hero.moveLockTimer = FastScaleRoundInt(0x22);
                         break;
@@ -6021,6 +6381,7 @@ void Hero_Transitions(void)
                     if (Hero.framesNotGrounded == 0) {
                         if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                             break;
+
                         Hero_TransAnim(Hero_GetIdleAnim(0), 0, -2.0f);
                         Hero_SetTiltWobbleParams(0.016f, 0.002f, 5, 2, 0, 1);
                         break;
@@ -6028,6 +6389,7 @@ void Hero_Transitions(void)
 
                     if (Hero_InitBodyState(HERO_STATE_IDLE, 0) == 0)
                         break;
+
                     Hero_TransAnim(HERO_ANIM_JUMP, 0x17, FastScaleRoundInt(9));
                     Hero_SetTiltWobbleParams(0.016f, 0.002f, 5, 2, 0, 1);
                     break;
@@ -6097,9 +6459,8 @@ void Hero_Transitions(void)
                         Hero.state != HERO_STATE_DOUBLE_JUMP && Hero.state != HERO_STATE_QUICKSAND_JUMP) {
                         if (Hero_GetGadgetMoby(3) == ITEM_HELI_PACK && UnlockableItems[ITEM_HELI_PACK] != 0 &&
                             Hero.hasClank == 0 &&
-                            frameTime * 0.9f < Hero.forwardSpeed) {
+                            frameTime * 0.9f < Hero.forwardSpeed)
                             Hero_InitBodyState(HERO_STATE_HELI_PACK_FWD_JUMP, 1);
-                        }
 
                         else if (Hero_GetGadgetMoby(3) == ITEM_THRUSTER_PACK && Hero.hasClank == 0 &&
                                    frameTime * 0.9f < Hero.forwardSpeed &&
@@ -6118,8 +6479,10 @@ void Hero_Transitions(void)
                         if (PadRingBitsOn(PAD_R2 | PAD_R1, FastScaleRoundInt(9), 0)) {
                             if (Hero_GetGadgetMoby(3) != ITEM_THRUSTER_PACK)
                                 break;
+
                             if (Hero.hasClank != 0)
                                 break;
+
                             Hero_InitBodyState(HERO_STATE_ROCKET_STOMP, 1);
                             break;
                         }
@@ -6158,6 +6521,7 @@ void Hero_Transitions(void)
 
                         if (!(Hero.stateTimer > Hero.takeoffFrame))
                             break;
+
                         if (Hero.stateTimer == Hero.takeoffFrame + 1) {
                             if (Hero.velocityKeysActive != 0) {
                                 float framesToKeyStart = Hero.velocityKeysStartFrame - Hero.stateTimer;
@@ -6168,11 +6532,13 @@ void Hero_Transitions(void)
                                         framesToKeyStart,
                                         Hero.jumpAnimRetimeScale,
                                         -1.0f);
+
                                 break;
                             }
 
                             if (Hero.state == HERO_STATE_DOUBLE_JUMP)
                                 break;
+
                             Hero_GetJumpPeak(&Hero.position,
                                                       &Hero.velocity,
                                                       &predictedSteps,
@@ -6185,6 +6551,7 @@ void Hero_Transitions(void)
 
                             if (1.5f < Hero.animSpeed)
                                 Hero.animSpeed = 1.5f;
+
                             break;
                         }
 
@@ -6196,6 +6563,7 @@ void Hero_Transitions(void)
                             if (0.0f < framesToApexAnim)
                                 Hero_GetAnimFrameBlend(
                                     Hero.apexAnimFrame, framesToApexAnim, Hero.jumpAnimRetimeScale, -1.0f);
+
                             break;
                         }
 
@@ -6270,15 +6638,15 @@ void Hero_Transitions(void)
 
                                 if ((float)FastScaleRoundInt(0xA) < landBlendFrames)
                                     landBlendFrames = FastScaleRoundInt(0xA);
+
                                 Hero_TransAnim(
                                     7, (FastFloatToInt(Hero.animFrame) + 4) / 2, landBlendFrames);
                                 Hero.state = HERO_STATE_JUMP;
                             }
 
                             if (FastFloatToInt(Hero.animFrame) ==
-                                FastFloatToInt(Hero.targetAnimFrame)) {
+                                FastFloatToInt(Hero.targetAnimFrame))
                                 Hero.animSpeed = 0.0f;
-                            }
                         }
                     }
 
@@ -6286,6 +6654,7 @@ void Hero_Transitions(void)
                         if (Hero.state == HERO_STATE_HELI_PACK_FWD_JUMP) {
                             if (Hero_InitBodyState(HERO_STATE_SKID, 0) == 0)
                                 break;
+
                             Hero_TransAnim(HERO_ANIM_SKID_RIGHT, 0, -2.0f);
                             FastVec3Scale(&Hero.externalMomentum, &Hero.externalMomentum, 0.8f);
                             break;
@@ -6312,9 +6681,8 @@ void Hero_Transitions(void)
                     }
 
                     if (Hero.dustHoverState > FastScaleRoundInt(1) &&
-                        Hero.state != HERO_STATE_HELI_PACK_FWD_JUMP) {
+                        Hero.state != HERO_STATE_HELI_PACK_FWD_JUMP)
                         Hero_JumpLandTransitions();
-                    }
 
                     else if (Hero.pastJumpApex != 0 &&
                                !(Hero.fallDelayFrames > Hero.stateTimer) &&
@@ -6333,9 +6701,8 @@ void Hero_Transitions(void)
 
                         if (Hero.state == HERO_STATE_JUMP ||
                             Hero.state == HERO_STATE_RUN_JUMP ||
-                            Hero.state == HERO_STATE_WALL_JUMP) {
+                            Hero.state == HERO_STATE_WALL_JUMP)
                             inJumpState = 1;
-                        }
 
                         if (Hero.wallJumpOk != 0 && Hero.dustHoverState == 0 && inJumpState) {
                             if (Hero.state != HERO_STATE_WALL_JUMP ||
@@ -6358,9 +6725,8 @@ void Hero_Transitions(void)
                     if (Hero.state == HERO_STATE_HELI_PACK_FWD_JUMP ||
                         Hero.state == HERO_STATE_THRUSTER_PACK_FORWARD_JUMP) {
                         if (FastScaleRoundInt(0x19) < Hero.stateTimer &&
-                            Hero.onFlaggedGroundMoby != 0) {
+                            Hero.onFlaggedGroundMoby != 0)
                             Hero.packGlideDelay = FastScaleRoundInt(0x14);
-                        }
                     }
 
                     {
@@ -6375,6 +6741,7 @@ void Hero_Transitions(void)
                         if (Hero.state == HERO_STATE_DOUBLE_JUMP && Hero.groundDist > 4.0f) {
                             if (Hero.pastJumpApex == 0 && Hero.animSpeed < 1.3f)
                                 Delt(Hero.animSpeed, 1.3f, transStepScale * 0.1f);
+
                             jumpPackDelay = FastScaleRoundInt(0x11);
                             Hero.packGlideDelay = jumpPackDelay;
                         }
@@ -6400,9 +6767,8 @@ void Hero_Transitions(void)
                                     (Hero.pastJumpApex == 0 ||
                                      (Hero.groundDist > 0.7f &&
                                       FastAbsF(Hero_RelativeZComponent(&Hero.velocity)) <
-                                          frameTime * 5.8f))) {
+                                          frameTime * 5.8f)))
                                     Hero_InitBodyState(HERO_STATE_DOUBLE_JUMP, 1);
-                                }
 
                                 else if (UnlockableItems[ITEM_HELI_PACK] != 0 && Hero_GetGadgetMoby(3) != ITEM_HYDRO_PACK &&
                                            Hero.hasClank == 0 &&
@@ -6412,9 +6778,8 @@ void Hero_Transitions(void)
                                     float maxGroundDistance = 0.6f;
 
                                     if (Hero.state == HERO_STATE_RUN_JUMP ||
-                                        Hero.state == HERO_STATE_JUMP) {
+                                        Hero.state == HERO_STATE_JUMP)
                                         maxGroundDistance = 1.0f;
-                                    }
 
                                     if (Hero.state == HERO_STATE_DOUBLE_JUMP)
                                         maxGroundDistance = 1.5f;
@@ -6428,6 +6793,7 @@ void Hero_Transitions(void)
 
                     if (Hero.ledgeFound != 0 && Hero.state != HERO_STATE_FLIP_JUMP)
                         Hero_InitBodyState(HERO_STATE_LEDGE_GRAB, 1);
+
                     break;
 
                 case HERO_STATE_GET_HIT:
@@ -6450,6 +6816,7 @@ void Hero_Transitions(void)
 
                         Hero_InitBodyState(HERO_STATE_IDLE, 0);
                     }
+
                     break;
 
                 case HERO_STATE_HOLOGUISE_STANDING:
@@ -6491,6 +6858,7 @@ void Hero_Transitions(void)
 
                     if (Hero.padMagnitude > 0.22f && Hero.idealSpeed > 0.0f)
                         Hero_InitBodyState(HERO_STATE_HOLOGUISE_WALKING, 1);
+
                     break;
 
                 case HERO_STATE_HOLOGUISE_SLIP:
@@ -6499,6 +6867,7 @@ void Hero_Transitions(void)
 
                     if (Hero.onSlipGround != 0)
                         break;
+
                     if (Hero.framesNotGrounded != 0) {
                         Hero_InitBodyState(HERO_STATE_HOLOGUISE_FALLING, 1);
                         break;
@@ -6513,11 +6882,13 @@ void Hero_Transitions(void)
                         Hero_InitBodyState(HERO_STATE_HOLOGUISE_STANDING, 0);
                         Hero_TransAnim(HERO_ANIM_IDLE, 0, FastScaleRoundInt(0x14));
                     }
+
                     break;
 
                 case HERO_STATE_HOLOGUISE_FALLING:
                     if (Hero.framesNotGrounded != 0)
                         break;
+
                     if (frameTime * -9.0f > Hero.displacement.z)
                         Hero.displacement.z = frameTime * -9.0f;
 
@@ -6569,6 +6940,7 @@ void Hero_Transitions(void)
 
                     if (Hero.framesNotGrounded == 0 && Hero.padMagnitude < 0.17f)
                         Hero_InitBodyState(HERO_STATE_HOLOGUISE_STANDING, 1);
+
                     break;
 
                 case HERO_STATE_HOLOGUISE_DAMAGE:
@@ -6591,6 +6963,7 @@ void Hero_Transitions(void)
 
                         Hero_InitBodyState(HERO_STATE_HOLOGUISE_STANDING, 0);
                     }
+
                     break;
 
                 case HERO_STATE_WEAPON_FIRST_PERSON_VIEW:
@@ -6612,6 +6985,7 @@ void Hero_Transitions(void)
 
                     if (padState.bits & (PAD_L2 | PAD_L1))
                         break;
+
                     if (Hero.state == HERO_STATE_WEAPON_FIRST_PERSON_VIEW) {
                         int idleAnimation;
 
@@ -6627,9 +7001,9 @@ void Hero_Transitions(void)
 
                 case HERO_STATE_WALLOPER_ATTACK:
                     if (Hero.items[0].moby != 0 && Hero.animChanging == 0 &&
-                        Hero.animFrame > 20.0f) {
+                        Hero.animFrame > 20.0f)
                         Hero_InitBodyState(HERO_STATE_IDLE, 0);
-                    }
+
                     break;
 
                 case HERO_STATE_THROWING_ITEM:
@@ -6646,6 +7020,7 @@ void Hero_Transitions(void)
 
                     if (21.0f <= Hero.animFrame)
                         Hero_InitBodyState(HERO_STATE_IDLE, 0);
+
                     break;
                 }
             }
@@ -6656,9 +7031,8 @@ void Hero_Transitions(void)
         Hero_KillLoopingSounds();
 
     if ((Hero.prevState == HERO_STATE_FIDGET && Hero.state != HERO_STATE_FIDGET_ALT) ||
-        (Hero.prevState == HERO_STATE_FIDGET_ALT && Hero.fidgetPropMoby != 0)) {
+        (Hero.prevState == HERO_STATE_FIDGET_ALT && Hero.fidgetPropMoby != 0))
         Hero_CleanupAttachedMobys();
-    }
 
     if (previousSubState != Hero.subState)
         Hero.stepFrames = 0;
