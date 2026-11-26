@@ -32,6 +32,7 @@
 #include "stash.h"
 #include "initlevel.h"
 #include "mathfunc_inline.h"
+#include "gsregs.h"
 #include "sce.h"
 #include "fastfunc.h"
 
@@ -3332,7 +3333,7 @@ void LoadMobyModel(int oClass, int slot)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", QueuePifLoad);
+
 
 #define PIF_LOAD_QUEUE_SIZE 64
 
@@ -3349,6 +3350,49 @@ struct PifLoad {
 
 extern int GifLoadCnt;
 extern PifLoad GifLoads[];
+
+unsigned long QueuePifLoad(PifHeader *pif)
+{
+    PifParser parsed;
+
+    parsed.pClut = pif + 1;
+    parsed.cSize = 0x400;
+    parsed.uLog = FastLog2(pif->uSize);
+    parsed.vLog = FastLog2(pif->vSize);
+
+    parsed.pTex[0] = (char *)(pif + 1) + parsed.cSize;
+    int address = GSloc;
+    int clutBlock = address >> 8;
+    address += 0x400;
+    int textureBlock = address >> 8;
+    GSloc = address + (1 << (parsed.uLog + parsed.vLog));
+
+    int tbw = parsed.uLog - 6;
+    if (tbw < 0)
+        tbw = 0;
+    tbw = 1 << tbw;
+
+    GsTex0 textureRegister;
+    textureRegister.bits = (unsigned long)textureBlock | ((unsigned long)tbw << 14) |
+        ((unsigned long)GS_PSMT8 << 20) | ((unsigned long)parsed.uLog << 26);
+    textureRegister.bits = textureRegister.bits | ((unsigned long)parsed.vLog << 30) |
+        ((unsigned long)1 << 34) | ((unsigned long)clutBlock << 37);
+    unsigned long tex0 = textureRegister.bits | ((unsigned long)4 << 61);
+
+    if (GifLoadCnt < PIF_LOAD_QUEUE_SIZE) {
+        GifLoads[GifLoadCnt].clut = (char *)parsed.pClut;
+        GifLoads[GifLoadCnt].clutBlock = clutBlock;
+        GifLoads[GifLoadCnt].clutFormat = 0;
+        GifLoads[GifLoadCnt].tex = (char *)parsed.pTex[0];
+        GifLoads[GifLoadCnt].uLog = parsed.uLog;
+        GifLoads[GifLoadCnt].vLog = parsed.vLog;
+        GifLoads[GifLoadCnt].texBlock = textureBlock;
+        GifLoadCnt++;
+    }
+    return tex0;
+}
+
+
 
 // Queues an 8-bit texture and its clut for upload and returns the TEX0 register value that
 // will address it.
