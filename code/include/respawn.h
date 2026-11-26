@@ -36,4 +36,8 @@ extern BoltSourceStats BoltSources[][64];
 
 int FindOrAssignBoltSourceSlot(int level, int uid);
 
+// One bit per moby uid: set at the checkpoint, and per level for every checkpoint reached.
+extern int CheckpointBits[64];
+extern int LevelCheckpointBits[][64];
+
 #endif

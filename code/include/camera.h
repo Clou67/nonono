@@ -221,4 +221,7 @@ void FUN_0030f600(UpdateCam *camera, void *work);
 
 void BackupCurrentCam(void);
 
+void InitCameras(void);
+void UpdateCameras(void);
+
 #endif

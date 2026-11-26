@@ -7,10 +7,14 @@
 // A tie instance (field names from the PS3 project, PS2 offsets).
 struct TieInstance {
     BSphere bSphere;
-    char unk10[0xB];
+    struct TieMatrix *matrix;
+    float drawDist;
+    // The occlusion id from the gameplay file, then its occlusion bit as (byte << 8) | mask.
+    unsigned short occlIndex;
+    unsigned char tieClass;
     // Set when no point light is left on it.
     char dir_lights_upd;
-    char unk1C[2];
+    unsigned short dirLights;
     // Four 4-bit point light slots, 0xF is empty.
     unsigned short point_lights;
 };
@@ -27,9 +31,15 @@ struct TieDraw {
     unsigned char pad_34[0x1C];
 };
 
+// One entry of a tie class's packet list (offset relocated by ParseTieClass).
+struct TiePacket {
+    int offset;
+    char pad_04[0xC];
+};
+
 // A tie class (RC1 layout; DL's TieClass differs).
 struct TieClass {
-    void *packets[3];
+    TiePacket *packets[3];
     int vert_norms;
     unsigned char pad_10[0x10];
     unsigned char packet_cnt[3];
@@ -50,7 +60,18 @@ struct TieClass {
 #define TIE_GS_LOC_MAX 256
 #define TIE_CLASS_HIDDEN 8
 
+// A tie instance's transform (w of the rows: inverse row lengths, then the class scale),
+// followed by its vertex colours.
+struct TieMatrix {
+    Mtx4 mtx;
+    char unk40[0x100];
+    char colors[0x80];
+};
+
 extern TieInstance *TieInstances;
+extern TieMatrix *TieMatrices;
+extern int TieCnt;
+extern float TieDrawDist;
 extern TieInstance *TieInstanceEnd;
 
 extern int TieClassIndex;

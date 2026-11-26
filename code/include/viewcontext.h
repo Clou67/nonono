@@ -46,13 +46,11 @@ struct ViewContext {
     int scis_l;
     int scis_r;
     int scis_t;
-    int scis_b;
-    int fogR;
-    int fogG;
-    int fogB;
+    // The level's background colour, from the gameplay file.
     int backR;
     int backG;
     int backB;
+    int unk_248[5];
     int splitScreenMode;
 };
 

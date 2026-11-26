@@ -1,4 +1,5 @@
 #include "common.h"
+#include "debug.h"
 #include "draw.h"
 #include "framebuf.h"
 #include "gameglobals.h"
@@ -26,27 +27,12 @@ struct PauseMenuState {
     int hideActivityIcon;
 };
 
-// Debug switches set up for each level (DL's debug globals).
-struct DebugSettings {
-    char unk_00[0x8];
-    int update;
-    int selectedCol;
-    char unk_10[0x8];
-    int profile;
-    char unk_1C[0x14];
-    int tvMode;
-    char unk_34[0x4];
-    int scene;
-    char unk_3C[0xB8];
-    int actuator;
-};
 
 extern char bss_start[];
 extern char bss_end[];
 extern LevelRecord LevelRecords[];
 extern unsigned char g_MiscLevelFlags[] __attribute__((section(".data")));
 extern PauseMenuState PauseMenu;
-extern DebugSettings Debug;
 extern int g_newlevel;
 extern int FramesSinceStateChange;
 extern float FrameLoad;
@@ -60,7 +46,7 @@ extern "C" void snd_UnkFunction_0012eb00(void);
 
 void Stash_InitOnce(void);
 void InitLevel(void);
-int InitLevelFromWad(int firstLoad, int reload); // result unused, but the int return changes register choice
+int InitLevelFromWad(int full, int keep);
 void map_LoadPlanetMap(void);
 void hud_InitBanks(void);
 void LoadHudSeqs(void);

@@ -14,15 +14,6 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/hud", Hud_ClearBank);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/hud", Hud_UploadBankIcons);
 
-enum { HUD_HEAP_SIZE = 0x64000 };
-struct HudStateData {
-    char unk_00[0x10];
-    unsigned char *heapCursor;
-    unsigned char *heapEnd;
-    char unk18[4];
-    HudIconTableEntry *icons;
-};
-extern HudStateData HudState;
 
 void HudHeap_Reset(void)
 {

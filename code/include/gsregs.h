@@ -1,6 +1,25 @@
 #ifndef GSREGS_H
 #define GSREGS_H
 
+// TEX0 texture descriptor, exposed as a register word or individual GS fields.
+union GsTex0 {
+    unsigned long bits;
+    struct {
+        unsigned long tbp0 : 14;
+        unsigned long tbw : 6;
+        unsigned long psm : 6;
+        unsigned long tw : 4;
+        unsigned long th : 4;
+        unsigned long tcc : 1;
+        unsigned long tfx : 2;
+        unsigned long cbp : 14;
+        unsigned long cpsm : 4;
+        unsigned long csm : 1;
+        unsigned long csa : 5;
+        unsigned long cld : 3;
+    } fields;
+};
+
 // GS register addresses written through packets (A+D).
 #define GS_REG_CLAMP_1 0x08
 #define GS_REG_ALPHA_1 0x42

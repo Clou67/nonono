@@ -18,7 +18,7 @@ struct StashInfo {
 struct StashBlock {
     int address;
     int qwords;
-    int comment;
+    char *comment;
     int padding;
 };
 
@@ -68,7 +68,7 @@ void Stash_InitOnce(void)
     }
 }
 
-int Stash_SendData(void *source, int transferQwords, int reserveQwords, int comment)
+int Stash_SendData(void *source, int transferQwords, int reserveQwords, char *comment)
 {
     StashInfo *state = &StashState;
     int reserveBytes = reserveQwords * STASH_QWORD_BYTES;

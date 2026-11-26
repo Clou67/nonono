@@ -49,6 +49,8 @@ struct MusicTransition {
 
 extern MusicTransition musicTransition;
 
+int music_LoadBankFromEE(void *buffer, int sector, int sectorCount);
+
 void music_Sync(int wait);
 void music_Pause(int includeSpeech);
 void music_Unpause(void);

@@ -2,6 +2,7 @@
 #include "vuchain.h"
 #include "fastfunc.h"
 #include "moby.h"
+#include "mobyutil.h"
 #include "hero.h"
 #include "draw.h"
 #include "sce.h"
@@ -37,7 +38,6 @@ void UpdateNumSpawnableMobys(void)
 
 extern unsigned char *mobyVars;
 
-extern MobyClass *MobyClasses[];
 extern void *MobyClassUpdate[];
 
 void InitMobyInstance(MobyInstance *moby, int oClass);
@@ -718,18 +718,6 @@ void DmaMobyTextures(void)
     start->vif1 = 0;
 }
 
-typedef struct {
-    unsigned int mip_tex;
-    unsigned char pad_04[0x2C];
-    unsigned int base_tex;
-    unsigned char pad_34[0xC];
-} MobyDraw;
-
-struct MobyGifUsage {
-    unsigned char stash[12];
-    MobyDraw *draws;
-};
-
 extern int MobyClassRectify[];
 extern GsTextureLoc MobyGsLocStash[256];
 
@@ -943,7 +931,7 @@ void DrawMobys(void)
     DrawMobysCleanup();
 }
 
-void SetMobyLights(MobyInstance *moby, long long dirIdx, unsigned long long colorIdx, long a, long b);
+
 
 typedef struct EnvSample {
     Vec4 pos;
@@ -1039,10 +1027,10 @@ int MobySdata15FFF4 = 0;
 int MobyTexMarker = 0;
 int MobyShadowCnt = 0;
 Vu1ChainCursor MobyVu1ShadowMarker = { 0 };
-int MobySdata160004 = 0;
-int MobySdata160008 = 0;
-int MobySdata16000C = 0;
-int MobySdata160010 = 0;
+int savedLevelSoundBank = 0;
+int MobyRefCnt = 0;
+int MobyRefCurrent = 0;
+int MobyRefBuffer = 0;
 int EnvSampleCnt = 0;
 int MobySdata160018 = 0;
 int MobySdata16001C = 0;

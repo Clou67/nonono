@@ -9,6 +9,7 @@ void *memset(void *destination, int value, unsigned int count);
 char *strcpy(char *destination, const char *source);
 char *strstr(const char *string, const char *search);
 int sprintf(char *buffer, const char *format, ...);
+void srand(unsigned int seed);
 }
 
 #endif

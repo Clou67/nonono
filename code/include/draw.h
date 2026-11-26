@@ -101,4 +101,34 @@ void SetupDefaultDrawMovie(int black);
 
 void ResetLevelCounters(void);
 
+
+// A full-screen colour wash; DrawScreenInsertEffect sets the alpha register from alphaReg and fills the screen.
+struct ScreenInsertEffect {
+    int enabled;
+    unsigned int color;
+    unsigned long alphaReg;
+};
+
+// The colour washes the level starts with (space levels get their own).
+extern ScreenInsertEffect ScreenColorEffectDefault __attribute__((section(".data")));
+extern ScreenInsertEffect ScreenColorEffectSpace __attribute__((section(".data")));
+extern ScreenInsertEffect *ScreenColorEffectNow;
+extern ScreenInsertEffect *volatile ScreenColorEffectLevel;
+
+void ResetDrawGlobals(void);
+void UpdateFog(void);
+// 1 switches the frame timing to PAL, 0 to NTSC.
+void SetNtscPalTiming(int pal);
+
+// The level's fog colour, distances and intensities, from the gameplay file.
+extern unsigned char DrawSdata15F444;
+extern unsigned char DrawSdata15F445;
+extern unsigned char DrawSdata15F446;
+extern float DrawSdata15F448;
+extern float DrawSdata15F44C;
+extern float DrawSdata15F450;
+extern float DrawSdata15F454;
+// The occlusion grid of the level, if it has one.
+extern char *OcclGrid;
+
 #endif

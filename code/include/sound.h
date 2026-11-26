@@ -3,7 +3,12 @@
 
 void snd_PauseAllSoundsInGroup(int group);
 void snd_ContinueAllSoundsInGroup(int group);
-void snd_FlushSoundCommands(void);
+int snd_FlushSoundCommands(void);
+void snd_StopAllSounds(void);
+void snd_UnloadBank(int bank);
+void snd_ResolveBankXREFS(void);
+typedef void (*SndCompleteProc)(unsigned int result, unsigned long userData);
+void snd_BankLoadFromEE_CB(void *eeLocation, SndCompleteProc callback, unsigned long userData);
 void snd_SetMasterVolume(int group, int volume);
 
 // Sound system state (only the fields known so far).
@@ -38,6 +43,16 @@ struct SoundVoice {
     unsigned char unk_1C[0x54];
 };
 
+// An ambient sound placed in the level (PS3 names).
+struct SoundInstance {
+    short oClass;
+    short mClass;
+    void *pUpdate;
+    // An index into the gameplay file's pVar table until the level is loaded.
+    int pVar;
+    char unk_0C[0x84];
+};
+
 struct SoundAudioState {
     unsigned char unk_00[0x48];
     int group_volume[6];
@@ -49,10 +64,13 @@ struct SoundAudioState {
     unsigned char reverb_commands;
     int pending_commands;
     SoundVoice voices[30];
+    int soundInstanceCnt;               // 0xD90
+    SoundInstance *soundInstances;      // 0xD94
 };
 
 extern SoundAudioState audioState;
 char sound_Update(void);
+void sound_SetupAmbientFunctions(SoundInstance *sound);
 int sound_LevelPlay(int entry, int flags, int owner);
 
 int sound_SetVol(int handle, int volume);

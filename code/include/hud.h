@@ -96,4 +96,39 @@ void HudEntry_SetIcon(HudEntry *entry, unsigned int id);
 
 void HudEntry_Restore(HudEntry *entry);
 
+// Header of the loaded HUD image; only the fields known so far.
+// Header of the level's HUD data, followed by the tables its offsets point to.
+struct HudBankHeader {
+    int unk_00;
+    int icons;                // 0x04: offsets from the header
+    int frameRefs;            // 0x08
+    int palettePages;         // 0x0C
+    int imagePages;           // 0x10
+    char unk_14[0x40];
+    int hasBank0;             // 0x54: banks 0, 2, 3 and 4 are sent to the IOP stash
+    int bank1Size;            // 0x58: bank 1 lives in the HUD heap
+    int hasBank2;             // 0x5C
+    int hasBank3;             // 0x60
+    int hasBank4;             // 0x64
+    char unk_68[0xC];
+    void *bankData[6];        // 0x74: cleared by LoadCompressedHudBank
+    char unk_8C[0x8];
+    int bankStash[5];         // 0x94: stash slots of the sent banks
+};
+
+enum { HUD_HEAP_SIZE = 0x64000 };
+struct HudStateData {
+    char unk_00[0x10];
+    unsigned char *heapCursor;
+    unsigned char *heapEnd;
+    HudBankHeader *header;
+    HudIconTableEntry *icons;   // 0x1C
+    void *frameRefs;            // 0x20
+    void *imagePages;           // 0x24
+    void *palettePages;         // 0x28
+    char unk_2C[0xC];
+    int bankSizes[5];           // 0x38: of the level WAD's HUD banks, rounded up to 0x40
+};
+extern HudStateData HudState;
+
 #endif
