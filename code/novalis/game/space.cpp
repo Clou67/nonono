@@ -8,6 +8,7 @@
 #include "lights.h"
 #include "loaders.h"
 #include "mathfunc_inline.h"
+#include "mobyclasses.h"
 #include "mobyutil.h"
 #include "music.h"
 #include "pad.h"
@@ -230,7 +231,7 @@ void UpdateSpace(void)
             for (objectCursor = MobyInstancePermEnd; objectCursor->state != 0xFF;
                  objectCursor++) {
                 if (!(objectCursor->state & 0x80) &&
-                    ((short)objectCursor->oClass == 0x4A || (short)objectCursor->oClass == 0xCB))
+                    ((short)objectCursor->oClass == OCLASS_MINE_74 || (short)objectCursor->oClass == OCLASS_DECOY))
                     objectCursor->modeBits &= ~0x80;
             }
 
@@ -318,7 +319,7 @@ void UpdateSpace(void)
             playbackObject->unk71 = 0xFF;
             PostUpdateMoby(playbackObject);
 
-            if ((short)playbackObject->oClass == 0) {
+            if ((short)playbackObject->oClass == OCLASS_RATCHET) {
                 if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
                     if (Level == LEVEL_ORXON && UnlockableItems[ITEM_O2_MASK] == 0)
                         playbackObject->shadow = 0;
@@ -342,7 +343,7 @@ void UpdateSpace(void)
                     playbackObject->shadow = 0;
             }
 
-            else if ((short)playbackObject->oClass == 10) {
+            else if ((short)playbackObject->oClass == OCLASS_CLANK_10) {
                 if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
                     if (SceneLoad.sceneFrame <= FastScaleRoundInt(350))
                         playbackObject->shadow = 0x18;
@@ -361,16 +362,16 @@ void UpdateSpace(void)
             if (playbackObject->shadow != 0)
                 MB_SetZBoundsFromFloorCeil(playbackObject);
 
-            if ((short)playbackObject->oClass == 10)
+            if ((short)playbackObject->oClass == OCLASS_CLANK_10)
                 Hero_AddPulsingMobyGlow(playbackObject);
 
-            if ((short)playbackObject->oClass == 0) {
+            if ((short)playbackObject->oClass == OCLASS_RATCHET) {
                 Hero_UpdateInScene(playbackObject);
 
                 if ((Level == LEVEL_ORXON && UnlockableItems[ITEM_O2_MASK] != 0) ||
                     Level == LEVEL_GEMLIK) {
                     if (bootSpaceTransitionState.o2Mask == 0) {
-                        bootSpaceTransitionState.o2Mask = CreateMoby(0x509);
+                        bootSpaceTransitionState.o2Mask = CreateMoby(OCLASS_O2_MASK);
                         bootSpaceTransitionState.o2Mask->drawDistance = 0x40;
                         bootSpaceTransitionState.o2Mask->modeBits |= 0x806;
                         bootSpaceTransitionState.o2Mask->lights = playbackObject->lights;
@@ -383,7 +384,7 @@ void UpdateSpace(void)
                 }
             }
 
-            if ((unsigned short)(short)playbackObject->oClass - 0x213U < 3) {
+            if ((unsigned short)(short)playbackObject->oClass - OCLASS_GREEN_SHIP_531 < 3U) {
                 RegisterPreDraw(Space_DrawTransitionOverlay, playbackObject);
                 RegisterMobyDraw(Space_DrawLoadingBanner, playbackObject);
 
@@ -395,7 +396,7 @@ void UpdateSpace(void)
                                   80.0f) +
                             120;
 
-                        if ((short)playbackObject->oClass == 0x215)
+                        if ((short)playbackObject->oClass == OCLASS_PURPLE_SHIP_533)
                             playbackObject->glowRgba = (colorIntensity >> 1) |
                                                         (colorIntensity << 8) |
                                                         (colorIntensity << 16);
@@ -413,7 +414,7 @@ void UpdateSpace(void)
                         if (colorIntensity >= 256)
                             colorIntensity = 255;
 
-                        if ((short)playbackObject->oClass == 0x215)
+                        if ((short)playbackObject->oClass == OCLASS_PURPLE_SHIP_533)
                             playbackObject->glowRgba =
                                 (colorIntensity << 8) | (colorIntensity << 16);
 
@@ -461,7 +462,7 @@ void UpdateSpace(void)
                               80.0f) +
                         120;
 
-                    if ((short)playbackObject->oClass == 0x215)
+                    if ((short)playbackObject->oClass == OCLASS_PURPLE_SHIP_533)
                         playbackObject->glowRgba = (colorIntensity >> 1) |
                                                     (colorIntensity << 8) |
                                                     (colorIntensity << 16);
@@ -491,7 +492,7 @@ void UpdateSpace(void)
                         (int)((FastScaleBySpeed(360.0f) - (float)SceneLoad.sceneFrame) *
                               (transStepScale * 1.25f));
 
-                    if ((short)playbackObject->oClass == 0x215)
+                    if ((short)playbackObject->oClass == OCLASS_PURPLE_SHIP_533)
                         playbackObject->glowRgba =
                             (colorIntensity << 8) | (colorIntensity << 16);
 
@@ -507,7 +508,7 @@ void UpdateSpace(void)
                               80.0f) +
                         120;
 
-                    if ((short)playbackObject->oClass == 0x215)
+                    if ((short)playbackObject->oClass == OCLASS_PURPLE_SHIP_533)
                         playbackObject->glowRgba = (colorIntensity >> 1) |
                                                     (colorIntensity << 8) |
                                                     (colorIntensity << 16);
@@ -552,13 +553,13 @@ void UpdateSpace(void)
             bootSpaceTransitionState.spaceship->collision = 0;
 
             if (bootSpaceTransitionState.shipSplinePath >= 0) {
-                bootSpaceTransitionState.riderRatchet = CreateMoby(0);
+                bootSpaceTransitionState.riderRatchet = CreateMoby(OCLASS_RATCHET);
                 bootSpaceTransitionState.riderRatchet->drawDistance = 0x1FF;
                 bootSpaceTransitionState.riderRatchet->lodTransition = 0xFF;
                 bootSpaceTransitionState.riderRatchet->collision = 0;
                 bootSpaceTransitionState.riderRatchet->modeBits |= 6;
                 bootSpaceTransitionState.riderRatchet->lights = Hero.moby->lights;
-                bootSpaceTransitionState.riderClank = CreateMoby(10);
+                bootSpaceTransitionState.riderClank = CreateMoby(OCLASS_CLANK_10);
                 bootSpaceTransitionState.riderClank->drawDistance = 0x1FF;
                 bootSpaceTransitionState.riderClank->lodTransition = 0xFF;
                 bootSpaceTransitionState.riderClank->collision = 0;

@@ -2,6 +2,7 @@
 #include "mathfunc_inline.h"
 #include "draw.h"
 #include "npc.h"
+#include "mobyclasses.h"
 #include "mobyutil.h"
 #include "fastfunc.h"
 #include "hero.h"
@@ -936,7 +937,7 @@ void Hero_DoBehavior(void)
         if (Hero.sinkEffectMoby == 0) {
             MobyInstance *itemMoby;
 
-            itemMoby = CreateMoby(0x52A);
+            itemMoby = CreateMoby(OCLASS_ICE_CUBE);
             Hero.sinkEffectMoby = itemMoby;
 
             if (Hero.sinkEffectMoby != 0) {
