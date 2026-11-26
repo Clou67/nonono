@@ -851,11 +851,11 @@ char *ResetLevelData(int reload)
             for (int index = 0; index < BlenderCnt; index++) {
                 Blender *blender = &Blenders[index];
 
-                if (blender->lightA < 0)
-                    blender->lightA = BLENDER_LIGHT_DEFAULT;
+                if (blender->dLightA < 0)
+                    blender->dLightA = BLENDER_LIGHT_DEFAULT;
 
-                if (blender->lightB < 0)
-                    blender->lightB = BLENDER_LIGHT_DEFAULT;
+                if (blender->dLightB < 0)
+                    blender->dLightB = BLENDER_LIGHT_DEFAULT;
             }
         }
     }

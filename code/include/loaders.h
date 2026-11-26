@@ -257,11 +257,25 @@ struct GrindPath {
 };
 
 // A colour blend region (PS3 Blender); its two light indices default to 11.
+// A lighting/fog blend volume (field names from the PS3 project).
 struct Blender {
-    char unk00[0x48];
-    int lightA;
-    int lightB;
-    char unk50[0x30];
+    Mtx4 invMatrix;                 // 0x00
+    unsigned int ambientA;          // 0x40: ABGR
+    unsigned int ambientB;          // 0x44: ABGR
+    int dLightA;                    // 0x48: directional light index (BLENDER_LIGHT_DEFAULT if none)
+    int dLightB;                    // 0x4C
+    unsigned int flags;             // 0x50
+    unsigned int fogColor1;         // 0x54: ABGR
+    unsigned int fogColor2;         // 0x58: ABGR
+    float fogNearDist1;             // 0x5C
+    float fogNearIntensity1;        // 0x60
+    float fogFarDist1;              // 0x64
+    float fogFarIntensity1;         // 0x68
+    float fogNearDist2;             // 0x6C
+    float fogNearIntensity2;        // 0x70
+    float fogFarDist2;              // 0x74
+    float fogFarIntensity2;         // 0x78
+    int unk;                        // 0x7C
 };
 
 #define BLENDER_LIGHT_DEFAULT 11
