@@ -1152,7 +1152,7 @@ SpawnPart_001 = 0x0027DAF0; // type:func size:0xD8
 UpdatePart_002 = 0x0027DBC8; // type:func size:0xD0
 SpawnPart_002 = 0x0027DC98; // type:func size:0x1D4
 UpdatePart_003 = 0x0027DE70; // type:func size:0x260
-UpdatePart_004 = 0x0027E0D8; // type:func size:0x460
+UpdatePart_004__FP12PartInstance = 0x0027E0D8; // type:func size:0x460
 SpawnPart_004 = 0x0027E538; // type:func size:0x114
 UpdatePart_005 = 0x0027E650; // type:func size:0xFC
 SpawnPart_005 = 0x0027E750; // type:func size:0xFC
@@ -2470,3 +2470,5 @@ ShipTakeoffSkipFrames = 0x001605D0; // size:0xC
 ShipTrailOffsets = 0x001BDF30; // size:0x60
 ShipRatchetOffsets = 0x001BE200; // size:0x30
 ShipClankOffsets = 0x001BE230; // size:0x30
+
+WindState = 0x001CBC40; // size:0x20

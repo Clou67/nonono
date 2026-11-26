@@ -7,9 +7,11 @@
 #include "vuchain.h"
 #include "gameglobals.h"
 #include "camera.h"
+#include "ambience.h"
 
 extern float frameTimeSq __attribute__((section(".sdata")));
 
+int CollSphere(float radius, Vec4 *position, int flags, MobyInstance *ignore);
 int CollLine(Vec4 *start, Vec4 *end, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
 
 
@@ -27,7 +29,121 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_003)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027E0D0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_004);
+void UpdatePart_004(PartInstance *particle)
+{
+    PartDriftingMotion *motion = &particle->driftingMotion;
+    Vec4 positionScratch;
+    float cameraDistance, cameraAngleDelta;
+    int collisionCounter, remainingLifetime, alpha;
+    AmbienceState *wind;
+    Vec4 *cameraPosition;
+    GAMECAMERA *camera;
+    Vec4 *particlePosition;
+
+    collisionCounter = motion->collisionCounter;
+    if (collisionCounter >= 3) {
+        remainingLifetime = particle->timer;
+        particlePosition = &particle->pos;
+        if (remainingLifetime > FastScaleRoundInt(0x78) &&
+            CollSphere(7.99f, particlePosition, PART_DRIFT_COLLISION_FLAGS, 0)) {
+            motion->fading = 1;
+            particle->timer = FastScaleRoundInt(0x78);
+            motion->collisionCounter = -1;
+        }
+
+        else
+            motion->collisionCounter = 0;
+    }
+
+    else {
+        particlePosition = &particle->pos;
+        // Negative counters disable wind motion without skipping the distance fade.
+        if (collisionCounter < 0)
+            goto updateDistanceFade;
+        motion->collisionCounter = collisionCounter + 1;
+    }
+
+    if (motion->collisionCounter >= 0) {
+        wind = &WindState;
+        motion->velocity.x = FastAngleSinF(wind->rotation) * wind->strength / 2.5f;
+        motion->velocity.y = FastAngleCosF(wind->rotation) * wind->strength / 2.5f;
+        motion->velocity.z = 0.0f;
+        FastVec3Add(particlePosition, particlePosition, &motion->velocity);
+    }
+updateDistanceFade:
+    cameraPosition = &GameCamera.position;
+    camera = &GameCamera;
+
+    cameraDistance = FastVec3Dist(particlePosition, cameraPosition);
+    cameraAngleDelta = FastSubRots(
+        FastArcTan(particle->pos.x - camera->position.x, particle->pos.y - camera->position.y),
+        camera->rot.radius);
+
+    if (FastAbsF(cameraAngleDelta) > 1.0471976f) {
+        if ((motion->offscreenFrames)++ >= 6) {
+            *motion->active = 0;
+            DeletePart(particle);
+            return;
+        }
+        positionScratch.x =
+            FastAngleSinF(FastAddRots(camera->rot.radius,
+                                      cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) *
+            cameraDistance;
+        positionScratch.y =
+            FastAngleCosF(FastAddRots(camera->rot.radius,
+                                      cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) *
+            cameraDistance;
+        positionScratch.z = particle->pos.z - camera->position.z;
+        FastVec3Add(particlePosition, &positionScratch, cameraPosition);
+        CopyVec4Inline(&positionScratch, particlePosition);
+        positionScratch.z = positionScratch.z + 32.0f;
+        if (CollLine(particlePosition, &positionScratch, PART_DRIFT_COLLISION_FLAGS, 0, 0)) {
+            *motion->active = 0;
+            DeletePart(particle);
+            return;
+        }
+    }
+
+    if ((worldUpdateTime & 3) == 0)
+        particle->rot++;
+
+    remainingLifetime = particle->timer;
+    if (FastScaleRoundInt(0x78) >= remainingLifetime)
+        if (motion->fading)
+            alpha = particle->timer * 0x14 / FastScaleRoundInt(0x78);
+
+        else
+            alpha = (FastScaleRoundInt(0x78) - particle->timer) * 0x14 / FastScaleRoundInt(0x78);
+
+    else
+        alpha = 0x14;
+
+    if (cameraDistance < 8.0f || cameraDistance > 96.0f) {
+        *motion->active = 0;
+        DeletePart(particle);
+        return;
+    }
+    if (cameraDistance < 16.0f)
+        alpha = FastFloatToInt(FastIntToFloat(alpha) * (cameraDistance - 8.0f) * 0.125f);
+
+    else if (cameraDistance > 80.0f)
+        alpha = FastFloatToInt(FastIntToFloat(alpha) * (96.0f - cameraDistance) * 0.0625f);
+
+    particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
+
+    if (FastDecTimer(particle->timer)) {
+        if (motion->fading) {
+            *motion->active = 0;
+            DeletePart(particle);
+        }
+
+        else {
+            motion->fading = 1;
+            particle->timer =
+                MB_randRange(FastScaleRoundInt(0x78) * 3, FastScaleRoundInt(0x78) * 9);
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_004);
 

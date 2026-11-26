@@ -103,6 +103,16 @@ struct PartBranchingMotion {
     float sizeCurve;            // 0x1C
 };
 
+enum { PART_DRIFT_COLLISION_FLAGS = 0x12 };
+
+struct PartDriftingMotion {
+    Vec4 velocity;
+    unsigned char *active;
+    int fading;
+    int offscreenFrames;
+    int collisionCounter;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -130,6 +140,7 @@ struct PartInstance {
         PartTimedScale timedScale;
         PartSplittingMotion splittingMotion;
         PartBranchingMotion branchingMotion;
+        PartDriftingMotion driftingMotion;
     };
 };
 
@@ -175,5 +186,7 @@ void UpdatePart_043(PartInstance *particle);
 void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime,
                    int timer, int generation, float sizeCurve, int flags, float velocityScale);
 void UpdatePart_012(PartInstance *particle);
+
+void UpdatePart_004(PartInstance *particle);
 
 #endif

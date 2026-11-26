@@ -17,6 +17,7 @@ float FastIntToFloat(int value);
 float FastAngleCosF(float angle);
 float FastAngleSinF(float angle);
 float FastAddRots(float angle, float delta);
+float FastSubRots(float first, float second);
 float FastArcTan(float x, float y);
 float FastDiffRots(float first, float second);
 float FastVec3DistLen(Vec4 *from, Vec4 *to);
