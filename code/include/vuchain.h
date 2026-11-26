@@ -64,10 +64,13 @@ struct MEMSLOTS {
     void *base;
     unsigned char *vu1_chain[2];
     unsigned char *hudHeap;
-    unsigned char unk_10[0x8];
+    unsigned char *gadgetBuffer;        // 0x10
+    // Where the level's core data is decompressed (the header's offsets count from here).
+    unsigned char *levelBase;           // 0x14
     // Where the level's objects are built from the gameplay file.
-    unsigned char *levelData;
-    unsigned char unk_1C[0x44];
+    unsigned char *levelData;           // 0x18
+    unsigned char *levelEnd;            // 0x1C: end of the level's objects
+    unsigned char unk_20[0x40];
     Vec4 collisionPoint;
 };
 

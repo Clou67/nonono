@@ -156,7 +156,7 @@ void LoadByteGrid(int *grid);
 void ParseColl(char *data);
 void LoadCompressedHudBank(int bank, char *destination);
 int SetupLevelWadBuffer(void);
-void WadDecompress(void *source, void *destination);
+int WadDecompress(void *source, void *destination);
 
 void STUB_RET_255950(void *data, int count);
 

@@ -28,6 +28,7 @@
 #include "wad.h"
 #include "draw.h"
 #include "hud.h"
+#include "npc.h"
 #include "initlevel.h"
 #include "mathfunc_inline.h"
 #include "sce.h"
@@ -2177,7 +2178,418 @@ int LoadLevelFiles(void)
     return 0;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", InitLevelFromWad);
+// The level core data's header: counts, and offsets from the header (or, for the data
+// itself, from MemSlots.levelBase).
+struct LevelCoreHeader {
+    int permTexCnt;             // 0x00
+    int permTexs;               // 0x04
+    int tfrags;                 // 0x08: data
+    int occlusion;              // 0x0C: data
+    int sky;                    // 0x10: data
+    int collision;              // 0x14: data
+    int mobyClassCnt;           // 0x18
+    int mobyClasses;            // 0x1C: 0x20-byte entries
+    int tieClassCnt;            // 0x20
+    int tieClasses;             // 0x24: 0x20-byte entries
+    int shrubClassCnt;          // 0x28
+    int shrubClasses;           // 0x2C: 0x30-byte entries
+    int tfragTexCnt;            // 0x30
+    int tfragTexs;              // 0x34
+    int mobyTexCnt;             // 0x38
+    int mobyTexs;               // 0x3C
+    int tieTexCnt;              // 0x40
+    int tieTexs;                // 0x44
+    int shrubTexCnt;            // 0x48
+    int shrubTexs;              // 0x4C
+    int partTexCnt;             // 0x50
+    int partTexs;               // 0x54
+    int fxTexCnt;               // 0x58
+    int fxTexs;                 // 0x5C
+    int texData;                // 0x60: data
+    int partTexData;            // 0x64: data
+    int fxTexData;              // 0x68: data
+    int partTexDefs;            // 0x6C
+    int sounds;                 // 0x70
+    int unk_74;
+    int ratchetSeqs;            // 0x78
+    int unk_7C;
+    int mobyRefCnt;             // 0x80
+    int mobyRefs;               // 0x84: 0x10-byte entries
+    int unk_88[2];
+    int tex128;                 // 0x90: GS blocks of the shared 128x128 texture and its clut
+    int clut128;                // 0x94
+    int tex64;                  // 0x98
+    int clut64;                 // 0x9C
+    int effectTable;            // 0xA0: data
+    int byteGrid;               // 0xA4: data
+    int occlOct;                // 0xA8: data
+    int shipGsRam[4];           // 0xAC: GS blocks of the spaceship pack (ParseMobyPack)
+    int unk_BC;
+    int tex128B;                // 0xC0: a second shared 128x128 texture and its clut
+    int clut128B;               // 0xC4
+};
+
+// Retail clears the hint's next time with an unaligned store.
+struct UnalignedHintTime {
+    char unk0[0x10];
+    int nextTime __attribute__((packed, aligned(1)));
+};
+
+// A level texture's definition: where its image is, then its size and GS blocks.
+struct TextureDef {
+    int offset;                 // 0x00: from the texture data
+    unsigned short width;       // 0x04
+    short height;               // 0x06
+    short mipCount;             // 0x08
+    short clut;                 // 0x0A
+    short mip1;                 // 0x0C
+    short mip2;                 // 0x0E
+};
+
+// The core header's sound table: spans of 4-byte sound references (offset from the
+// table, count), the level's own first, then one per moby class.
+struct SoundSpan {
+    short offset;
+    short count;
+};
+
+#define LEVEL_TEXTURE_REF(texDef, texData) \
+    ((texData) + (texDef).offset + (FastLog2((texDef).width) << 28))
+#define KILOBYTES(bytes) (FastIntToFloat((int)(bytes)) * (1.0f / 1024.0f))
+#define MEGABYTES(bytes) (FastIntToFloat((int)(bytes)) * (1.0f / 1048576.0f))
+#define OS_MEMORY_SIZE 0x100000
+
+extern unsigned long VisGifSpecialTemplate3[3];
+extern int DrawSdata15F40C;     // the level's texture data
+extern int DrawSdata15F420;     // the level's effect texture data
+extern unsigned char occlCharTable[][16];
+extern int TfragTexCnt;
+extern int TfragTexLocs[];
+extern int MobySdata15FFC8;     // moby texture count
+extern int MobyTexLocs[];
+extern int MobySdata16000C;
+extern int MobySdata160010;
+extern char MemoryMapNewline[];
+extern char *OcclOct;
+extern int EffectTableCnt;
+extern int *EffectTableEntries;
+extern int *EffectTableOffsets;
+extern int TieTexCnt;
+extern int ShrubTexCnt;
+extern int TieTexLocs[];
+extern int ShrubTexLocs[];
+extern TextureDef MobyTexDefs[];
+extern int savedLevelSoundBank;
+extern int MobyRefCnt;
+extern int MobyRefOClasses[];
+extern char *MobyRefData[];
+extern int MobyRefUnk[];
+extern u_long128 MobyRefTexRefs[];
+extern unsigned short MobyRefSounds[][16];
+extern SoundDef *LevelSounds;
+extern int LevelSoundCnt;
+extern char LevelProgramEnd[];
+extern int LevelUnkVars[16];
+
+void LoadHudBanks(void);
+void RelocEffectTable(int *table);
+void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass);
+void ParseShrubClass(char *classData, TextureDef *texDefs, char *texRefs, char *mipDists, int oClass);
+char *ParseMobyPack(char *pack, LevelCoreHeader *header);
+void UpdateMobysInitial(void);
+
+// Loads the level: (on a full load) its core data, textures, classes, sounds and spaceship,
+// then its gameplay objects. keep restores the checkpoint state instead of clearing it.
+int InitLevelFromWad(int full, int keep)
+{
+    MEMSLOTS *slots = &MemSlots;
+    LevelCoreHeader *header = (LevelCoreHeader *)slots->vu1_chain[0];
+    int *levelFile = (int *)LevelLoad.soundBank;  // the level WAD
+    char *base;
+    int used;
+    char *soundRefs;
+    char *mem;
+    char *end;
+    SoundSpan *span;
+    TextureDef *mobyTexDefs;
+    TextureDef *tfragTexDefs;
+    TextureDef *tieTexDefs;
+    TextureDef *shrubTexDefs;
+    char *soundTable;
+    int i;
+    int j;
+    int soundCnt;
+    int k;
+    int tfragTex, mobyTex, tieTex, shrubTex;
+    int mobyRef;
+    char *seqOffset;
+    int seq;
+    char *mobyRefEntry;
+    int var;
+    int classIndex;
+    int sound;
+    char *classEntry;
+
+    if (full)
+        LoadHudBanks();
+
+    base = (char *)slots->levelBase;
+    if (full) {
+        FastMemCopy16(header, (char *)(levelFile[4] + (int)levelFile), levelFile[5]);
+        DrawSdata15F40C = 0;
+        FastMemCopy32(CheckpointLevelFlags, occlCharTable[Level], 0x10);
+        ParsePermGsRam((char *)(levelFile[6] + (int)levelFile), header->permTexCnt, (PermGsTexture *)((char *)header + header->permTexs));
+        savedLevelSoundBank = levelSoundBank;
+        FlushCache(0);
+        used = WadDecompress((char *)(levelFile[0x14] + (int)levelFile), base);
+        DrawSdata15F40C = (int)(base + header->texData);
+
+        VisGifSpecialTemplate[0] = SCE_GS_SET_TEX0((GSmemBase + header->tex128) >> 8, 2, GS_PSMT8, 7, 7, 1, 0,
+                                                   (GSmemBase + header->clut128) >> 8, 0, 0, 0, 4);
+        VisGifSpecialTemplate[1] = 0x0000FFA0000000E0;
+        VisGifSpecialTemplate[2] = 0x0040000400004000;
+        VisGifSpecialTemplateAlt[0] = SCE_GS_SET_TEX0((GSmemBase + header->tex64) >> 8, 1, GS_PSMT8, 6, 6, 1, 0,
+                                                      (GSmemBase + header->clut64) >> 8, 0, 0, 0, 4);
+        VisGifSpecialTemplateAlt[1] = 0x0000FFA0000000E0;
+        VisGifSpecialTemplateAlt[2] = 0x0040000400004000;
+        VisGifSpecialTemplate3[0] = SCE_GS_SET_TEX0((GSmemBase + header->tex128B) >> 8, 2, GS_PSMT8, 7, 7, 1, 0,
+                                                    (GSmemBase + header->clut128B) >> 8, 0, 0, 0, 4);
+        VisGifSpecialTemplate3[1] = 0x0000FFA0000000E0;
+        VisGifSpecialTemplate3[2] = 0x0040000400004000;
+
+        tfragTexDefs = (TextureDef *)((char *)header + header->tfragTexs);
+        TfragTexCnt = header->tfragTexCnt;
+        for (tfragTex = 0; tfragTex < TfragTexCnt; tfragTex++)
+            TfragTexLocs[tfragTex] = LEVEL_TEXTURE_REF(tfragTexDefs[tfragTex], DrawSdata15F40C);
+
+        mobyTexDefs = (TextureDef *)((char *)header + header->mobyTexs);
+        MobySdata15FFC8 = header->mobyTexCnt;
+        for (mobyTex = 0; mobyTex < MobySdata15FFC8; mobyTex++)
+            MobyTexLocs[mobyTex] = LEVEL_TEXTURE_REF(mobyTexDefs[mobyTex], DrawSdata15F40C);
+
+        FastMemCopy16(MobyTexDefs, mobyTexDefs, MobySdata15FFC8 * 16);
+
+        tieTexDefs = (TextureDef *)((char *)header + header->tieTexs);
+        TieTexCnt = header->tieTexCnt;
+        for (tieTex = 0; tieTex < TieTexCnt; tieTex++)
+            TieTexLocs[tieTex] = LEVEL_TEXTURE_REF(tieTexDefs[tieTex], DrawSdata15F40C);
+
+        shrubTexDefs = (TextureDef *)((char *)header + header->shrubTexs);
+        ShrubTexCnt = header->shrubTexCnt;
+        for (shrubTex = 0; shrubTex < ShrubTexCnt; shrubTex++)
+            ShrubTexLocs[shrubTex] = LEVEL_TEXTURE_REF(shrubTexDefs[shrubTex], DrawSdata15F40C);
+
+        ParseTfrag(base + header->tfrags, (short *)((char *)header + header->tfragTexs));
+        if (header->occlusion)
+            OcclGrid = base + header->occlusion;
+        else
+            OcclGrid = 0;
+
+        if (header->sky)
+            ParseSky(base + header->sky);
+        else
+            Sky = 0;
+
+        ParseColl(base + header->collision);
+
+        for (i = 0, classEntry = (char *)header + header->mobyClasses; i < header->mobyClassCnt; i++, classEntry += 0x20)
+            ParseMoby(*(int *)classEntry ? base + *(int *)classEntry : 0, (short *)((char *)header + header->mobyTexs),
+                      classEntry + 0x10, *(int *)(classEntry + 4));
+
+        PrintMobyMemory((int *)((char *)header + header->mobyClasses), header->mobyClasses);
+
+        // Ratchet's animations, shared by every level.
+        for (seq = 0, seqOffset = (char *)header + header->ratchetSeqs; seq < MobyClasses[0]->sequenceCount; seq++, seqOffset += 4) {
+            if (*(int *)seqOffset) {
+                MobyClasses[0]->animations[seq] = (MobySeq *)(base + *(int *)seqOffset);
+                ParseMobySeq(MobyClasses[0], seq);
+            }
+        }
+
+        MobySdata16000C = -1;
+        mobyRefEntry = (char *)header + header->mobyRefs;
+        MobySdata160010 = 0;
+        MobyRefCnt = header->mobyRefCnt;
+        for (mobyRef = 0; mobyRef < header->mobyRefCnt; mobyRef++, mobyRefEntry += 0x10) {
+            MobyRefOClasses[mobyRef] = *(int *)(mobyRefEntry + 4);
+            MobyRefData[mobyRef] = base + *(int *)mobyRefEntry;
+            MobyRefUnk[mobyRef] = *(int *)(mobyRefEntry + 8);
+            {
+                int texRefsOffset = (unsigned char)MobyClassLookup[*(int *)(mobyRefEntry + 4)] * 32 + 0x10;
+
+                CopyVec4Inline((Vec4 *)&MobyRefTexRefs[mobyRef], (Vec4 *)((char *)header + header->mobyClasses + texRefsOffset));
+            }
+        }
+
+        for (i = 0, classEntry = (char *)header + header->tieClasses; i < header->tieClassCnt; i++, classEntry += 0x20)
+            ParseTieClass(base + *(int *)classEntry, (TextureDef *)((char *)header + header->tieTexs), classEntry + 0x10,
+                          *(int *)(classEntry + 4));
+
+        STUB_RET_255950((char *)header + header->tieClasses, header->tieClassCnt);
+
+        for (i = 0, classEntry = (char *)header + header->shrubClasses; i < header->shrubClassCnt; i++, classEntry += 0x30)
+            ParseShrubClass(base + *(int *)classEntry, (TextureDef *)((char *)header + header->shrubTexs), classEntry + 0x10,
+                            classEntry + 0x20, *(int *)(classEntry + 4));
+
+        DrawSdata15F420 = (int)(base + header->fxTexData);
+        ParseEffectTexs((int *)((char *)header + header->fxTexs), header->fxTexCnt);
+
+        if (header->effectTable) {
+            RelocEffectTable((int *)(base + header->effectTable));
+        } else {
+            EffectTableCnt = 0;
+            EffectTableEntries = 0;
+            EffectTableOffsets = 0;
+        }
+
+        if (header->byteGrid) {
+            LoadByteGrid((int *)(base + header->byteGrid));
+        } else {
+            byteGridStride = 0;
+            byteGridRows = 0;
+            byteGridMax = 0;
+            byteGridMin = 0;
+            byteGridData = 0;
+        }
+
+        if (header->occlOct)
+            OcclOct = base + header->occlOct;
+        else
+            OcclOct = 0;
+
+        {
+            char *partTexData = base + header->partTexData;
+            char *partTexDefs = (char *)header + header->partTexs;
+
+            ParseParticleTexs((int *)((char *)header + header->partTexDefs), (int)partTexData, (int *)partTexDefs, header->partTexCnt);
+        }
+
+        // The level's sounds, then each moby class's.
+        soundTable = (char *)header + header->sounds;
+        span = (SoundSpan *)soundTable;
+        mem = (char *)((unsigned int)(base + used + 0x3F) & ~0x3F);
+        soundCnt = span->count;
+        LevelSounds = (SoundDef *)mem;
+        LevelSoundCnt = soundCnt;
+        FastMemCopy32(mem, soundTable + span->offset, soundCnt * 32);
+        span++;
+        mem += soundCnt * 32;
+        soundRefs = soundTable + span->offset;
+        for (sound = 0; sound < LevelSoundCnt; sound++) {
+            if (LevelSounds[sound].index >= span->count) {
+                printf_stub("internal level sound mismatch\n");
+                LevelSounds[sound].index = -1;
+            } else {
+                LevelSounds[sound].index = *(unsigned short *)(soundRefs + LevelSounds[sound].index * 4);
+            }
+            LevelSounds[sound].bank_index = levelSoundBank;
+        }
+
+        end = mem + 0x3F;
+        span++;
+        for (classIndex = 0; classIndex < MobyClassIndex; classIndex++, span++) {
+            MobyClass *mobyClass = MobyClasses[classIndex];
+
+            if (mobyClass == 0) {
+                for (j = 0; j < MobyRefCnt; j++)
+                    if (MobyRefOClasses[j] == MobyOClasses[classIndex])
+                        break;
+
+                if (j < MobyRefCnt) {
+                    FastMemSet(MobyRefSounds[j], -1, 0x20);
+                    soundRefs = soundTable + span->offset;
+                    for (k = 0; k < span->count && k < 15; k++, soundRefs += 4)
+                        MobyRefSounds[j][k] = *(unsigned short *)soundRefs;
+                }
+            } else {
+                if (span->count != mobyClass->soundCount)
+                    printf_stub("internal moby sound mismatch on moby %d\n", MobyOClasses[classIndex]);
+
+                soundRefs = soundTable + span->offset;
+                for (k = 0; k < MobyClasses[classIndex]->soundCount; k++, soundRefs += 4) {
+                    MobyClasses[classIndex]->soundDefs[k].index = *(unsigned short *)soundRefs;
+                    MobyClasses[classIndex]->soundDefs[k].bank_index = levelSoundBank;
+                }
+            }
+        }
+
+        MemSlots.levelData = (unsigned char *)ParseMobyPack((char *)((unsigned int)end & ~0x3F), header);
+    }
+
+    MemSlots.levelEnd = (unsigned char *)ResetLevelData(full);
+
+    if (full) {
+        char *codeEnd;
+
+        printf_stub("\n*** MEMORY MAP ***\n\n");
+        printf_stub("os:             %.1fK\n", KILOBYTES(OS_MEMORY_SIZE));
+        codeEnd = LevelProgramEnd;
+        printf_stub("code mem:       %.1fK\n", KILOBYTES(codeEnd - OS_MEMORY_SIZE));
+        printf_stub("dead space:     %.1fK\n", KILOBYTES((char *)MemSlots.base - codeEnd));
+        printf_stub("vu chain bufs:  %.1fK\n", KILOBYTES(MemSlots.hudHeap - (unsigned char *)MemSlots.base));
+        printf_stub("hud:            %.1fK\n", KILOBYTES(MemSlots.gadgetBuffer - MemSlots.hudHeap));
+        printf_stub("gadget buffer:  %.1fK\n", KILOBYTES(MemSlots.levelBase - MemSlots.gadgetBuffer));
+        if (OcclGrid != 0)
+            printf_stub("tfrag geom:     %.1fK\n", KILOBYTES((unsigned char *)OcclGrid - MemSlots.levelBase));
+        else if (Sky != 0)
+            printf_stub("tfrag geom:     %.1fK\n", KILOBYTES((unsigned char *)Sky - MemSlots.levelBase));
+        else
+            printf_stub("tfrag geom:     unknown\n");
+
+        if (OcclGrid != 0) {
+            if (Sky != 0)
+                printf_stub("occlusion:      %.1fK\n", KILOBYTES((int)Sky - (int)OcclGrid));
+            else
+                printf_stub("occlusion:      %.1fK\n", KILOBYTES(CollOutput.grid - (char *)OcclGrid));
+        }
+
+        if (header->sky)
+            printf_stub("sky:            %.1fK\n", KILOBYTES(CollOutput.grid - (char *)Sky));
+
+        printf_stub("collision:      %.1fK\n", KILOBYTES(DrawSdata15F40C - (int)CollOutput.grid));
+        printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].unk_04 >> 4) - DrawSdata15F40C));
+        printf_stub("particle vram:  %.1fK\n", KILOBYTES(DrawSdata15F420 - (PartTexs[0].unk_04 >> 4)));
+        printf_stub("effects vram:   %.1fK\n", KILOBYTES((char *)MobyClasses[0] - (char *)DrawSdata15F420));
+        printf_stub("mobys:          %.1fK\n", KILOBYTES((char *)TieClasses[0] - (char *)MobyClasses[0]));
+        if (header->shrubClassCnt)
+            printf_stub("ties:           %.1fK\n", KILOBYTES((char *)ShrubClasses[0] - (char *)TieClasses[0]));
+        else
+            printf_stub("ties:           %.1fK\n", KILOBYTES((char *)TieInstances - (char *)TieClasses[0]));
+
+        if (header->shrubClassCnt)
+            printf_stub("shrubs:         %.1fK\n", KILOBYTES((char *)MobyClasses[0]->animations[0] - (char *)ShrubClasses[0]));
+
+        printf_stub("ratchett seqs:  %.1fK\n", KILOBYTES((char *)TieInstances - (char *)MobyClasses[0]->animations[0]));
+        printf_stub("tie insts:      %.1fK\n", KILOBYTES((char *)ShrubInstances - (char *)TieInstances));
+        printf_stub("shrub insts:    %.1fK\n", KILOBYTES((char *)MobyInstances - (char *)ShrubInstances));
+        printf_stub("moby insts:     %.1fK\n", KILOBYTES((char *)mobyVars - (char *)MobyInstances));
+        printf_stub("moby pvars:     %.1fK\n", KILOBYTES((char *)SplineData - (char *)mobyVars));
+        printf_stub("paths:          %.1fK\n", KILOBYTES((char *)PartInstances - (char *)SplineData));
+        printf_stub("part insts:     %.1fK\n", 128.0);
+        printf_stub(MemoryMapNewline);
+        printf_stub("end of mem:     %.1fM\n", MEGABYTES((int)PartInstances + 0x20000));
+        printf_stub(MemoryMapNewline);
+        {
+            unsigned char *start = (unsigned char *)MemSlots.base - 0x2D0000;
+
+            printf_stub("estimated mem:  %.1fM\n", MEGABYTES(MemSlots.levelEnd - start));
+        }
+        printf_stub(MemoryMapNewline);
+    }
+
+    if (keep) {
+        RestoreCheckpoint();
+    } else {
+        ClearCheckpointData();
+        for (var = 15; var >= 0; var--)
+            LevelUnkVars[var] = 0;
+    }
+
+    ((UnalignedHintTime *)&ActiveHint)->nextTime = 0;
+    UpdateMobysInitial();
+    worldUpdateTime++;
+    return 0;
+}
 
 // loaders.cpp's small data, in retail order. Defined after the functions above so they reach it
 // with lui, as retail does.
@@ -2190,7 +2602,7 @@ unsigned char ShipTexRefs[16] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-// Stand-ins for LoadHudBanks' and InitLevelFromWad's string literals until those are decompiled.
+// LoadHudBanks' timer labels (stand-ins until it is decompiled), then InitLevelFromWad's memory map line break.
 char LoadersTimerLabel[] = "loaders.cpp";
 char HudBankLabel0[] = "hud bank 0";
 char HudBankLabel2[] = "hud bank 2";
@@ -2337,3 +2749,7 @@ unsigned long QueuePifLoad(int uLog, int vLog, char *clut, char *tex, int clutAd
 
     return tex0;
 }
+
+// Debug-build paths of the NPC scene files; nothing in the release code reads them.
+extern const char NpcScenePath[] = "host0:z:/i5/levels/level%d/npcs/scene_%d/scene.dat";
+extern const char NpcScenePathPal[] = "host0:z:/i5/levels/level%d/npcs/scene_%d/scenep.dat";

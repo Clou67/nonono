@@ -46,7 +46,7 @@ extern "C" void snd_UnkFunction_0012eb00(void);
 
 void Stash_InitOnce(void);
 void InitLevel(void);
-int InitLevelFromWad(int firstLoad, int reload); // result unused, but the int return changes register choice
+int InitLevelFromWad(int full, int keep);
 void map_LoadPlanetMap(void);
 void hud_InitBanks(void);
 void LoadHudSeqs(void);
