@@ -62,6 +62,29 @@ struct PartTimedScale {
     float scaleStep;
 };
 
+enum PartSplittingFlags {
+    PART_SPLIT_REVERSE_ROTATION = 1,
+    PART_SPLIT_FADING = 8,
+    PART_SPLIT_NO_MOMENTUM = 0x40,
+    PART_SPLIT_CHILD = 0x80
+};
+
+enum {
+    PART_TEXTURE_SPLITTING = 12,
+    PART_SPLIT_COLLISION_NO_DAMAGE = 4,
+    PART_SPLIT_DAMAGE_FLAGS = 0x10001
+};
+
+struct PartSplittingMotion {
+    Vec4 velocity;              // 0x00
+    float rotation;             // 0x10, fraction of a turn
+    short age;                  // 0x14
+    short fadeFrames;           // 0x16
+    unsigned char flags;        // 0x18
+    unsigned char unk_19[3];
+    MobyInstance *owner;         // 0x1C
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -87,6 +110,7 @@ struct PartInstance {
         PartTweenSpin tweenSpin;
         PartFollowFade followFade;
         PartTimedScale timedScale;
+        PartSplittingMotion splittingMotion;
     };
 };
 
@@ -123,5 +147,8 @@ void UpdatePart_060(PartInstance *part);
 void UpdatePart_071(PartInstance *part);
 
 void UpdatePart_073(PartInstance *part);
+
+PartInstance *SpawnPart_040(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
+void UpdatePart_041(PartInstance *particle);
 
 #endif

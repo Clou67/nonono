@@ -44,4 +44,9 @@ void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 // DMAs quadwords from the scratchpad at spr_address into main memory.
 void FastFromSpr(void *destination, int spr_address, int quadwords);
 
+void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastVecZero(Vec4 *vector);
+void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
+void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
+
 #endif

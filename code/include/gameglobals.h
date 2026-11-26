@@ -24,6 +24,7 @@ extern int gameLanguage;
 extern int TotalPlayTime;
 
 extern float transStepScale;
+extern float transStepScaleSq;
 // Scale from a frame count to the per-frame animation playback rate (moby->animIScale).
 extern float animationSpeed;
 // Seconds the last frame took, as a fraction of a 60Hz frame.

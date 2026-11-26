@@ -78,6 +78,8 @@ struct MEMSLOTS {
     unsigned char *levelEnd;            // 0x1C: end of the level's objects
     unsigned char unk_20[0x40];
     Vec4 collisionPoint;
+    Vec4 collisionPush;
+    Vec4 collisionNormal;
 };
 
 extern MEMSLOTS MemSlots;
