@@ -1,5 +1,71 @@
+#include "camera.h"
 #include "common.h"
+#include "draw.h"
+#include "fastfunc.h"
 #include "freeze.h"
+#include "gameglobals.h"
+#include "hero.h"
+#include "lights.h"
+#include "loaders.h"
+#include "mathfunc_inline.h"
+#include "mobyutil.h"
+#include "music.h"
+#include "pad.h"
+#include "path.h"
+#include "pause.h"
+#include "sound.h"
+#include "viewcontext.h"
+#include "vuchain.h"
+
+extern unsigned char FinishedLoading[]; // incomplete type: retail stores to it
+                                        // with lui/sb, not $gp
+extern Vec4 ShipTrailOffsets[3][2];
+extern Vec4 ShipRatchetOffsets[3];
+extern Vec4 ShipClankOffsets[3];
+extern float g_SceneFlash;
+extern float frameTime;
+extern float frameTimeSq __attribute__((section(".sdata")));
+
+// Frame each take-off cutscene skips to, per ship variant.
+int ShipTakeoffSkipFrames[3] = {558, 558, 558};
+
+void ResetGameCounters(void);
+void UpdateMobyChain(void);
+void sound_UpdateAmbient(void);
+void HeroUpdate(void);
+void UpdateParts(void);
+void UpdateGameCounters(void);
+void Space_UpdateCutsceneScene(void);
+void Space_DrawTransitionOverlay(MobyInstance *moby);
+void Space_DrawLoadingBanner(MobyInstance *moby);
+void Space_DrawShipEngineGlow(MobyInstance *moby);
+void Space_DrawShipEffects(MobyInstance *moby);
+void Space_SpawnShipParticles(MobyInstance *ship, float zVel);
+void BeginMenu(int menu);
+void Hero_MakeVisible(void);
+void SetPositionAfterMovie(void);
+void Hero_AddPulsingMobyGlow(MobyInstance *moby);
+void Hero_UpdateInScene(MobyInstance *moby);
+void Hero_SnapMobyToBonePose(MobyInstance *hero, MobyInstance *attachment);
+void MB_SetZBoundsFromFloorCeil(MobyInstance *moby);
+void UpdateMobyFrameData(MobyInstance *moby);
+float FastScaleBySpeed(float value);
+float FastSubRots(float first, float second);
+void FastVecZero(Vec4 *vector);
+void FastVecLerp(Vec4 *out, Vec4 *from, Vec4 *to, float amount);
+void FastVec3Cross(Vec4 *out, Vec4 *first, Vec4 *second);
+void camPolarInit(Mtx4 *matrix);
+void camPolarRot0(Mtx4 *out, Mtx4 *in, float angle);
+void camPolarRot1(Mtx4 *out, Mtx4 *in, float angle);
+void camPolarRot2(Mtx4 *out, Mtx4 *in, float angle);
+float OrganicDelt(float *value, float *velocity, float target, float accel, float decel,
+                  float limit);
+void FUN_00316ef8(Vec4 *position, PolarSm *rotation, int flags, int unk0, int unk1);
+void FUN_00316dd0(Vec4 *position);
+void FUN_00316e28(Vec4 *rotation);
+void MB_PathEvalSpline(MobyPath *path, int unk, Vec4 *position, Vec4 *rotation, int flags,
+                       float progress);
+int sceGsSyncV(int mode);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", UpdateMoby_Spaceship);
 
@@ -44,7 +110,706 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", TransitionDraw_Sp
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_SpawnShipParticles);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", UpdateSpace);
+enum {
+    SPACE_CUTSCENE_TAKEOFF = 0,
+    SPACE_CUTSCENE_FLIGHT = 3,
+    SPACE_CUTSCENE_LOADING = 4,
+    SPACE_CUTSCENE_ARRIVAL = 8
+};
+
+void UpdateSpace(void)
+{
+    Mtx4 scratch;
+    int keyframeFlags;
+    int ticksPerBank;
+    int skip;
+    int objectIndex;
+    int pointIndex;
+    MobyInstance *playbackObject;
+    MobyInstance *objectCursor;
+    MobyInstance *expiredObject;
+    int releaseIndex;
+    int bankTickLimit;
+    MobyInstance *player;
+    int pathPointIndex;
+    float cameraBlendStep;
+
+    SceneCameraFrame *keyframe;
+    Vec4 *cameraPosition;
+    float *keyframeAngles;
+    Vec4 *animationPositions;
+    int currentFrame;
+
+    MobyPath *path;
+    float segmentAngle;
+    float maximumTurn;
+    float turnScale;
+    float blend;
+
+    bootSpaceTransitionState.timer++;
+
+    switch (bootSpaceTransitionState.cutscene) {
+    case SPACE_CUTSCENE_TAKEOFF:
+    case SPACE_CUTSCENE_ARRIVAL:
+        ResetGameCounters();
+        UpdateMobyChain();
+        sound_UpdateAmbient();
+        HeroUpdate();
+        UpdateParts();
+        screenFade -= 0.125f;
+        SceneLoad.cameraFrame++;
+        SceneLoad.sceneFrame++;
+
+        if (screenFade < 0.0f)
+            screenFade = 0.0f;
+
+        ticksPerBank = videoModePal ? 0x50 : 0x60;
+        skip = bootSpaceTransitionState.skip;
+
+        if ((padState.bitsOn & (PAD_TRIANGLE | PAD_CROSS)) &&
+            FastScaleRoundInt(30) < SceneLoad.sceneFrame && screenFade == 0.0f) {
+            if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF &&
+                SceneLoad.sceneFrame <
+                    FastScaleRoundInt(ShipTakeoffSkipFrames[bootSpaceTransitionState.shipVariant] -
+                                      30))
+                skip = 1;
+
+            if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_ARRIVAL &&
+                SceneLoad.sceneFrame < SceneLoad.numFrames - FastScaleRoundInt(30))
+                skip = 1;
+        }
+
+        if (skip) {
+            if (musicTransition.state != 6 && musicTransition.state != 7)
+                musicTransition.state = 5;
+
+            if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
+                SceneLoad.sceneFrame =
+                    FastScaleRoundInt(ShipTakeoffSkipFrames[bootSpaceTransitionState.shipVariant]);
+                SceneLoad.chunk = SceneLoad.sceneFrame / ticksPerBank;
+                ParseSpaceSceneChunk(SceneLoad.chunk);
+                SceneLoad.cameraFrame = SceneLoad.sceneFrame % ticksPerBank;
+
+                if (bootSpaceTransitionState.skip)
+                    bootSpaceTransitionState.skip = 0;
+
+                else
+                    FadeToBlack(4);
+
+                screenFade = 1.0f;
+            }
+
+            else
+                SceneLoad.sceneFrame = SceneLoad.numFrames;
+        }
+
+        if (SceneLoad.sceneFrame >= SceneLoad.numFrames) {
+            if (musicTransition.state != 6 && musicTransition.state != 7)
+                musicTransition.state = 5;
+
+            VU1_setBufSizeByLevel();
+            VC.xratio = 0.63f;
+            UpdateViewContext();
+            /* Retail releases the attachment once per screenFade object, even when
+       * that object is null. */
+            for (releaseIndex = 0; releaseIndex < SceneLoad.mobyCount; releaseIndex++) {
+                expiredObject = SceneLoad.mobys[releaseIndex];
+
+                if (expiredObject != 0) {
+                    expiredObject->pClass->sequenceCount--;
+                    expiredObject->pClass->animations[expiredObject->pClass->sequenceCount] = 0;
+                    DeleteMoby(expiredObject);
+                }
+
+                if (bootSpaceTransitionState.o2Mask != 0)
+                    DeleteMoby(bootSpaceTransitionState.o2Mask);
+            }
+
+            bootSpaceTransitionState.spaceship->modeBits &= ~1;
+
+            for (objectCursor = MobyInstancePermEnd; objectCursor->state != 0xFF;
+                 objectCursor++) {
+                if (!(objectCursor->state & 0x80) &&
+                    ((short)objectCursor->oClass == 0x4A || (short)objectCursor->oClass == 0xCB))
+                    objectCursor->modeBits &= ~0x80;
+            }
+
+            if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
+                BeginMenu(0);
+                PauseMenu.state = 0xE;
+                CutscenePlaying = 1;
+                return;
+            }
+
+            gameMode = 0;
+            music_Unpause();
+            CutscenePlaying = 1;
+            FinishedLoading[0] = 0;
+            Hero_MakeVisible();
+
+            if (bootSpaceTransitionState.arrivalPending != 0) {
+                SetPositionAfterMovie();
+                return;
+            }
+
+            Hero_Warp(&bootSpaceTransitionState.arrivalPos.x,
+                      &bootSpaceTransitionState.arrivalRot.x, 0, 1);
+            return;
+        }
+
+        bankTickLimit = videoModePal ? 0x50 : 0x60;
+
+        if (SceneLoad.cameraFrame >= bankTickLimit)
+            ParseSpaceSceneChunk(++SceneLoad.chunk);
+
+        keyframe = &SceneLoad.cameraFrames[SceneLoad.cameraFrame];
+        keyframeAngles = &keyframe->rotX;
+        keyframeFlags = keyframe->flags[0];
+        VC.xratio = keyframeAngles[3];
+        UpdateViewContext();
+        cameraPosition = &GameCamera.position;
+        CopyVec4Inline(cameraPosition, &keyframe->position);
+        FastVecMtx3Mult(cameraPosition, cameraPosition,
+                        &bootSpaceTransitionState.spaceship->transform);
+        FastVec3Add(cameraPosition, cameraPosition, &bootSpaceTransitionState.spaceship->pos);
+        segmentAngle =
+            FastAddRots(keyframeAngles[2], bootSpaceTransitionState.spaceship->rotation.z);
+        camPolarInit(&scratch);
+        camPolarRot0(&scratch, &scratch, keyframe->rotX);
+        camPolarRot1(&scratch, &scratch, keyframeAngles[1]);
+        camPolarRot2(&scratch, &scratch, segmentAngle);
+        GameCamera.orientMtx.forward.x = -scratch.v2.x;
+        GameCamera.orientMtx.right.x = -scratch.v0.x;
+        GameCamera.orientMtx.up.x = scratch.v1.x;
+        GameCamera.orientMtx.forward.y = -scratch.v2.y;
+        GameCamera.orientMtx.right.y = -scratch.v0.y;
+        GameCamera.orientMtx.up.y = scratch.v1.y;
+        GameCamera.orientMtx.forward.z = -scratch.v2.z;
+        GameCamera.orientMtx.right.z = -scratch.v0.z;
+        GameCamera.orientMtx.up.z = scratch.v1.z;
+
+        if (CheatsActivated[4] != 0)
+            FastVec3Cross(&GameCamera.orientMtx.right, &GameCamera.orientMtx.up,
+                          &GameCamera.orientMtx.forward);
+
+        for (objectIndex = 0; objectIndex < SceneLoad.mobyCount; objectIndex++) {
+            playbackObject = SceneLoad.mobys[objectIndex];
+            currentFrame = SceneLoad.cameraFrame >> 1;
+            playbackObject->previousAnimationFrame = currentFrame;
+            playbackObject->animationFrame = currentFrame + 1;
+            UpdateMobyFrameData(playbackObject);
+            playbackObject->animationBlend = FastIntToFloat(SceneLoad.cameraFrame & 1) * 0.5f;
+
+            if (keyframeFlags != 0 && (SceneLoad.cameraFrame & 1))
+                playbackObject->animationBlend = 1.0f;
+
+            animationPositions = (Vec4 *)playbackObject->pVar;
+            FastVec3Scale(&scratch.v0,
+                          &animationPositions[playbackObject->previousAnimationFrame],
+                          1.0f - playbackObject->animationBlend);
+            FastVec3Scale(&scratch.v1, &animationPositions[playbackObject->animationFrame],
+                          playbackObject->animationBlend);
+            FastVec3Add(&playbackObject->pos, &scratch.v0, &scratch.v1);
+            FastVecMtx3Mult(&playbackObject->pos, &playbackObject->pos,
+                            &bootSpaceTransitionState.spaceship->transform);
+            FastVec3Add(&playbackObject->pos, &playbackObject->pos,
+                        &bootSpaceTransitionState.spaceship->pos);
+            playbackObject->rotation.z = bootSpaceTransitionState.spaceship->rotation.z;
+            playbackObject->unk71 = 0xFF;
+            PostUpdateMoby(playbackObject);
+
+            if ((short)playbackObject->oClass == 0) {
+                if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
+                    if (Level == LEVEL_ORXON && UnlockableItems[ITEM_O2_MASK] == 0)
+                        playbackObject->shadow = 0;
+
+                    else if (SceneLoad.sceneFrame <= FastScaleRoundInt(0x3E))
+                        playbackObject->shadow = 0x18;
+
+                    else
+                        playbackObject->shadow = 0;
+                }
+
+                else if (FastScaleRoundInt(360) < SceneLoad.sceneFrame) {
+                    if (Level == LEVEL_ORXON && UnlockableItems[ITEM_O2_MASK] == 0)
+                        playbackObject->shadow = 0;
+
+                    else
+                        playbackObject->shadow = 0x18;
+                }
+
+                else
+                    playbackObject->shadow = 0;
+            }
+
+            else if ((short)playbackObject->oClass == 10) {
+                if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
+                    if (SceneLoad.sceneFrame <= FastScaleRoundInt(350))
+                        playbackObject->shadow = 0x18;
+
+                    else
+                        playbackObject->shadow = 0;
+                }
+
+                else if (SceneLoad.sceneFrame <= FastScaleRoundInt(524))
+                    playbackObject->shadow = 0;
+
+                else
+                    playbackObject->shadow = 0x18;
+            }
+
+            if (playbackObject->shadow != 0)
+                MB_SetZBoundsFromFloorCeil(playbackObject);
+
+            if ((short)playbackObject->oClass == 10)
+                Hero_AddPulsingMobyGlow(playbackObject);
+
+            if ((short)playbackObject->oClass == 0) {
+                Hero_UpdateInScene(playbackObject);
+
+                if ((Level == LEVEL_ORXON && UnlockableItems[ITEM_O2_MASK] != 0) ||
+                    Level == LEVEL_GEMLIK) {
+                    if (bootSpaceTransitionState.o2Mask == 0) {
+                        bootSpaceTransitionState.o2Mask = CreateMoby(0x509);
+                        bootSpaceTransitionState.o2Mask->drawDistance = 0x40;
+                        bootSpaceTransitionState.o2Mask->modeBits |= 0x806;
+                        bootSpaceTransitionState.o2Mask->lights = playbackObject->lights;
+
+                        if (bootSpaceTransitionState.o2Mask->pClass->metalCount != 0)
+                            bootSpaceTransitionState.o2Mask->metal = 0x18;
+                    }
+
+                    Hero_SnapMobyToBonePose(playbackObject, bootSpaceTransitionState.o2Mask);
+                }
+            }
+
+            if ((unsigned short)(short)playbackObject->oClass - 0x213U < 3) {
+                RegisterPreDraw(Space_DrawTransitionOverlay, playbackObject);
+                RegisterMobyDraw(Space_DrawLoadingBanner, playbackObject);
+
+                if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
+                    if (SceneLoad.sceneFrame < FastScaleRoundInt(360)) {
+                        int colorIntensity =
+                            (int)(FastAngleSinF(FastIntToFloat((SceneLoad.sceneFrame & 0x3F) - 32) *
+                                                0.09817477f) *
+                                  80.0f) +
+                            120;
+
+                        if ((short)playbackObject->oClass == 0x215)
+                            playbackObject->glowRgba = (colorIntensity >> 1) |
+                                                        (colorIntensity << 8) |
+                                                        (colorIntensity << 16);
+
+                        else
+                            playbackObject->glowRgba =
+                                colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
+                    }
+
+                    else if (SceneLoad.sceneFrame < FastScaleRoundInt(0x1F8)) {
+                        int colorIntensity =
+                            (int)(((float)SceneLoad.sceneFrame - FastScaleBySpeed(360.0f)) *
+                                  (transStepScale * 1.25f));
+
+                        if (colorIntensity >= 256)
+                            colorIntensity = 255;
+
+                        if ((short)playbackObject->oClass == 0x215)
+                            playbackObject->glowRgba =
+                                (colorIntensity << 8) | (colorIntensity << 16);
+
+                        else
+                            playbackObject->glowRgba =
+                                colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
+
+                        if (FastScaleRoundInt(0x1A4) < SceneLoad.sceneFrame) {
+                            bootSpaceTransitionState.spaceship->setByGroup =
+                                (int)(((float)SceneLoad.sceneFrame - FastScaleBySpeed(420.0f)) *
+                                      (transStepScale * 1.2f));
+                            bootSpaceTransitionState.spaceship->uid = 0;
+                            RegisterMobyDraw(Space_DrawShipEngineGlow,
+                                             bootSpaceTransitionState.spaceship);
+                        }
+
+                        if (FastScaleRoundInt(0x1D0) < SceneLoad.sceneFrame) {
+                            g_SceneFlash += 0.025f;
+
+                            if (g_SceneFlash > 1.0f)
+                                g_SceneFlash = 1.0f;
+                        }
+                    }
+
+                    else {
+                        playbackObject->glowRgba = 0xA0A0A0;
+                        g_SceneFlash -= 0.025f;
+
+                        if (g_SceneFlash < 0.0f)
+                            g_SceneFlash = 0.0f;
+                    }
+                }
+
+                else if (SceneLoad.sceneFrame < FastScaleRoundInt(0xF0)) {
+                    int colorIntensity;
+
+                    if (SceneLoad.sceneFrame < FastScaleRoundInt(0xC8)) {
+                        Space_SpawnShipParticles(playbackObject, frameTime * -4.0f);
+                        Space_SpawnShipParticles(playbackObject, frameTime * -3.0f);
+                    }
+
+                    colorIntensity =
+                        (int)(FastAngleSinF(FastIntToFloat((SceneLoad.sceneFrame & 0x3F) - 32) *
+                                            0.09817477f) *
+                              80.0f) +
+                        120;
+
+                    if ((short)playbackObject->oClass == 0x215)
+                        playbackObject->glowRgba = (colorIntensity >> 1) |
+                                                    (colorIntensity << 8) |
+                                                    (colorIntensity << 16);
+
+                    else
+                        playbackObject->glowRgba =
+                            colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
+
+                    playbackObject->setByGroup = 0x32;
+                    playbackObject->uid = 10;
+                    RegisterMobyDraw(Space_DrawShipEngineGlow, playbackObject);
+                }
+
+                else if (SceneLoad.sceneFrame <= FastScaleRoundInt(360)) {
+                    int colorIntensity;
+
+                    if (SceneLoad.sceneFrame < FastScaleRoundInt(300)) {
+                        bootSpaceTransitionState.spaceship->setByGroup =
+                            (int)((FastScaleBySpeed(300.0f) - (float)SceneLoad.sceneFrame) *
+                                  (transStepScale * 1.5f));
+                        bootSpaceTransitionState.spaceship->uid = 0;
+                        RegisterMobyDraw(Space_DrawShipEngineGlow,
+                                         bootSpaceTransitionState.spaceship);
+                    }
+
+                    colorIntensity =
+                        (int)((FastScaleBySpeed(360.0f) - (float)SceneLoad.sceneFrame) *
+                              (transStepScale * 1.25f));
+
+                    if ((short)playbackObject->oClass == 0x215)
+                        playbackObject->glowRgba =
+                            (colorIntensity << 8) | (colorIntensity << 16);
+
+                    else
+                        playbackObject->glowRgba =
+                            colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
+                }
+
+                else {
+                    int colorIntensity =
+                        (int)(FastAngleSinF(FastIntToFloat((SceneLoad.sceneFrame & 0x3F) - 32) *
+                                            0.09817477f) *
+                              80.0f) +
+                        120;
+
+                    if ((short)playbackObject->oClass == 0x215)
+                        playbackObject->glowRgba = (colorIntensity >> 1) |
+                                                    (colorIntensity << 8) |
+                                                    (colorIntensity << 16);
+
+                    else
+                        playbackObject->glowRgba =
+                            colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
+                }
+            }
+        }
+
+        sound_Update();
+        UpdatePointLights();
+        MB_UpdateLightAngle();
+        UpdateGameCounters();
+        break;
+
+    case SPACE_CUTSCENE_FLIGHT:
+        ResetGameCounters();
+        UpdateMobyChain();
+        sound_UpdateAmbient();
+        HeroUpdate();
+        UpdateParts();
+
+        if (bootSpaceTransitionState.timer == 0) {
+            music_Pause(0);
+            music_Sync(0);
+            musicTransition.queuedSpeech = bootSpaceTransitionState.shipVariant + 0x9C4F;
+            FadeToBlack(FastScaleRoundInt(12));
+
+            while ((short)musicTransition.state != 3) {
+                sound_Update();
+                sceGsSyncV(0);
+            }
+
+            music_PlayPreseekedSpeech();
+            bootSpaceTransitionState.spaceship->updateId = 1;
+            bootSpaceTransitionState.spaceship->animationId = 2;
+            bootSpaceTransitionState.spaceship->animationBlend = 0.0f;
+            UpdateMobyFrameData(bootSpaceTransitionState.spaceship);
+            bootSpaceTransitionState.spaceship->lodTransition = 0xFF;
+            bootSpaceTransitionState.spaceship->collision = 0;
+
+            if (bootSpaceTransitionState.shipSplinePath >= 0) {
+                bootSpaceTransitionState.riderRatchet = CreateMoby(0);
+                bootSpaceTransitionState.riderRatchet->drawDistance = 0x1FF;
+                bootSpaceTransitionState.riderRatchet->lodTransition = 0xFF;
+                bootSpaceTransitionState.riderRatchet->collision = 0;
+                bootSpaceTransitionState.riderRatchet->modeBits |= 6;
+                bootSpaceTransitionState.riderRatchet->lights = Hero.moby->lights;
+                bootSpaceTransitionState.riderClank = CreateMoby(10);
+                bootSpaceTransitionState.riderClank->drawDistance = 0x1FF;
+                bootSpaceTransitionState.riderClank->lodTransition = 0xFF;
+                bootSpaceTransitionState.riderClank->collision = 0;
+                bootSpaceTransitionState.riderClank->modeBits |= 6;
+                bootSpaceTransitionState.riderClank->lights = Hero.moby->lights;
+            }
+
+            FUN_00316ef8(&GameCamera.position, &GameCamera.rot, 1, 0, 0);
+            bootSpaceTransitionState.cameraBlend = 0.0f;
+            bootSpaceTransitionState.cameraBlendSpeed = 0.0f;
+
+            if (bootSpaceTransitionState.shipSplinePath >= 0) {
+                path = Splines[bootSpaceTransitionState.shipSplinePath];
+                maximumTurn = bootSpaceTransitionState.cameraBlend;
+                path->points[0].w = maximumTurn;
+
+                for (pathPointIndex = 1; pathPointIndex < path->pointCount - 1;
+                     pathPointIndex++) {
+                    segmentAngle = FastArcTan(
+                        path->points[pathPointIndex].x - path->points[pathPointIndex - 1].x,
+                        path->points[pathPointIndex].y - path->points[pathPointIndex - 1].y);
+                    path->points[pathPointIndex].w =
+                        FastSubRots(FastArcTan(path->points[pathPointIndex + 1].x -
+                                                   path->points[pathPointIndex].x,
+                                               path->points[pathPointIndex + 1].y -
+                                                   path->points[pathPointIndex].y),
+                                    segmentAngle);
+
+                    if (maximumTurn < FastAbsF(path->points[pathPointIndex].w))
+                        maximumTurn = FastAbsF(path->points[pathPointIndex].w);
+                }
+
+                segmentAngle = FastArcTan(
+                    path->points[path->pointCount - 1].x - path->points[path->pointCount - 2].x,
+                    path->points[path->pointCount - 1].y - path->points[path->pointCount - 2].y);
+                path->points[path->pointCount - 1].w = FastSubRots(
+                    FastArcTan(path->points[0].x - path->points[path->pointCount - 1].x,
+                               path->points[0].y - path->points[path->pointCount - 1].y),
+                    segmentAngle);
+                turnScale = 0.34906584f / maximumTurn;
+
+                for (pointIndex = 0; pointIndex < path->pointCount; pointIndex++)
+                    path->points[pointIndex].w *= turnScale;
+
+                bootSpaceTransitionState.flightSegLen =
+                    FastVec3Dist(&path->points[0], &path->points[1]);
+                bootSpaceTransitionState.flightParam = 0.0f;
+                bootSpaceTransitionState.flightSpeed = 0.0f;
+                bootSpaceTransitionState.trailHead = 0;
+                bootSpaceTransitionState.trailLen = 0;
+                player = bootSpaceTransitionState.spaceship;
+                CopyVec4Inline(&bootSpaceTransitionState.liftFrom, &player->pos);
+                CopyVec4Inline(&bootSpaceTransitionState.liftTo, &path->points[0]);
+                CopyVec4Inline(&bootSpaceTransitionState.liftFromRot, &player->rotation);
+                bootSpaceTransitionState.liftPitch =
+                    FastArcTan(FastVec3DistLen(&path->points[1], &path->points[0]),
+                               path->points[0].z - path->points[1].z);
+                bootSpaceTransitionState.liftYaw = FastArcTan(
+                    path->points[1].x - path->points[0].x, path->points[1].y - path->points[0].y);
+            }
+        }
+
+        if (bootSpaceTransitionState.shipCameraStartCuboid >= 0 &&
+            bootSpaceTransitionState.shipCameraEndCuboid >= 0) {
+            cameraBlendStep = 0.666f * frameTimeSq;
+            OrganicDelt(&bootSpaceTransitionState.cameraBlend,
+                        &bootSpaceTransitionState.cameraBlendSpeed, 1.0f, cameraBlendStep,
+                        cameraBlendStep, frameTime * 0.5f);
+            FastVecLerp(&scratch.v0,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].origin,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid].origin,
+                        bootSpaceTransitionState.cameraBlend);
+            FastVecZero(&scratch.v1);
+            scratch.v1.y = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
+                                           .inverseTransform.v3.y,
+                                       CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
+                                           .inverseTransform.v3.y) *
+                           bootSpaceTransitionState.cameraBlend;
+            scratch.v1.y = FastAddRots(
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.y,
+                scratch.v1.y);
+            scratch.v1.z = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
+                                           .inverseTransform.v3.z,
+                                       CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
+                                           .inverseTransform.v3.z) *
+                           bootSpaceTransitionState.cameraBlend;
+            scratch.v1.z = FastAddRots(
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.z,
+                scratch.v1.z);
+            FUN_00316dd0(&scratch.v0);
+            FUN_00316e28(&scratch.v1);
+        }
+
+        if (bootSpaceTransitionState.shipSplinePath >= 0) {
+            if (bootSpaceTransitionState.timer < FastScaleRoundInt(150)) {
+                blend =
+                    (1.0f - FastAngleSinF(FastIntToFloat(bootSpaceTransitionState.timer) *
+                                          (3.1415927f / FastIntToFloat(FastScaleRoundInt(120))))) *
+                    0.5f;
+
+                if (bootSpaceTransitionState.timer >= FastScaleRoundInt(120))
+                    blend = 1.0f;
+
+                bootSpaceTransitionState.spaceship->animationBlend = blend;
+                FastVecLerp(&bootSpaceTransitionState.spaceship->pos,
+                            &bootSpaceTransitionState.liftFrom, &bootSpaceTransitionState.liftTo,
+                            blend);
+                bootSpaceTransitionState.spaceship->rotation.x = 0.0f;
+                bootSpaceTransitionState.spaceship->rotation.y =
+                    FastAddRots(bootSpaceTransitionState.liftFromRot.y,
+                                FastSubRots(bootSpaceTransitionState.liftPitch,
+                                            bootSpaceTransitionState.liftFromRot.y) *
+                                    blend);
+                bootSpaceTransitionState.spaceship->rotation.z =
+                    FastAddRots(bootSpaceTransitionState.liftFromRot.z,
+                                FastSubRots(bootSpaceTransitionState.liftYaw,
+                                            bootSpaceTransitionState.liftFromRot.z) *
+                                    blend);
+
+                if (screenFade > 0.0f) {
+                    screenFade -= 0.125f;
+
+                    if (screenFade < 0.0f)
+                        screenFade = 0.0f;
+                }
+
+                if (blend < 1.0f)
+                    Space_SpawnShipParticles(bootSpaceTransitionState.spaceship,
+                                             frameTime * -3.75f);
+            }
+
+            else {
+                MobyPath *activePath;
+                bootSpaceTransitionState.flightSpeed += 0.8f;
+                activePath = Splines[bootSpaceTransitionState.shipSplinePath];
+
+                if (bootSpaceTransitionState.flightSpeed > 100.0f)
+                    bootSpaceTransitionState.flightSpeed = 100.0f;
+
+                if ((padState.bitsOn & (PAD_TRIANGLE | PAD_CROSS)) && screenFade < 0.0625f)
+                    screenFade = 0.0625f;
+
+                if ((float)(activePath->pointCount - 6) < bootSpaceTransitionState.flightParam &&
+                    screenFade < 0.0625f)
+                    screenFade = 0.0625f;
+
+                if (bootSpaceTransitionState.shipVariant < 2) {
+                    bootSpaceTransitionState.spaceship->setByGroup = 0x32;
+                    bootSpaceTransitionState.spaceship->uid = 10;
+                    RegisterMobyDraw(Space_DrawShipEngineGlow, bootSpaceTransitionState.spaceship);
+                }
+
+                bootSpaceTransitionState.flightParam += bootSpaceTransitionState.flightSpeed *
+                                                        frameTime /
+                                                        bootSpaceTransitionState.flightSegLen;
+
+                if ((float)(activePath->pointCount - 1) < bootSpaceTransitionState.flightParam ||
+                    screenFade >= 1.0f) {
+                    g_newlevel = 1;
+                    CutscenePlaying = 1;
+                }
+
+                else {
+                    MB_PathEvalSpline(activePath, 1, &bootSpaceTransitionState.spaceship->pos,
+                                      &bootSpaceTransitionState.spaceship->rotation, 0,
+                                      bootSpaceTransitionState.flightParam);
+                    bootSpaceTransitionState.spaceship->rotation.x =
+                        bootSpaceTransitionState.spaceship->rotation.w;
+                    bootSpaceTransitionState.trailHead =
+                        (bootSpaceTransitionState.trailHead + 1) & 0x1F;
+
+                    if (bootSpaceTransitionState.trailLen < 0x20)
+                        bootSpaceTransitionState.trailLen++;
+
+                    FastVecMtx3Mult(
+                        &bootSpaceTransitionState.trails[0][bootSpaceTransitionState.trailHead],
+                        &ShipTrailOffsets[bootSpaceTransitionState.shipVariant][0],
+                        &bootSpaceTransitionState.spaceship->transform);
+                    FastVec3Add(
+                        &bootSpaceTransitionState.trails[0][bootSpaceTransitionState.trailHead],
+                        &bootSpaceTransitionState.trails[0][bootSpaceTransitionState.trailHead],
+                        &bootSpaceTransitionState.spaceship->pos);
+                    bootSpaceTransitionState.trails[0][bootSpaceTransitionState.trailHead].w = 1.0f;
+                    FastVecMtx3Mult(
+                        &bootSpaceTransitionState.trails[1][bootSpaceTransitionState.trailHead],
+                        &ShipTrailOffsets[bootSpaceTransitionState.shipVariant][1],
+                        &bootSpaceTransitionState.spaceship->transform);
+                    FastVec3Add(
+                        &bootSpaceTransitionState.trails[1][bootSpaceTransitionState.trailHead],
+                        &bootSpaceTransitionState.trails[1][bootSpaceTransitionState.trailHead],
+                        &bootSpaceTransitionState.spaceship->pos);
+                    bootSpaceTransitionState.trails[1][bootSpaceTransitionState.trailHead].w = 1.0f;
+                    RegisterMobyDraw(Space_DrawShipEffects, bootSpaceTransitionState.spaceship);
+
+                    if (screenFade > 0.0f) {
+                        screenFade += 0.0625f;
+
+                        if (screenFade > 1.0f)
+                            screenFade = 1.0f;
+                    }
+                }
+            }
+
+            {
+                MobyInstance *p = bootSpaceTransitionState.spaceship;
+                MobyInstance *companion = bootSpaceTransitionState.riderRatchet;
+
+                CopyVec4Inline(&companion->rotation, &p->rotation);
+                FastVecMtx3Mult(&companion->pos,
+                                &ShipRatchetOffsets[bootSpaceTransitionState.shipVariant],
+                                &p->transform);
+            }
+
+            FastVec3Add(&bootSpaceTransitionState.riderRatchet->pos,
+                        &bootSpaceTransitionState.riderRatchet->pos,
+                        &bootSpaceTransitionState.spaceship->pos);
+            PostUpdateMoby(bootSpaceTransitionState.riderRatchet);
+            {
+                MobyInstance *companion = bootSpaceTransitionState.riderClank;
+                MobyInstance *p = bootSpaceTransitionState.spaceship;
+
+                CopyVec4Inline(&companion->rotation, &p->rotation);
+                FastVecMtx3Mult(&companion->pos,
+                                &ShipClankOffsets[bootSpaceTransitionState.shipVariant],
+                                &p->transform);
+            }
+
+            FastVec3Add(&bootSpaceTransitionState.riderClank->pos,
+                        &bootSpaceTransitionState.riderClank->pos,
+                        &bootSpaceTransitionState.spaceship->pos);
+            PostUpdateMoby(bootSpaceTransitionState.riderClank);
+        }
+
+        UpdateCameras();
+        sound_Update();
+        UpdatePointLights();
+        MB_UpdateLightAngle();
+        UpdateGameCounters();
+        break;
+
+    case SPACE_CUTSCENE_LOADING:
+        Space_UpdateCutsceneScene();
+        break;
+    case 1:
+    case 2:
+    case 5:
+    case 6:
+    case 7:
+        break;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", space_DefaultDraw);
 

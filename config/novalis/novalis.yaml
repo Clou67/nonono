@@ -88,6 +88,8 @@ segments:
     - [0x2590, lit4]
     - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c
     - [0x2620, lit4]
+    - [0x26d0, .sdata, game/space]  # ShipTakeoffSkipFrames
+    - [0x26e0, lit4]
     - [0x3030, .sdata, game/tfragfunc]  # tfrag texs, tfrag draw labels
     - [0x3050, lit4]
     - [0x30a0, .sdata, game/tiefunc]  # tie texs, tie draw labels
@@ -137,6 +139,8 @@ segments:
     - [0xac2c0, data]
     - [0xac4d0, .rodata, game/shrubfunc]  # texture overflow message
     - [0xac4e8, data]
+    - [0xac530, .rodata, game/space]  # UpdateSpace jump table
+    - [0xac560, data]
     - [0xac5b0, .rodata, game/tfragfunc]  # texture overflow message
     - [0xac5c8, .rodata, game/tiefunc]  # texture overflow message
     - [0xac5e0, data]

@@ -243,13 +243,30 @@ void ParseSpaceSceneChunk(int chunk);
 #define SCENE_MAX_CHUNKS 70
 #define SCENE_HEADER_SIZE 0x800
 
+// One camera frame of a scene (title screen and ship cutscenes).
+struct SceneCameraFrame {
+    union {
+        Vec4 position;
+        struct {
+            float x;
+            float y;
+            float z;
+            unsigned char flags[4]; // 0x0C copied to GameCamera; the first byte holds the key
+        };
+    };
+    float rotX;                     // 0x10
+    float rotY;
+    float rotZ;
+    float xratio;                   // 0x1C the ship cutscenes set the view's xratio from it
+};
+
 // State of the npc scene (cutscene) being streamed in.
 struct SceneLoadState {
     char unk_00[0x30];
     int sceneId;                    // 0x30
-    char unk_34[4];
-    int cameraFrame;
-    char unk_3C[4];
+    int sceneFrame;                 // 0x34 frames since the scene began
+    int cameraFrame;                // 0x38
+    int chunk;                      // 0x3C
     short numFrames;
     char unk_42[2];
     short mobyCount;
@@ -258,7 +275,7 @@ struct SceneLoadState {
     char unk_4A[2];
     void *subtitles;
     char unk_50[4];
-    void *cameraFrames;
+    SceneCameraFrame *cameraFrames; // 0x54
     unsigned char *decodedChunk;    // 0x58
     unsigned char *buffer;          // 0x5C
     unsigned char *chunks[SCENE_MAX_CHUNKS]; // 0x60
@@ -432,7 +449,8 @@ extern int CylinderCnt;
 extern int SplineCnt;
 // The spline points; Splines point into it.
 extern char *SplineData;
-extern char *Splines[];
+struct MobyPath;
+extern MobyPath *Splines[];
 extern char *EnvSamples;
 extern int EnvSampleCnt;
 
@@ -480,12 +498,41 @@ extern char PartAlloc[];
 // The space transition and player's ship state kept in the core.
 struct SpaceTransitionState {
     MobyInstance *spaceship;        // 0x00
-    char unk_04[0x22];
+    char unk_04[4];
+    MobyInstance *o2Mask;           // 0x08 the O2 mask moby on the hero in a ship cutscene
+    char unk_0C[4];
+    MobyInstance *riderRatchet;     // 0x10 Ratchet riding the flying ship
+    MobyInstance *riderClank;       // 0x14
+    char unk_18[8];
+    int cutscene;                   // 0x20 SpaceCutscene
+    short timer;                    // 0x24 frames into the current space cutscene
     short shipVariant;              // 0x26
-    char unk_28[8];
+    short skip;                     // 0x28
+    short storyTrip;                // 0x2A
+    short arrivalPending;           // 0x2C
+    char unk_2E[2];
     int shipSplinePath;             // 0x30
     int shipCameraStartCuboid;      // 0x34
     int shipCameraEndCuboid;        // 0x38
+    float flightParam;              // 0x3C position along the flight spline
+    float flightSpeed;              // 0x40
+    float flightSegLen;             // 0x44
+    float cameraBlend;              // 0x48 0..1 between the start and end camera cuboids
+    float cameraBlendSpeed;         // 0x4C
+    int trailHead;                  // 0x50
+    int trailLen;                   // 0x54 points in use
+    int loadingScreen;              // 0x58
+    int loadingCount;               // 0x5C
+    Vec4 arrivalPos;                // 0x60 where the hero is put after a landing cutscene
+    Vec4 arrivalRot;                // 0x70
+    Vec4 liftFrom;                  // 0x80 the ship as it starts to lift off
+    Vec4 liftTo;                    // 0x90 the flight spline's first point
+    Vec4 liftFromRot;               // 0xA0
+    float unk_B0;
+    float liftPitch;                // 0xB4
+    float liftYaw;                  // 0xB8
+    float unk_BC;
+    Vec4 trails[2][32];             // 0xC0 the two engine trails' points, a ring from trailHead
 };
 
 extern SpaceTransitionState bootSpaceTransitionState;

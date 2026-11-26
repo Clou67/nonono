@@ -12,20 +12,14 @@
 #include "vuchain.h"
 #include "fastfunc.h"
 #include "galaxymap.h"
+#include "pause.h"
 #include "sound.h"
-
-// Pause menu state; only the memory card icon switch is named so far.
-struct PauseMenuState {
-    char unk_000[0x13C];
-    int hideActivityIcon;
-};
 
 
 extern char bss_start[];
 extern char bss_end[];
 
 extern unsigned char g_MiscLevelFlags[] __attribute__((section(".data")));
-extern PauseMenuState PauseMenu;
 extern int g_newlevel;
 extern int FramesSinceStateChange;
 extern float FrameLoad;

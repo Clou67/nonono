@@ -134,7 +134,7 @@ void Help_Skip(void)
 int Help_QueueMessage(int id, int flag)
 {
     if (Help.state == HELP_STATE_IDLE && Help.message_id == HELP_NO_MESSAGE) {
-        if (musicTransition.speechHandle == 0 && musicTransition.unk1C == HELP_NO_MESSAGE) {
+        if (musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == HELP_NO_MESSAGE) {
             if (HelpDataMessages[flag].timesUsed != HELP_TIMES_USED_MAX) {
                 Help.message_id = id;
                 Help.message_flg = flag;
@@ -359,8 +359,8 @@ void Help_Update(void)
         MB_RequestHelpMessage(HELP_MESSAGE_SELECTOR, 0);
 
         vag = HelpMsgs[Help.message_index].vag;
-        if (vag >= 0 && musicTransition.speechHandle == 0 && musicTransition.unk1C == -1) {
-            musicTransition.unk1C = vag + MUSIC_SPEECH_ID_BASE;
+        if (vag >= 0 && musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == -1) {
+            musicTransition.queuedSpeech = vag + MUSIC_SPEECH_ID_BASE;
         }
 
         if (padState.bitsOn & PAD_TRIANGLE) {
@@ -438,7 +438,7 @@ void Help_Update(void)
 
         MB_RequestHelpMessage(HELP_MESSAGE_SELECTOR, 0);
 
-        if ((Help.counter >= FastScaleRoundInt(HELP_TEXT_SHOWN_FRAMES) && ((vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicTransition.speechId - MUSIC_SPEECH_ID_BASE || (musicTransition.speechHandle == 0 && musicTransition.unk1C == -1))) || (padState.bitsOn & PAD_TRIANGLE)) {
+        if ((Help.counter >= FastScaleRoundInt(HELP_TEXT_SHOWN_FRAMES) && ((vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicTransition.speechId - MUSIC_SPEECH_ID_BASE || (musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == -1))) || (padState.bitsOn & PAD_TRIANGLE)) {
             Help_RecordUse();
             Help_RecordTime();
             Help.state = HELP_STATE_TEXT_FADE_OUT;
