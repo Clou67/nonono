@@ -73,17 +73,19 @@ struct HeroState {
     Vec4 aimPos;
     Vec4 cgPos;
     Vec4 velocity;
-    char unkF0[0x10];
+    Vec4 platformDelta;
     Vec4 displacement;
     Vec4 resolvedVelocity;
-    char unk120[0x20];
+    Vec4 resolvedVelocityZ;
+    char unk130[0x10];
     // How far the hero moved this frame.
     Vec4 frameMove;
     Vec4 externalMomentum;
     float speedXY;
     float flatSpeed;
     float forwardSpeed;
-    char unk16C[0x14];
+    float moveSlope;
+    Vec4 moveDirection;
     float idealRotZ;
     float turnSpeed;
     float turnDelta;
@@ -118,7 +120,7 @@ struct HeroState {
     short screenFlashRed;
     char unk1F0[0x2];
     short noJumps;
-    char unk1F4[0x2];
+    short edgeStop;
     short splineWallHitTimer;
     char unk1F8[0x28];
     float collTop;
@@ -138,13 +140,14 @@ struct HeroState {
     float groundHeight;
     float groundDist;
     float groundSlope;
-    char unk2E4[0xC];
+    char unk2E4[0x8];
+    float groundAngZ;
     float waterHeight;
     char unk2F4[0x4];
     int inWaterFrames;
     MobyInstance *standingOnMoby;
     int framesGroundedCnt;
-    char unk304[0x4];
+    float groundSpringVelocity;
     short onMagnerail;
     short onFlaggedGroundMoby;
     short framesOffGround;
@@ -165,7 +168,8 @@ struct HeroState {
     char unk3EC[0x8];
     float longJumpSpeed;
     float fallGravity;
-    char unk3FC[0x14];
+    char unk3FC[0x4];
+    Vec4 takeoffPos;
     float smoothedGroundZ;
     float airTurnRate;
     int dustHoverState;
@@ -212,7 +216,10 @@ struct HeroState {
     int predictedLandFrames;
     float riseFallTargetFrame;
     int riseFallLandFrames;
-    char unk4C8[0x20];
+    char unk4C8[0x8];
+    Vec4 ledgeGrabPos;
+    char unk4E0[0x4];
+    float ledgeWallAngZ;
     int ledgeFound;
     float ledgeGravity;
     float smoothedAirZ;
@@ -234,7 +241,8 @@ struct HeroState {
     int swimStrokeTimer;
     float swimWaterLevel;
     float swimWaterLevelVelocity;
-    char unk6A4[0x1C8];
+    MobyInstance *sinkEffectMoby;
+    char unk6A8[0x1C4];
     MobyInstance *boardMoby;
     char unk870[0x10];
     int trickHudHandle;
@@ -253,24 +261,40 @@ struct HeroState {
     int racePlace;
     char unk8C4[0x1C];
     int swimEntryFrames;
-    char unk8E4[0x10];
+    float swimPitchSpeed;
+    float swimBankSpeed;
+    float swimYawSpeed;
+    int swimBubbleTimer;
     int swimThrustTimer;
-    char unk8F8[0x4];
+    short packParticleTimer;
+    char unk8FA[0x2];
     float drownSinkSpeed;
-    char unk900[0xA];
+    short cwTurnFrames;
+    short swimSquareHoldFrames;
+    char unk904[0x6];
     short splashEffectTimer;
-    char unk90C[0x2];
+    short swimHardPressFrames;
     short jumpButtonFrames;
     int swimCrossTapCount;
-    char unk914[0x2C];
+    int lastCrossPressFrame;
+    char unk918[0x8];
+    Vec4 moveImpulse;
+    float pushLength;
+    char unk934[0xC];
     float fallStateGravity;
     float sticklessDecel;
-    char unk948[0x8];
+    float fatalFallRollRate;
+    float fixedPivotRotY;
     float pivotRotXTarget;
     float fatalFallTumbleTargetY;
     char unk958[0x46];
     short nearSwingshot;
-    char unk9A0[0xB0];
+    char unk9A0[0x34];
+    float railRidePitch;
+    char unk9D8[0xC];
+    float rollSpringVelocity;
+    float railRidePitchVelocity;
+    char unk9EC[0x64];
     MobyInstance *throwTarget;
     MobyInstance *meleeTarget;
     int headingLocked;
@@ -316,7 +340,8 @@ struct HeroState {
     unsigned char hotSpotWater;
     unsigned char hotSpotLava;
     unsigned char hotSpotQuickSand;
-    char unk12E7[0x3];
+    unsigned char onMagnetGround;
+    char unk12E8[0x2];
     unsigned char onSlipGround;
     unsigned char hotSpotDeathSand;
     unsigned char hotSpotIceWater;
@@ -393,7 +418,8 @@ struct HeroState {
     int animLinkTable;
     char unk2280[4];
     int requestedCamType;
-    char unk2288[0xC];
+    char unk2288[0x8];
+    float skidDecel;
     int itemHoldAnim;
     int itemAnimItemId;
     float padMagnitude;
@@ -453,6 +479,94 @@ enum HeroStateType {
 };
 
 // Hero states, named after Deadlocked where the behaviour lines up.
+// Hero animation ids, named from what each clip shows. Unlabeled ids are still raw numbers.
+enum HeroAnimId {
+    HERO_ANIM_IDLE = 0,
+    HERO_ANIM_LOOK_RIGHT = 1,
+    HERO_ANIM_LOOK_LEFT = 2,
+    HERO_ANIM_WALK = 3,
+    HERO_ANIM_RUN = 4,
+    HERO_ANIM_SKID_RIGHT = 5,
+    HERO_ANIM_SKID_LEFT = 6,
+    HERO_ANIM_JUMP = 7,
+    HERO_ANIM_BUNNY_HOP_LEFT = 8,
+    HERO_ANIM_BUNNY_HOP_RIGHT = 9,
+    HERO_ANIM_FALL_STATIC = 10,
+    HERO_ANIM_FALL = 11,
+    HERO_ANIM_LAND = 12,
+    HERO_ANIM_CROUCH = 13,
+    HERO_ANIM_CROUCH_MOVE_RIGHT = 14,
+    HERO_ANIM_CROUCH_MOVE_LEFT = 15,
+    HERO_ANIM_HIT = 16,
+    HERO_ANIM_GROUND_POUND = 17,
+    HERO_ANIM_LONG_JUMP_HELI = 18,
+    HERO_ANIM_GLIDE = 19,
+    HERO_ANIM_SLIDE = 20,
+    HERO_ANIM_HIGH_JUMP_HELI = 21,
+    HERO_ANIM_DOUBLE_JUMP = 22,
+    HERO_ANIM_WRENCH_SWING_RIGHT = 23,
+    HERO_ANIM_WRENCH_SWING_LEFT = 24,
+    HERO_ANIM_WRENCH_SWING_LAST = 25,
+    HERO_ANIM_WRENCH_THROW = 26,
+    HERO_ANIM_SHOOT_GUN = 27,
+    HERO_ANIM_SIDEFLIP_RIGHT = 28,
+    HERO_ANIM_SIDEFLIP_LEFT = 29,
+    HERO_ANIM_DOUBLE_JUMP_ALT = 30,
+    HERO_ANIM_BACKFLIP = 31,
+    HERO_ANIM_LEDGE_GRAB = 32,
+    HERO_ANIM_LEDGE_HANG = 33,
+    HERO_ANIM_LEDGE_PULL_UP = 34,
+    HERO_ANIM_WALL_JUMP = 35,
+    HERO_ANIM_LEDGE_MOVE_RIGHT_HAND = 36,
+    HERO_ANIM_LEDGE_MOVE_LEFT_HAND = 37,
+    HERO_ANIM_THRUSTER_PACK_FORWARD = 38,
+    HERO_ANIM_BONK_0 = 39,
+    HERO_ANIM_BONK_1 = 40,
+    HERO_ANIM_BONK_2 = 41,
+    HERO_ANIM_GROUND_POUND_DOWN = 42,
+    HERO_ANIM_HYPERSTRIKE = 43,
+    HERO_ANIM_THROW = 44,
+    HERO_ANIM_DRAG_ITEM = 45,
+    HERO_ANIM_SHOOT_A = 46,
+    HERO_ANIM_SHOOT_B = 51,
+    HERO_ANIM_SHOOT_C = 54,
+    HERO_ANIM_SHOOT_D = 56,
+    HERO_ANIM_SHOOT_E = 57,
+    HERO_ANIM_WATER_IDLE = 58,
+    HERO_ANIM_SWIM_FORWARD = 59,
+    HERO_ANIM_UNDERWATER_IDLE = 60,
+    HERO_ANIM_HYDRO_PACK_SWIM = 61,
+    HERO_ANIM_PUSH_WALK = 64,
+    HERO_ANIM_PUSH_RUN = 65,
+    HERO_ANIM_RUN_THROW = 66,
+    HERO_ANIM_PUSH_SIDEWAYS = 68,
+    HERO_ANIM_DEATH_FALL = 69,
+    HERO_ANIM_SHOOT_F = 81,
+    HERO_ANIM_LOW_HEALTH_IDLE = 84,
+    HERO_ANIM_LOW_HEALTH_SWEATING = 90,
+    HERO_ANIM_DROWNING = 95,
+    HERO_ANIM_WADE_STRUGGLE = 96,
+    HERO_ANIM_WATER_SLIDE = 100,
+    HERO_ANIM_SWIM_SLIDE = 101,
+    HERO_ANIM_WALLOPER_PUNCH = 103,
+    HERO_ANIM_HOVERBOARD_TRICK_FEET_RIGHT = 105,
+    HERO_ANIM_HOVERBOARD_TRICK_FEET_LEFT = 106,
+    HERO_ANIM_HOVERBOARD_TRICK_RIGHT_HAND = 107,
+    HERO_ANIM_HOVERBOARD_TRICK_LEFT_HAND = 108,
+    HERO_ANIM_SWIM_HIT_A = 111,
+    HERO_ANIM_SWIM_HIT_B = 112,
+    HERO_ANIM_WATER_EXIT_JUMP = 114,
+    HERO_ANIM_FACE_SHOCKED = 116,
+    HERO_ANIM_FACE_EVIL = 117,
+    HERO_ANIM_FACE_ANGRY = 118,
+    HERO_ANIM_FACE_CONFUSED = 119,
+    HERO_ANIM_FACE_CHEEKS_BLOWN = 120,
+    HERO_ANIM_FACE_SCHEMING = 121,
+    HERO_ANIM_FACE_SHOCKED_ALT = 122,
+    HERO_ANIM_FACE_EARS_DOWN = 123,
+    HERO_ANIM_COLLECT_GOLD_BOLT = 130,
+};
+
 enum HeroStateId {
     HERO_STATE_IDLE = 0,
     HERO_STATE_LOOK = 1,
@@ -608,6 +722,16 @@ enum UsageAction {
 extern UsageStat UsageStats[];
 extern UsageStat ActionUsageStats[];
 
+// How HeroAttackRow::kind moves the hero while the swing animation plays.
+enum HeroComboKind {
+    HERO_COMBO_FORWARD_ADVANCE,
+    HERO_COMBO_FORWARD_DECELERATION,
+    HERO_COMBO_CONDITIONAL_FORWARD_ADVANCE
+};
+
+// HeroState::gravityMode; the other modes tilt the hero's gravity.
+enum HeroGravityMode { HERO_GRAVITY_WORLD_DOWN = 0 };
+
 // One row of HeroAttackTable, indexed by HeroState::attackRecord.
 struct HeroAttackRow {
     int comboEnds;          // 1: this is the finishing recovery animation
@@ -638,7 +762,8 @@ struct HeroIdleFidget {
 
 // Speed thresholds the grounded jump transitions compare against.
 struct HeroJumpSpeedTweaks {
-    char pad00[0xC];
+    char pad00[0x8];
+    float lowStepSpeed;
     float minRunSpeed;
     char pad10[0x8];
     float stepSpeed;
@@ -782,33 +907,31 @@ void Hero_SetNextAnimFrame(int animation, int frame);
 
 void Hero_PlayLoopSound(int slot, MobyInstance *moby, int soundId);
 
-struct HeroTweakValues {
-    char unk_00[0xA4];
-    float unk_A4;
-    float unk_A8;
-    char unk_AC[0xA8];
-    float unk_154;
-    float unk_158;
-    char unk_15C[0xA8];
-    float unk_204;
-    float unk_208;
-    char unk_20C[0x48];
-    float unk_254;
-    float unk_258;
-    char unk_25C[0x58];
-    float unk_2B4;
-    float unk_2B8;
+// One joint tweak: the manipulator eases rot toward target at speed, trans toward transTarget.
+struct HeroTweaker {
+    Manipulator manip;
+    Vec4 rot;
+    Vec4 speed;
+    Vec4 target;
+    Vec4 trans;
+    Vec4 transSpeed;
+    Vec4 transTarget;
+    short joint;
+    short whichMoby;
+    float gain;
+    float damp;
+    float scale;
 };
 
-extern HeroTweakValues HeroTweaks;
+extern HeroTweaker HeroTweaks[18];
 
-void Hero_SetTweakPair_97b44(float first, float second);
+void Hero_SetTweaker0(float gain, float damp);
 
-void Hero_SetTweakPair_929e8(float first, float second);
+void Hero_SetTweaker1(float gain, float damp);
 
-void Hero_SetTweak_721dd4(float first, float second);
+void Hero_SetTweaker2(float gain, float damp);
 
-void Hero_SetTweak_721e84(float first, float second);
+void Hero_SetTweaker3(float gain, float damp);
 
 void Hero_PlayFootStep(int groundType, int whichFoot, int playSound);
 

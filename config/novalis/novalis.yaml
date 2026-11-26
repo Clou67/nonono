@@ -121,8 +121,7 @@ segments:
     - [0xaab60, .rodata, game/draw]  # long DefaultDraw timer labels
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
-    - [0xaad50, data]
-    - [0xab190, .rodata, game/hero]  # Hero_InitBodyState, Hero_GadgetTransitions and Hero_Transitions jump tables
+    - [0xaad50, .rodata, game/hero]  # gadget helper tables and the Hero_DoBehavior, Hero_InitBodyState, Hero_GadgetTransitions and Hero_Transitions jump tables
     - [0xab670, data]
     - [0xab730, .rodata, game/lights]  # debug strings
     - [0xab7a0, .rodata, game/loaders]  # moby memory and occlusion messages, LoadLevelFiles jump table
