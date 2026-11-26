@@ -260,13 +260,13 @@ struct GrindPath {
 // A lighting/fog blend volume (field names from the PS3 project).
 struct Blender {
     Mtx4 invMatrix;                 // 0x00
-    unsigned int ambientA;          // 0x40: ABGR
-    unsigned int ambientB;          // 0x44: ABGR
+    unsigned int ambientA;          // 0x40: RGBA
+    unsigned int ambientB;          // 0x44: RGBA
     int dLightA;                    // 0x48: directional light index (BLENDER_LIGHT_DEFAULT if none)
     int dLightB;                    // 0x4C
     unsigned int flags;             // 0x50
-    unsigned int fogColor1;         // 0x54: ABGR
-    unsigned int fogColor2;         // 0x58: ABGR
+    unsigned int fogColor1;         // 0x54: RGBA
+    unsigned int fogColor2;         // 0x58: RGBA
     float fogNearDist1;             // 0x5C
     float fogNearIntensity1;        // 0x60
     float fogFarDist1;              // 0x64
