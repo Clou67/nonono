@@ -43,7 +43,29 @@ void LoadByteGrid(int *grid)
     byteGridData = (unsigned char *)grid;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", RelocEffectTable);
+extern int EffectTableCnt;
+extern int *EffectTableEntries;
+extern int *EffectTableOffsets;
+
+// Fixes up the level's effect table: 0x20-byte entries, then one offset per entry to
+// its data, whose second word is also an offset. Both become pointers.
+void RelocEffectTable(int *table)
+{
+    int i, j;
+    int count;
+
+    count = *table;
+    table += 4;
+    EffectTableEntries = table;
+    table = (int *)((char *)table + (count << 5));
+    EffectTableCnt = count;
+    EffectTableOffsets = table;
+    for (i = 0; i < EffectTableCnt; i++)
+        *(int *)((int)EffectTableOffsets + i * 4) += (int)EffectTableOffsets;
+
+    for (j = 0; j < EffectTableCnt; j++)
+        *(int *)(*(int *)((int)EffectTableOffsets + j * 4) + 4) += (int)EffectTableOffsets;
+}
 
 int FastLog2(int value);
 
@@ -2292,7 +2314,6 @@ extern char LevelProgramEnd[];
 extern int LevelUnkVars[16];
 
 void LoadHudBanks(void);
-void RelocEffectTable(int *table);
 void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass);
 void ParseShrubClass(char *classData, TextureDef *texDefs, char *texRefs, char *mipDists, int oClass);
 char *ParseMobyPack(char *pack, LevelCoreHeader *header);
