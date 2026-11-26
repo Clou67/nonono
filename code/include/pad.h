@@ -8,7 +8,10 @@
 #define PAD_TRIANGLE 0x0010
 #define PAD_CIRCLE 0x0020
 #define PAD_CROSS 0x0040
+#define PAD_SQUARE 0x0080
 #define PAD_SELECT 0x0100
+#define PAD_L3 0x0200
+#define PAD_R3 0x0400
 #define PAD_START 0x0800
 #define PAD_UP 0x1000
 #define PAD_RIGHT 0x2000
@@ -43,7 +46,7 @@
 
 // DL struct PAD; the later build has more members after repeatCounter.
 struct PAD {
-    unsigned char unk_000[0x100];
+    unsigned char unk_000[0x100] __attribute__((aligned(16)));
     float analog[PAD_ANALOG_COUNT];
     float hudAnalog[PAD_ANALOG_COUNT];
     unsigned char profile[PAD_PROFILE_SIZE];

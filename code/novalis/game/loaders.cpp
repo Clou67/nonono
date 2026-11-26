@@ -2181,7 +2181,7 @@ char *ResetLevelData(int reload)
             FastMemCopy16(SplineData, source, size);
 
         for (int index = 0; index < SplineCnt; index++) {
-            Splines[index] = SplineData + *(int *)section;
+            Splines[index] = (MobyPath *)(SplineData + *(int *)section);
             section += 4;
         }
     }
@@ -3178,7 +3178,7 @@ void ParseNpcChunk(void)
     int subtitleOffset = chunk->subtitles;
     SceneLoad.speechFrame = chunk->speechFrame;
     SceneLoad.mobyCount = chunk->mobyCount;
-    SceneLoad.cameraFrames = base + chunk->cameraFrames;
+    SceneLoad.cameraFrames = (SceneCameraFrame *)(base + chunk->cameraFrames);
 
     if (subtitleOffset < 0x400)
         SceneLoad.subtitles = 0;

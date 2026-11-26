@@ -38,7 +38,7 @@ int InfobotHint_Update(MobyInstance *moby, InfobotHint *hint)
     int index;
     int handle;
 
-    if (hero->state == PLAYER_STATE_VISIBOMB_CONTROL)
+    if (hero->state == HERO_STATE_VISIBOMB)
         return 0;
 
     if (hero->health == 0)

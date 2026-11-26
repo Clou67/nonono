@@ -2,13 +2,62 @@
 #define HERO_H
 
 #include "moby.h"
+#include "mobyutil.h"
 
-enum { HERO_TYPE_RATCHET = 0, HERO_TYPE_HOLOGUISE = 3 };
+enum { HERO_TYPE_RATCHET = 0, HERO_TYPE_CLANK = 1, HERO_TYPE_GIANT_CLANK = 2, HERO_TYPE_HOLOGUISE = 3 };
 
 #define HERO_NO_HUD_HANDLE -1
 #define HERO_SHIP_FLAG_RESET 0x1
 #define HERO_RACE_LAP_COUNT 3
 #define HERO_RACE_MOBY_LAP_OFFSET 0xBC
+
+// One key of a jump's vertical velocity curve, played between velocityKeysStartFrame and EndFrame.
+// Entering a key sets the vertical acceleration to value * frameTimeSq (-999999 keeps the old one),
+// each later frame adds delta * frameTimeSq. A key lasts FastScaleRoundInt(frames) frames.
+struct HeroVelocityKey {
+    float value;
+    float delta;
+    int frames;
+};
+
+// Timer that fires after a random number of frames; a range of 0 holds it off.
+struct HeroRandTimer {
+    int fired;
+    int deadline;
+    int range;
+};
+
+// One of the hero's item slots. Slot 0 is the equipped gadget.
+struct HeroItemSlot {
+    MobyInstance *moby;         // 0x00: item moby
+    MobyInstance *moby2;        // 0x04: second item moby
+    char unk8[0x4];
+    MobyInstance *moby3;        // 0x0C: third item moby
+    int buttonMask;             // 0x10: pad buttons that hold the gadget states
+    int respawnFrame;           // 0x14: set on release
+    // Counts down; a slot change waits for 0.
+    short timer;                // 0x18
+    unsigned char thrown;       // 0x1A: cleared on a slot change
+    unsigned char releasedFrames; // 0x1B: counts releases
+    unsigned char switchLock;   // 0x1C: 2 blocks a slot change, 1 reloads timer
+    unsigned char timerReload;  // 0x1D: timer reload value
+    char unk1E[0x2];
+    int readyFrames;            // 0x20
+    // 0 empty, 2 ready, 3 released.
+    int state;                  // 0x24
+    // The item in the slot.
+    int itemId;                 // 0x28
+    float glowPhase;            // 0x2C: phase of the item moby's colour pulse
+    float effectRandomBase;     // 0x30
+    float effectRandomHalfRange; // 0x34
+    int effectUpdatesLeft;      // 0x38
+    short effectCountPerPoint;  // 0x3C
+    unsigned short effectFlags; // 0x3E
+    int lockedOn;               // 0x40: on slot 6, nonzero makes the Ryno aim along lockYaw
+    char unk44[0x4];
+    MobyInstance *lockTarget;   // 0x48: on slot 6, the moby the weapons lock on to
+    float lockYaw;              // 0x4C
+};
 
 // The hero. Field names from the PS3 project's hero globals (same layout), plus RC1-only fields.
 extern int WeaponAmmo[];
@@ -24,11 +73,19 @@ struct HeroState {
     Vec4 aimPos;
     Vec4 cgPos;
     Vec4 velocity;
-    char unkF0[0x50];
+    Vec4 platformDelta;
+    Vec4 displacement;
+    Vec4 resolvedVelocity;
+    Vec4 resolvedVelocityZ;
+    char unk130[0x10];
     // How far the hero moved this frame.
     Vec4 frameMove;
     Vec4 externalMomentum;
-    char unk160[0x20];
+    float speedXY;
+    float flatSpeed;
+    float forwardSpeed;
+    float moveSlope;
+    Vec4 moveDirection;
     float idealRotZ;
     float turnSpeed;
     float turnDelta;
@@ -37,43 +94,155 @@ struct HeroState {
     float storedNeutralSpeed;
     int stateTimer;
     int controlModeTimer;
-    char unk1A0[0x2C];
+    int stepFrames;
+    int animSeqFrames;
+    char unk1A8[0x8];
+    short noLedge;
+    short allowQuickSelect;
+    int wallJumpOk;
+    int longJumpLockout;
+    char unk1BC[0x4];
+    int postHitInvinc;
+    int moveLockTimer;
+    char unk1C8[0x4];
     int ghostFrames;
-    char unk1D0[0x16];
+    int idleReturnDelay;
+    int jumpBufferLockout;
+    short noWaterJump;
+    char unk1DA[0x4];
+    short noWaterDive;
+    short sinkingFloorHold;
+    short stillFrames;
+    char unk1E4[0x2];
     short swingshotReleasedTimer;
-    char unk1E8[0xE];
+    short fidgetCooldown;
+    char unk1EA[0x4];
+    short screenFlashRed;
+    char unk1F0[0x2];
+    short noJumps;
+    short edgeStop;
     short splineWallHitTimer;
     char unk1F8[0x28];
     float collTop;
     float collBottom;
     char unk228[0xC];
     float collRadius;
-    char unk238[0x38];
+    char unk238[0x10];
+    float wallProbeDistance;
+    char unk24C[0xB];
+    unsigned char wallHit;
+    char unk258[0x18];
     Vec4 groundNormal;
     char unk280[0x10];
     Vec4 gravityDir;
     Vec4 groundPoint;
     char unk2B0[0x28];
-    float groundZ;
+    float groundHeight;
     float groundDist;
     float groundSlope;
-    char unk2E4[0xC];
-    float waterZ;
-    char unk2F4[0x8];
+    char unk2E4[0x8];
+    float groundAngZ;
+    float waterHeight;
+    char unk2F4[0x4];
+    int inWaterFrames;
     MobyInstance *standingOnMoby;
     int framesGroundedCnt;
-    char unk304[0x4];
+    float groundSpringVelocity;
     short onMagnerail;
-    char unk30A[0x4];
+    short onFlaggedGroundMoby;
+    short framesOffGround;
     short framesNotGrounded;
-    char unk310[0x108];
+    char unk310[0xA8];
+    short moveAlongStick;
+    char unk3BA[0x2];
+    short runStartBlending;
+    short sharpTurn;
+    char unk3C0[0x10];
+    int velocityKeysStartFrame;
+    int velocityKeysEndFrame;
+    float keyedMoveTargetFrame;
+    float unk3DC;
+    int keyedAnimTargetFrame;
+    HeroVelocityKey *velocityKeys;
+    int velocityKeyIndex;
+    char unk3EC[0x8];
+    float longJumpSpeed;
+    float fallGravity;
+    char unk3FC[0x4];
+    Vec4 takeoffPos;
+    float smoothedGroundZ;
+    float airTurnRate;
     int dustHoverState;
-    char unk41C[0xDC];
+    short velocityKeysActive;
+    short pastJumpApex;
+    int takeoffFrame;
+    float airStickSpeed;
+    float pendingJumpImpulse;
+    float jumpImpulseTotal;
+    float jumpHeight;
+    float airCapsuleBottom;
+    float highJumpDriftYaw;
+    float takeoffYaw;
+    float apexAnimFrame;
+    float targetAnimFrame;
+    float jumpLandAnimFrame;
+    int framesToLand;
+    int jumpStickDirection;
+    float airTargetSpeed;
+    float highJumpDriftSpeed;
+    float ledgeJumpSpeed;
+    Vec4 wallHitNormal;
+    Vec4 wallJumpNormal;
+    float airSpeedStepUp;
+    float jumpDecel;
+    float jumpHeightStart;
+    float jumpHeightTarget;
+    float fallStartDistance;
+    float jumpAnimRetimeScale;
+    short jumpRampFrames;
+    short jumpMaxFrames;
+    char unk49C[0x4];
+    float jumpGravity;
+    short jumpBlockedAhead;
+    short packGlideDelay;
+    short tookOffFromIce;
+    short fallDelayFrames;
+    short canUseItemInJump;
+    unsigned char canChainHighJump;
+    unsigned char canDoubleJump;
+    float riseFallGravity;
+    char unk4B4[0x4];
+    float pastApex;
+    int predictedLandFrames;
+    float riseFallTargetFrame;
+    int riseFallLandFrames;
+    char unk4C8[0x8];
+    Vec4 ledgeGrabPos;
+    char unk4E0[0x4];
+    float ledgeWallAngZ;
+    int ledgeFound;
+    float ledgeGravity;
+    float smoothedAirZ;
+    char unk4F4[0x4];
     MobyInstance *ledgeMoby;
     char unk4FC[0x64];
     // The data of the grind path the hero is on.
     int grindPath;
-    char unk564[0x308];
+    char unk564[0xC];
+    int railOffFrames;
+    char unk574[0x38];
+    int grindSpeedBoost;
+    float grindBaseSpeed;
+    char unk5B4[0x18];
+    float grindRecoverySpeed;
+    char unk5D0[0xC0];
+    float swimBobOffset;
+    float swimBobVelocity;
+    int swimStrokeTimer;
+    float swimWaterLevel;
+    float swimWaterLevelVelocity;
+    MobyInstance *sinkEffectMoby;
+    char unk6A8[0x1C4];
     MobyInstance *boardMoby;
     char unk870[0x10];
     int trickHudHandle;
@@ -90,39 +259,106 @@ struct HeroState {
     char unk8AF[0x11];
     // Finishing place, 1 is first.
     int racePlace;
-    char unk8C4[0xDA];
+    char unk8C4[0x1C];
+    int swimEntryFrames;
+    float swimPitchSpeed;
+    float swimBankSpeed;
+    float swimYawSpeed;
+    int swimBubbleTimer;
+    int swimThrustTimer;
+    short packParticleTimer;
+    char unk8FA[0x2];
+    float drownSinkSpeed;
+    short cwTurnFrames;
+    short swimSquareHoldFrames;
+    char unk904[0x6];
+    short splashEffectTimer;
+    short swimHardPressFrames;
+    short jumpButtonFrames;
+    int swimCrossTapCount;
+    int lastCrossPressFrame;
+    char unk918[0x8];
+    Vec4 moveImpulse;
+    float pushLength;
+    char unk934[0xC];
+    float fallStateGravity;
+    float sticklessDecel;
+    float fatalFallRollRate;
+    float fixedPivotRotY;
+    float pivotRotXTarget;
+    float fatalFallTumbleTargetY;
+    char unk958[0x46];
     short nearSwingshot;
-    char unk9A0[0xE8];
+    char unk9A0[0x34];
+    float railRidePitch;
+    char unk9D8[0xC];
+    float rollSpringVelocity;
+    float railRidePitchVelocity;
+    char unk9EC[0x64];
+    MobyInstance *throwTarget;
+    MobyInstance *meleeTarget;
+    int headingLocked;
+    float attackTargetYaw;
+    int attackRecord;
+    int meleeHit;
+    float pushbackYaw;
+    float speedScale;
+    float slamDescending;
+    char unkA74[0x8];
+    int crouchSwingToggle;
+    char unkA80[0x8];
     MobyInstance *ratchetMoby;
     char unkA8C[0x4];
     float animSpeed;
-    char unkA94[0x14];
+    char unkA94[0x4];
+    int animFlags;
+    int animChanging;
+    int animBlendCurve;
+    int animBlendStep;
     float animFrame;
     float animFrameWindow;
     int nextAnimation;
     int nextAnimationFrame;
     int queuedFrameRequest;
-    char unkABC[0x5D4];
-    MobyInstance *currentWeaponMoby;
-    char unk1094[0x24];
-    int currentWeapon;
-    char unk10BC[0x24];
-    MobyInstance *bootMoby;
-    char unk10E4[0x1FC];
+    char unkABC[0x24C];
+    MobyInstance *heldItemAnimMoby[2];
+    char unkD10[0x4];
+    int armLayerFade;
+    char unkD18[0x2D8];
+    // Random-interval timer; range 0 holds it off.
+    HeroRandTimer randTimer;
+    char unkFFC[0x14];
+    int headLookTimer;
+    char unk1014[0x7C];
+    // Item slots; slot 0 is the equipped gadget.
+    HeroItemSlot items[7];
+    char unk12C0[0x20];
     short groundType;
-    char unk12E2[0x2];
+    unsigned char onIceGround;
+    unsigned char selector4;
     // The hero is in water.
     unsigned char hotSpotWater;
     unsigned char hotSpotLava;
     unsigned char hotSpotQuickSand;
-    char unk12E7[0x4];
+    unsigned char onMagnetGround;
+    char unk12E8[0x2];
+    unsigned char onSlipGround;
     unsigned char hotSpotDeathSand;
     unsigned char hotSpotIceWater;
-    char unk12ED[0x322];
+    unsigned char groundSoundClass;
+    char unk12EE[0x321];
     unsigned char shipFlags;
-    char unk1610[0x20];
+    char unk1610[0x4];
+    MobyInstance *fidgetPropMoby;
+    char unk1618[0x18];
     int giantClankHealth;
-    char unk1634[0x4CC];
+    char unk1634[0xC];
+    Vec4 targetPose;
+    int stateEntryOption;
+    char unk1654[0x1C];
+    // Translucent copies that follow the hero.
+    MotionBlur trail;
+    char unk17B0[0x350];
     Vec4 posHistory[32];
     float savedPosRot[8];
     float padStick[3];
@@ -134,20 +370,37 @@ struct HeroState {
     unsigned char metalDetectorSpotIsClose;
     char unk2049[0x37];
     MobyInstance *moby;
-    // A PlayerState value.
+    // A HeroStateId value.
     int state;
-    char unk2088[0x4];
+    int subState;
     int stateType;
-    char unk2090[0x14];
+    int prevState;
+    int prevStateType;
+    int prevStateTimer;
+    int prev2State;
+    int prev2StateType;
     unsigned char type;
     unsigned char invisible;
-    char unk20A6[0xB];
+    char unk20A6[0x1];
+    unsigned char itemSelectBlocked;
+    unsigned char itemAnimActive;
+    unsigned char wading;
+    unsigned char weaponUp;
+    char unk20AB[0x1];
+    unsigned char itemUseLocked;
+    unsigned char tiltDisabled;
+    char unk20AE[0x1];
+    unsigned char handItemHidden;
+    char unk20B0[0x1];
     unsigned char outOfBounds;
-    char unk20B2[0x1];
+    unsigned char onHoverboard;
     unsigned char gravityMode;
-    char unk20B4[0x20];
+    char unk20B4[0x4];
+    int pendingItem[7];
     int weaponToSwapTo;
-    char unk20D8[0x50];
+    char unk20D8[0x18];
+    int savedItem[7];
+    int restoreItem[7];
     float rotZHistory[32];
     int rotZHistoryIdx;
     int rotZHistoryCount;
@@ -158,162 +411,370 @@ struct HeroState {
     char unk21DA[0x3E];
     int loopSounds[8];
     MobyInstance *loopSoundMobys[8];
-    char unk2258[0x20];
+    char unk2258[0x18];
+    int fidgetIndex;
+    char unk2274[0x4];
     MobyInstance *animLinkMoby;
     int animLinkTable;
     char unk2280[4];
     int requestedCamType;
-    char unk2288[0x14];
+    char unk2288[0x8];
+    float skidDecel;
+    int itemHoldAnim;
+    int itemAnimItemId;
     float padMagnitude;
     int oxygen;
-    char unk22A4[0x4];
+    float waterDepth;
     int health;
     int clankMaxNanotech;
-    char unk22B0[0x10];
+    char unk22B0[0x2];
+    short fallVoiceSlot;
+    int wallJumped;
+    char unk22B8[0x8];
     // The command picked on the Clank command ring.
     int clankCommand;
-    char unk22C4[0x8];
+    int slot3AnimTimer;
+    short weaponLowered;
+    unsigned char hoverLatch;
+    char unk22CB[0x1];
     short requestedState;
-    char unk22CE[0xA];
+    char unk22CE[0x4];
+    short itemSelectorTimer;
+    short quickSwapTapTimer;
+    short quickSwapTapWindow;
     short hasClank;
     short splineWall;
-    char unk22DC[0x34];
+    short scalePulseStep;
+    short vehicleToggleTimer;
+    short glowPulseLevel;
+    char unk22E2[0x2E];
 };
 
-// Hero states (the PS3 project's PlayerState).
-enum PlayerState {
-    PLAYER_STATE_STANDING = 0,
-    PLAYER_STATE_FIRST_PERSON_VIEW = 1,
-    PLAYER_STATE_WALKING = 2,
-    PLAYER_STATE_STOPPING = 3,
-    PLAYER_STATE_CROUCHING = 4,
-    PLAYER_STATE_UNK_5 = 5,
-    PLAYER_STATE_NEUTRAL_JUMP = 6,
-    PLAYER_STATE_GLIDING = 7,
-    PLAYER_STATE_FALLING = 8,
-    PLAYER_STATE_MOVEMENT_JUMP = 9,
-    PLAYER_STATE_HELI_PACK_FWD_JUMP = 10,
-    PLAYER_STATE_FLIP_JUMP = 11,
-    PLAYER_STATE_UNK_C = 12,
-    PLAYER_STATE_THRUSTER_PACK_HIGH_JUMP = 13,
-    PLAYER_STATE_DOUBLE_JUMP = 14,
-    PLAYER_STATE_HELI_PACK_HIGH_JUMP = 15,
-    PLAYER_STATE_THRUSTER_PACK_FORWARD_JUMP = 16,
-    PLAYER_STATE_WALL_JUMP = 17,
-    PLAYER_STATE_WATER_JUMP = 18,
-    PLAYER_STATE_WRENCH_ATTACK = 19,
-    PLAYER_STATE_HYPER_STRIKE = 20,
-    PLAYER_STATE_CROUCH_WRENCH_THROW = 21,
-    PLAYER_STATE_TAKING_DAMAGE = 22,
-    PLAYER_STATE_UNK_17 = 23,
-    PLAYER_STATE_EDGE_GRAB = 24,
-    PLAYER_STATE_EDGE_HANG = 25,
-    PLAYER_STATE_EDGE_HANG_MOVE_LEFT = 26,
-    PLAYER_STATE_EDGE_HANG_MOVE_RIGHT = 27,
-    PLAYER_STATE_EDGE_JUMP = 28,
-    PLAYER_STATE_VISIBOMB_CONTROL = 29,
-    PLAYER_STATE_WEAPON_FIRST_PERSON_VIEW = 30,
-    PLAYER_STATE_ACTIVATE_SONIC_SUMMONER_MOUSE = 31,
-    PLAYER_STATE_WALLOPER_SOMETHING = 32,
-    PLAYER_STATE_UNK_BONK = 33,
-    PLAYER_STATE_THRUSTER_PACK_BONK_JUMP = 34,
-    PLAYER_STATE_THROWING_ITEM = 35,
-    PLAYER_STATE_THROWING_GREEN_SWINGSHOT = 36,
-    PLAYER_STATE_PULLING_GREEN_SWINGSHOT = 37,
-    PLAYER_STATE_UNK_26 = 38,
-    PLAYER_STATE_UNK_27 = 39,
-    PLAYER_STATE_GRINDRAIL_USE = 40,
-    PLAYER_STATE_GRINDRAIL_JUMP = 41,
-    PLAYER_STATE_GRINDRAIL_SWITCH = 42,
-    PLAYER_STATE_GRINDRAIL_WRENCH_ATTACK = 43,
-    PLAYER_STATE_SWINGING_YELLOW_SWINGSHOT = 44,
-    PLAYER_STATE_DISENGAGE_YELLOW_SWINGSHOT = 45,
-    PLAYER_STATE_UNK_2E = 46,
-    PLAYER_STATE_ICE_SLIDING = 47,
-    PLAYER_STATE_UNK_30 = 48,
-    PLAYER_STATE_WATER_SLIDING = 49,
-    PLAYER_STATE_TURRET_PLANE_UI = 50,
-    PLAYER_STATE_UNDERWATER_MOVING = 51,
-    PLAYER_STATE_UNDERWATER_STANDING = 52,
-    PLAYER_STATE_HYDRO_PACK_MOVING = 53,
-    PLAYER_STATE_WATER_SWIMMING = 54,
-    PLAYER_STATE_UNK_37 = 55,
-    PLAYER_STATE_HYDRODISPLACER_CONNECTING = 56,
-    PLAYER_STATE_HYDRODISPLACER_WAITING = 57,
-    PLAYER_STATE_HYDRODISPLACER_DISCONNECTING = 58,
-    PLAYER_STATE_BOLT_CRANK_TURNING = 59,
-    PLAYER_STATE_TAKING_DAMAGE_LAVA = 60,
-    PLAYER_STATE_DYING_GROUNDED = 61,
-    PLAYER_STATE_UNK_3E = 62,
-    PLAYER_STATE_MAGNERAMP_WAITING = 63,
-    PLAYER_STATE_UNK_40 = 64,
-    PLAYER_STATE_UNK_41 = 65,
-    PLAYER_STATE_GRINDRAIL_DAMAGE = 66,
-    PLAYER_STATE_CLANK_STANDING = 67,
-    PLAYER_STATE_CLANK_WALKING = 68,
-    PLAYER_STATE_CLANK_FALLING = 69,
-    PLAYER_STATE_CLANK_DAMAGE = 70,
-    PLAYER_STATE_CLANK_DYING = 71,
-    PLAYER_STATE_UNK_48 = 72,
-    PLAYER_STATE_CLANK_JUMP = 73,
-    PLAYER_STATE_CLANK_EDGE_ENGAGING = 74,
-    PLAYER_STATE_CLANK_EDGE_HANG = 75,
-    PLAYER_STATE_CLANK_EDGE_JUMP = 76,
-    PLAYER_STATE_CLANK_EDGE_MOVE_LEFT = 77,
-    PLAYER_STATE_CLANK_EDGE_MOVE_RIGHT = 78,
-    PLAYER_STATE_CLANK_GLIDING = 79,
-    PLAYER_STATE_UNK_50 = 80,
-    PLAYER_STATE_CLANK_ATTACK = 81,
-    PLAYER_STATE_UNK_52 = 82,
-    PLAYER_STATE_HOLOGUISE_STANDING = 83,
-    PLAYER_STATE_HOLOGUISE_WALKING = 84,
-    PLAYER_STATE_UNK_55 = 85,
-    PLAYER_STATE_UNK_56 = 86,
-    PLAYER_STATE_HOLOGUISE_DYING = 87,
-    PLAYER_STATE_UNK_58 = 88,
-    PLAYER_STATE_HOLOGUISE_WAVE = 89,
-    PLAYER_STATE_GIANT_CLANK_STANDING = 90,
-    PLAYER_STATE_GIANT_CLANK_WALKING = 91,
-    PLAYER_STATE_GIANT_CLANK_FALLING = 92,
-    PLAYER_STATE_GIANT_CLANK_DAMAGE = 93,
-    PLAYER_STATE_GIANT_CLANK_JUMP = 94,
-    PLAYER_STATE_GIANT_CLANK_FIRE_WEAPONS = 95,
-    PLAYER_STATE_GIANT_CLANK_ATTACK = 96,
-    PLAYER_STATE_GIANT_CLANK_CHARGE_ATTACK = 97,
-    PLAYER_STATE_GIANT_CLANK_DYING = 98,
-    PLAYER_STATE_UNK_63 = 99,
-    PLAYER_STATE_CUSTOM_UI = 100,
-    PLAYER_STATE_ANIM_TARGET_WALK = 101,
-    PLAYER_STATE_UNK_66 = 102,
-    PLAYER_STATE_TELEPORTER_USE = 103,
-    PLAYER_STATE_MUD_SINKING = 104,
-    PLAYER_STATE_MUD_JUMP = 105,
-    PLAYER_STATE_DEATH_DROWNING = 106,
-    PLAYER_STATE_HOVERBOARD_RIDING = 107,
-    PLAYER_STATE_HOVEDBOARD_JUMP = 108,
-    PLAYER_STATE_HOVERBOARD_DYING = 109,
-    PLAYER_STATE_HOVERBOARD_WATER_DYING = 110,
-    PLAYER_STATE_HOVERBOARD_WALL_BONK = 111,
-    PLAYER_STATE_MAGNERAMP_ATTACK = 112,
-    PLAYER_STATE_MAGNERAMP_JUMP = 113,
-    PLAYER_STATE_MOVEMENT_LOCKED = 114,
-    PLAYER_STATE_WATER_WALKING = 115,
-    PLAYER_STATE_UNK_74 = 116,
-    PLAYER_STATE_UNK_75 = 117,
-    PLAYER_STATE_UNDERWATER_DAMAGE = 118,
-    PLAYER_STATE_DEATH_FALLING = 119,
-    PLAYER_STATE_UNK_78 = 120,
-    PLAYER_STATE_SLIDING_OFF_SOMETHING = 121,
-    PLAYER_STATE_WALL_BONK = 122,
-    PLAYER_STATE_DEATH_MUD = 123,
-    PLAYER_STATE_DEATH_LAVA = 124,
-    PLAYER_STATE_UNK_7D = 125,
-    PLAYER_STATE_UNK_7E = 126,
-    PLAYER_STATE_DEATH_ICE = 127,
-    PLAYER_STATE_DEATH_LASER = 128,
-    PLAYER_STATE_THRUSTER_PACK_HOVER = 129,
-    PLAYER_STATE_DEATH_WATER_LASER = 130
+// Hero control modes (Hero.stateType): what kind of movement a state belongs to.
+// 9, 0xA, 0xB, 0x10, 0x13, 0x15, 0x16 and 0x18 are unnamed: what their states share is not clear.
+enum HeroStateType {
+    HERO_STATE_TYPE_IDLE = 0,
+    HERO_STATE_TYPE_RUN = 1,
+    HERO_STATE_TYPE_FALL = 2,
+    HERO_STATE_TYPE_LEDGE = 3,
+    HERO_STATE_TYPE_JUMP = 4,
+    HERO_STATE_TYPE_LAND = 5,
+    HERO_STATE_TYPE_ATTACK = 6,
+    HERO_STATE_TYPE_HURT = 7,
+    HERO_STATE_TYPE_ITEM_RELEASE_WAIT = 8,
+    HERO_STATE_TYPE_BUSY = 9,
+    HERO_STATE_TYPE_BOUNCE = 10,
+    HERO_STATE_TYPE_STOMP = 11,
+    HERO_STATE_TYPE_CROUCH = 12,
+    HERO_STATE_TYPE_GRAPPLE = 13,
+    HERO_STATE_TYPE_GRAPPLE_SWING = 14,
+    HERO_STATE_TYPE_GRIND = 15,
+    HERO_STATE_TYPE_SLIDE = 16,
+    HERO_STATE_TYPE_SWIM = 17,
+    HERO_STATE_TYPE_WATER_SURFACE = 18,
+    HERO_STATE_TYPE_DYING = 20,
+    HERO_STATE_TYPE_NPC = 24,
+    HERO_STATE_TYPE_RESPAWN_WAIT = 25,
+    HERO_STATE_TYPE_FOLLOW_PATH = 26
 };
+
+// Hero states, named after Deadlocked where the behaviour lines up.
+// Hero animation ids, named from what each clip shows. Unlabeled ids are still raw numbers.
+enum HeroAnimId {
+    HERO_ANIM_IDLE = 0,
+    HERO_ANIM_LOOK_RIGHT = 1,
+    HERO_ANIM_LOOK_LEFT = 2,
+    HERO_ANIM_WALK = 3,
+    HERO_ANIM_RUN = 4,
+    HERO_ANIM_SKID_RIGHT = 5,
+    HERO_ANIM_SKID_LEFT = 6,
+    HERO_ANIM_JUMP = 7,
+    HERO_ANIM_BUNNY_HOP_LEFT = 8,
+    HERO_ANIM_BUNNY_HOP_RIGHT = 9,
+    HERO_ANIM_FALL_STATIC = 10,
+    HERO_ANIM_FALL = 11,
+    HERO_ANIM_LAND = 12,
+    HERO_ANIM_CROUCH = 13,
+    HERO_ANIM_CROUCH_MOVE_RIGHT = 14,
+    HERO_ANIM_CROUCH_MOVE_LEFT = 15,
+    HERO_ANIM_HIT = 16,
+    HERO_ANIM_GROUND_POUND = 17,
+    HERO_ANIM_LONG_JUMP_HELI = 18,
+    HERO_ANIM_GLIDE = 19,
+    HERO_ANIM_SLIDE = 20,
+    HERO_ANIM_HIGH_JUMP_HELI = 21,
+    HERO_ANIM_DOUBLE_JUMP = 22,
+    HERO_ANIM_WRENCH_SWING_RIGHT = 23,
+    HERO_ANIM_WRENCH_SWING_LEFT = 24,
+    HERO_ANIM_WRENCH_SWING_LAST = 25,
+    HERO_ANIM_WRENCH_THROW = 26,
+    HERO_ANIM_SHOOT_GUN = 27,
+    HERO_ANIM_SIDEFLIP_RIGHT = 28,
+    HERO_ANIM_SIDEFLIP_LEFT = 29,
+    HERO_ANIM_DOUBLE_JUMP_ALT = 30,
+    HERO_ANIM_BACKFLIP = 31,
+    HERO_ANIM_LEDGE_GRAB = 32,
+    HERO_ANIM_LEDGE_HANG = 33,
+    HERO_ANIM_LEDGE_PULL_UP = 34,
+    HERO_ANIM_WALL_JUMP = 35,
+    HERO_ANIM_LEDGE_MOVE_RIGHT_HAND = 36,
+    HERO_ANIM_LEDGE_MOVE_LEFT_HAND = 37,
+    HERO_ANIM_THRUSTER_PACK_FORWARD = 38,
+    HERO_ANIM_BONK_0 = 39,
+    HERO_ANIM_BONK_1 = 40,
+    HERO_ANIM_BONK_2 = 41,
+    HERO_ANIM_GROUND_POUND_DOWN = 42,
+    HERO_ANIM_HYPERSTRIKE = 43,
+    HERO_ANIM_THROW = 44,
+    HERO_ANIM_DRAG_ITEM = 45,
+    HERO_ANIM_SHOOT_A = 46,
+    HERO_ANIM_SHOOT_B = 51,
+    HERO_ANIM_SHOOT_C = 54,
+    HERO_ANIM_SHOOT_D = 56,
+    HERO_ANIM_SHOOT_E = 57,
+    HERO_ANIM_WATER_IDLE = 58,
+    HERO_ANIM_SWIM_FORWARD = 59,
+    HERO_ANIM_UNDERWATER_IDLE = 60,
+    HERO_ANIM_HYDRO_PACK_SWIM = 61,
+    HERO_ANIM_PUSH_WALK = 64,
+    HERO_ANIM_PUSH_RUN = 65,
+    HERO_ANIM_RUN_THROW = 66,
+    HERO_ANIM_PUSH_SIDEWAYS = 68,
+    HERO_ANIM_DEATH_FALL = 69,
+    HERO_ANIM_SHOOT_F = 81,
+    HERO_ANIM_LOW_HEALTH_IDLE = 84,
+    HERO_ANIM_LOW_HEALTH_SWEATING = 90,
+    HERO_ANIM_DROWNING = 95,
+    HERO_ANIM_WADE_STRUGGLE = 96,
+    HERO_ANIM_WATER_SLIDE = 100,
+    HERO_ANIM_SWIM_SLIDE = 101,
+    HERO_ANIM_WALLOPER_PUNCH = 103,
+    HERO_ANIM_HOVERBOARD_TRICK_FEET_RIGHT = 105,
+    HERO_ANIM_HOVERBOARD_TRICK_FEET_LEFT = 106,
+    HERO_ANIM_HOVERBOARD_TRICK_RIGHT_HAND = 107,
+    HERO_ANIM_HOVERBOARD_TRICK_LEFT_HAND = 108,
+    HERO_ANIM_SWIM_HIT_A = 111,
+    HERO_ANIM_SWIM_HIT_B = 112,
+    HERO_ANIM_WATER_EXIT_JUMP = 114,
+    HERO_ANIM_FACE_SHOCKED = 116,
+    HERO_ANIM_FACE_EVIL = 117,
+    HERO_ANIM_FACE_ANGRY = 118,
+    HERO_ANIM_FACE_CONFUSED = 119,
+    HERO_ANIM_FACE_CHEEKS_BLOWN = 120,
+    HERO_ANIM_FACE_SCHEMING = 121,
+    HERO_ANIM_FACE_SHOCKED_ALT = 122,
+    HERO_ANIM_FACE_EARS_DOWN = 123,
+    HERO_ANIM_COLLECT_GOLD_BOLT = 130,
+};
+
+enum HeroStateId {
+    HERO_STATE_IDLE = 0,
+    HERO_STATE_LOOK = 1,
+    HERO_STATE_WALK = 2,
+    HERO_STATE_SKID = 3,
+    HERO_STATE_CROUCH = 4,
+    HERO_STATE_QUICK_TURN = 5,
+    HERO_STATE_FALL = 6,
+    HERO_STATE_JUMP = 7,
+    HERO_STATE_LAND = 8,
+    HERO_STATE_RUN_JUMP = 9,
+    HERO_STATE_HELI_PACK_FWD_JUMP = 10,
+    HERO_STATE_FLIP_JUMP = 11,
+    HERO_STATE_STORED_HEADING_JUMP = 12,
+    HERO_STATE_ROCKET_JUMP = 13,
+    HERO_STATE_DOUBLE_JUMP = 14,
+    HERO_STATE_HELI_JUMP = 15,
+    HERO_STATE_THRUSTER_PACK_FORWARD_JUMP = 16,
+    HERO_STATE_WALL_JUMP = 17,
+    HERO_STATE_WATER_JUMP = 18,
+    HERO_STATE_COMBO_ATTACK = 19,
+    HERO_STATE_JUMP_ATTACK = 20,
+    HERO_STATE_THROW_ATTACK = 21,
+    HERO_STATE_GET_HIT = 22,
+    HERO_STATE_ITEM_BUTTON_RELEASE_WAIT = 23,
+    HERO_STATE_LEDGE_GRAB = 24,
+    HERO_STATE_LEDGE_IDLE = 25,
+    HERO_STATE_LEDGE_TRAVERSE_LEFT = 26,
+    HERO_STATE_LEDGE_TRAVERSE_RIGHT = 27,
+    HERO_STATE_LEDGE_JUMP = 28,
+    HERO_STATE_VISIBOMB = 29,
+    HERO_STATE_WEAPON_FIRST_PERSON_VIEW = 30,
+    HERO_STATE_ACTIVATE_SONIC_SUMMONER_MOUSE = 31,
+    HERO_STATE_WALLOPER_ATTACK = 32,
+    HERO_STATE_UNK_BONK = 33,
+    HERO_STATE_ROCKET_STOMP = 34,
+    HERO_STATE_THROWING_ITEM = 35,
+    HERO_STATE_GRAPPLE_SHOOT = 36,
+    HERO_STATE_GRAPPLE_PULL = 37,
+    HERO_STATE_CONSTRAIN_TO_TARGET_RADIUS = 38,
+    HERO_STATE_IDLE_ANIMATION_LONG_BLEND_ENTRY = 39,
+    HERO_STATE_GRIND = 40,
+    HERO_STATE_GRIND_JUMP = 41,
+    HERO_STATE_GRIND_SWITCH_JUMP = 42,
+    HERO_STATE_GRIND_ATTACK = 43,
+    HERO_STATE_SWING = 44,
+    HERO_STATE_SWING_FALL = 45,
+    HERO_STATE_ITEM_BUTTON_HOLD_ANIMATION_WAIT = 46,
+    HERO_STATE_ICE_SLIDING = 47,
+    HERO_STATE_WAIT_FOR_ITEM_RELEASE_THEN_IDLE = 48,
+    HERO_STATE_SLIDE = 49,
+    HERO_STATE_TURRET_PLANE_UI = 50,
+    HERO_STATE_SWIMUNDER = 51,
+    HERO_STATE_IDLEUNDER = 52,
+    HERO_STATE_CHARGEUNDER = 53,
+    HERO_STATE_SWIMSURF = 54,
+    HERO_STATE_IDLESURF = 55,
+    HERO_STATE_HYDRODISPLACER_CONNECTING = 56,
+    HERO_STATE_HYDRODISPLACER_WAITING = 57,
+    HERO_STATE_HYDRODISPLACER_DISCONNECTING = 58,
+    HERO_STATE_BOLT_CRANK = 59,
+    HERO_STATE_TAKING_DAMAGE_LAVA = 60,
+    HERO_STATE_DEATH = 61,
+    HERO_STATE_BOARD = 62,
+    HERO_STATE_MAGNE_WALK = 63,
+    HERO_STATE_FIDGET = 64,
+    HERO_STATE_FIDGET_ALT = 65,
+    HERO_STATE_GRINDRAIL_DAMAGE = 66,
+    HERO_STATE_CLANK_STANDING = 67,
+    HERO_STATE_CLANK_WALKING = 68,
+    HERO_STATE_CLANK_FALLING = 69,
+    HERO_STATE_CLANK_DAMAGE = 70,
+    HERO_STATE_CLANK_DYING = 71,
+    HERO_STATE_UNK_48 = 72,
+    HERO_STATE_CLANK_JUMP = 73,
+    HERO_STATE_CLANK_EDGE_ENGAGING = 74,
+    HERO_STATE_CLANK_EDGE_HANG = 75,
+    HERO_STATE_CLANK_EDGE_JUMP = 76,
+    HERO_STATE_CLANK_EDGE_MOVE_LEFT = 77,
+    HERO_STATE_CLANK_EDGE_MOVE_RIGHT = 78,
+    HERO_STATE_CLANK_GLIDING = 79,
+    HERO_STATE_CLANK_SPEED_SCALED_RUN = 80,
+    HERO_STATE_CLANK_ATTACK = 81,
+    HERO_STATE_CLANK_SLIP = 82,
+    HERO_STATE_HOLOGUISE_STANDING = 83,
+    HERO_STATE_HOLOGUISE_WALKING = 84,
+    HERO_STATE_HOLOGUISE_FALLING = 85,
+    HERO_STATE_HOLOGUISE_DAMAGE = 86,
+    HERO_STATE_HOLOGUISE_DYING = 87,
+    HERO_STATE_HOLOGUISE_SLIP = 88,
+    HERO_STATE_HOLOGUISE_WAVE = 89,
+    HERO_STATE_GIANT_CLANK_STANDING = 90,
+    HERO_STATE_GIANT_CLANK_WALKING = 91,
+    HERO_STATE_GIANT_CLANK_FALLING = 92,
+    HERO_STATE_GIANT_CLANK_DAMAGE = 93,
+    HERO_STATE_GIANT_CLANK_JUMP = 94,
+    HERO_STATE_GIANT_CLANK_FIRE_WEAPONS = 95,
+    HERO_STATE_GIANT_CLANK_ATTACK = 96,
+    HERO_STATE_GIANT_CLANK_CHARGE_ATTACK = 97,
+    HERO_STATE_GIANT_CLANK_DYING = 98,
+    HERO_STATE_NPC = 99,
+    HERO_STATE_CUSTOM_UI = 100,
+    HERO_STATE_WALK_TO_POS = 101,
+    HERO_STATE_SKID_TO_POS = 102,
+    HERO_STATE_IDLE_TO_POS = 103,
+    HERO_STATE_QUICKSAND_SINK = 104,
+    HERO_STATE_QUICKSAND_JUMP = 105,
+    HERO_STATE_DROWN = 106,
+    HERO_STATE_HOVERBOARD_RIDING = 107,
+    HERO_STATE_HOVEDBOARD_JUMP = 108,
+    HERO_STATE_HOVERBOARD_DYING = 109,
+    HERO_STATE_HOVERBOARD_WATER_DYING = 110,
+    HERO_STATE_HOVERBOARD_WALL_BONK = 111,
+    HERO_STATE_MAGNE_ATTACK = 112,
+    HERO_STATE_MAGNE_JUMP = 113,
+    HERO_STATE_CUT_SCENE = 114,
+    HERO_STATE_WADE = 115,
+    HERO_STATE_ZIP = 116,
+    HERO_STATE_GET_HIT_SURF = 117,
+    HERO_STATE_GET_HIT_UNDER = 118,
+    HERO_STATE_DEATH_FALL = 119,
+    HERO_STATE_CLEAR_VELOCITY = 120,
+    HERO_STATE_SLOPESLIDE = 121,
+    HERO_STATE_JUMP_BOUNCE = 122,
+    HERO_STATE_DEATHSAND_SINK = 123,
+    HERO_STATE_LAVA_DEATH = 124,
+    HERO_STATE_CLANK_DEATH_DESCENT = 125,
+    HERO_STATE_UNK_7E = 126,
+    HERO_STATE_ICEWATER_FREEZE = 127,
+    HERO_STATE_ELECTRIC_DEATH = 128,
+    HERO_STATE_ROCKET_HOVER = 129,
+    HERO_STATE_ELECTRIC_DEATH_UNDER = 130
+};
+
+// One usage counter. Every user bumps count (saturating at 0xFFFF), raises latestTimeBucket
+// to the play time in 10 second units, and sets bit 31 plus its level's bit in levelMask.
+struct UsageStat {
+    unsigned short count;
+    unsigned short latestTimeBucket;
+    int levelMask;
+};
+
+#define USAGE_STAT_USED 0x80000000 // levelMask bit 31: the record has been used at least once
+
+// Records of UsageStats that hero actions count into (ActionUsageStats starts at record 57).
+enum UsageAction {
+    USAGE_HYPER_STRIKE = 0,
+    USAGE_WRENCH_THROW = 1,
+    USAGE_DROWN = 12,
+    USAGE_DROWN_FLAIL = 29
+};
+
+extern UsageStat UsageStats[];
+extern UsageStat ActionUsageStats[];
+
+// How HeroAttackRow::kind moves the hero while the swing animation plays.
+enum HeroComboKind {
+    HERO_COMBO_FORWARD_ADVANCE,
+    HERO_COMBO_FORWARD_DECELERATION,
+    HERO_COMBO_CONDITIONAL_FORWARD_ADVANCE
+};
+
+// HeroState::gravityMode; the other modes tilt the hero's gravity.
+enum HeroGravityMode { HERO_GRAVITY_WORLD_DOWN = 0 };
+
+// One row of HeroAttackTable, indexed by HeroState::attackRecord.
+struct HeroAttackRow {
+    int comboEnds;          // 1: this is the finishing recovery animation
+    int kind;
+    int chainBeforeFrame;   // a wrench press before this animation frame chains to the next record
+    int baseFrame;          // subtracted from the animation frame to time the forward motion
+    int followUpFrame;      // frame from which a follow-up move may start
+    int interruptFrame;     // once past this frame the swing can be cut short
+    int endFrame;           // once past this frame the swing is over
+    int hitStartFrame;      // the wrench hits between hitStartFrame and hitEndFrame
+    int hitEndFrame;
+    char pad24[0x8];
+};
+
+// One of the five idle fidget animations the hero picks between while standing still.
+struct HeroIdleFidget {
+    char pad00[0x44];
+    int useSpecialState; // nonzero: enter the fidget state instead of playing the animation directly
+    int animation;
+    char pad4C[0x4];
+    int itemId;          // only picked while this item is held, -1 for any
+    char pad54[0x4];
+    float interval;      // seconds between picks, 0 means never picked
+    float duration;      // seconds
+    int durationFrames;
+    char pad64[0xC];
+};
+
+// Speed thresholds the grounded jump transitions compare against.
+struct HeroJumpSpeedTweaks {
+    char pad00[0x8];
+    float lowStepSpeed;
+    float minRunSpeed;
+    char pad10[0x8];
+    float stepSpeed;
+};
+
+extern HeroAttackRow HeroAttackTable[];
+extern HeroIdleFidget HeroIdleFidgets[5];
+extern float HeroAnimBlendCurves[][25];
+extern unsigned char HeroRunJumpAnims[];
+extern HeroVelocityKey HeroTrailJumpKeys[];
+extern HeroVelocityKey HeroWaterJumpKeys[];
 
 extern HeroState Hero;
 
@@ -420,7 +881,7 @@ void Hero_ApplyRootMotion(float x, float y, float z);
 
 int Hero_GetJumpHoldTime(void);
 
-int STUB_00226fa0(int animation);
+int Hero_GetAnim(int animation);
 
 int Hero_GetWeaponAmmo(int item);
 
@@ -446,30 +907,31 @@ void Hero_SetNextAnimFrame(int animation, int frame);
 
 void Hero_PlayLoopSound(int slot, MobyInstance *moby, int soundId);
 
-struct HeroTweakValues {
-    char unk_00[0xA4];
-    float unk_A4;
-    float unk_A8;
-    char unk_AC[0xA8];
-    float unk_154;
-    float unk_158;
-    char unk_15C[0xA8];
-    float unk_204;
-    float unk_208;
-    char unk_20C[0xA8];
-    float unk_2B4;
-    float unk_2B8;
+// One joint tweak: the manipulator eases rot toward target at speed, trans toward transTarget.
+struct HeroTweaker {
+    Manipulator manip;
+    Vec4 rot;
+    Vec4 speed;
+    Vec4 target;
+    Vec4 trans;
+    Vec4 transSpeed;
+    Vec4 transTarget;
+    short joint;
+    short whichMoby;
+    float gain;
+    float damp;
+    float scale;
 };
 
-extern HeroTweakValues HeroTweaks;
+extern HeroTweaker HeroTweaks[18];
 
-void Hero_SetTweakPair_97b44(float first, float second);
+void Hero_SetTweaker0(float gain, float damp);
 
-void Hero_SetTweakPair_929e8(float first, float second);
+void Hero_SetTweaker1(float gain, float damp);
 
-void Hero_SetTweak_721dd4(float first, float second);
+void Hero_SetTweaker2(float gain, float damp);
 
-void Hero_SetTweak_721e84(float first, float second);
+void Hero_SetTweaker3(float gain, float damp);
 
 void Hero_PlayFootStep(int groundType, int whichFoot, int playSound);
 

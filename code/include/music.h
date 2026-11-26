@@ -14,7 +14,7 @@ struct MusicTransition {
     short read_state;
     unsigned char cancel_read;
     char unk0B[0x11];
-    int unk1C;
+    int queuedSpeech;
     char unk20[2];
     signed char requested_track;
     signed char requested_transition;

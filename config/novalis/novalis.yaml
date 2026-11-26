@@ -70,6 +70,8 @@ segments:
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
+    - [0x1778, .sdata, game/hero]  # hero timers and tables, slide anim frames, pack jump velocity keys
+    - [0x17f8, lit4]
     - [0x1d00, .sdata, game/loaders]  # ship texture defs, hud bank labels, occlusion chars, byte grid
     - [0x1db0, .sdata, game/main]  # ClearMem warning, system misc timer label
     - [0x1dc8, lit4]
@@ -86,6 +88,8 @@ segments:
     - [0x2590, lit4]
     - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c
     - [0x2620, lit4]
+    - [0x26d0, .sdata, game/space]  # ShipTakeoffSkipFrames
+    - [0x26e0, lit4]
     - [0x3030, .sdata, game/tfragfunc]  # tfrag texs, tfrag draw labels
     - [0x3050, lit4]
     - [0x30a0, .sdata, game/tiefunc]  # tie texs, tie draw labels
@@ -93,6 +97,8 @@ segments:
     - [0x3228, .sdata, game/vendor]  # timer labels, bolt formats, arrows, dude state
     - [0x32a0, .sdata, game/vuchain]  # VifChainFlags
     - [0x32a4, lit4]
+    - [0x32e0, .sdata, game/walk]  # jump distance debug format
+    - [0x32f0, lit4]
     - [0x3438, .sdata, movie/movie]  # movie error format, decoder state
     - [0x3458, .sdata, movie/videodec]  # sequence end code, error format
     - [0x3468, lit4]
@@ -119,7 +125,8 @@ segments:
     - [0xaab60, .rodata, game/draw]  # long DefaultDraw timer labels
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
-    - [0xaad50, data]
+    - [0xaad50, .rodata, game/hero]  # gadget helper tables and the Hero_DoBehavior, Hero_InitBodyState, Hero_GadgetTransitions and Hero_Transitions jump tables
+    - [0xab670, data]
     - [0xab730, .rodata, game/lights]  # debug strings
     - [0xab7a0, .rodata, game/loaders]  # moby memory and occlusion messages, LoadLevelFiles jump table
     - [0xabc30, .rodata, game/main]  # mode switch jump table
@@ -132,11 +139,14 @@ segments:
     - [0xac2c0, data]
     - [0xac4d0, .rodata, game/shrubfunc]  # texture overflow message
     - [0xac4e8, data]
+    - [0xac530, .rodata, game/space]  # UpdateSpace jump table
+    - [0xac560, data]
     - [0xac5b0, .rodata, game/tfragfunc]  # texture overflow message
     - [0xac5c8, .rodata, game/tiefunc]  # texture overflow message
     - [0xac5e0, data]
     - [0xac690, .rodata, game/vuchain]
     - [0xac718, data]
+    - [0xac7d0, .rodata, game/walk]  # walk_UpdateStateMachine jump tables
     - [0xac860, .rodata, movie/movie]  # open error
     - [0xac878, .rodata, movie/read]  # pts overflow message
     - [0xac890, .rodata, movie/vibuf]  # inactive DMA message

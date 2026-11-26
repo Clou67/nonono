@@ -81,6 +81,42 @@ struct COLL_DAM_IN {
     int shotUID;
     int pad;
 };
+// Damage reported against a moby by a collision query.
+struct COLL_DAM_OUT {
+    Vec4 ip;
+    Vec4 momentum;
+    MobyInstance *pDamager;
+    int damageFlags;
+    unsigned char damageClass;
+    unsigned char damageStrength;
+    unsigned short damageIndex;
+    float damageHp;
+    int flags;
+    float damageHeroHp;
+    int shotUID;
+    MobyInstance *pMoby;
+};
+
+// The result of the last collision query.
+struct COLLOUTPUT {
+    char *grid;               // 0x00: the env collision grid
+    char *jointCache;         // 0x04
+    char *jointCacheKeys;     // 0x08
+    int jointCacheNext;       // 0x0C
+    int collCount;            // 0x10
+    int damageNext;           // 0x14
+    MobyInstance *pMoby;      // 0x18: the moby that was hit
+    int poly;                 // 0x1C
+    Vec4 ip;                  // 0x20: impact point
+    Vec4 push;                // 0x30
+    Vec4 normal;              // 0x40
+    Vec4 v0;                  // 0x50: the hit triangle
+    Vec4 v1;                  // 0x60
+    Vec4 v2;                  // 0x70
+};
+
+extern COLLOUTPUT CollOutput;
+
 struct MobyVolume {
     Vec4 axisX;
     Vec4 axisY;
@@ -247,6 +283,12 @@ void InitMobyInstance(MobyInstance *moby, int oClass);
 void PostUpdateMoby(MobyInstance *moby);
 void SetMobyLights(MobyInstance *moby, int color, int a, int b, int c);
 void MB_SetAnimationNoBlend(MobyInstance *moby, int animation, int frame);
+
+// Plays an animation from a frame, blending from the current pose over blend frames.
+void MB_SetAnimation(MobyInstance *moby, int animation, int frame, int blend);
+
+// The frame the moby is currently showing, including the blend fraction.
+float MB_BlendAnimFrame(MobyInstance *moby);
 void Map_RegisterLevelObject(MobyInstance *moby, int object);
 void SetupSpaceShipVars(MobyInstance *moby);
 void UpdateMoby_Spaceship(MobyInstance *moby);

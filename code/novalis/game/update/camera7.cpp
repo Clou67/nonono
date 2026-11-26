@@ -33,7 +33,7 @@ enum { CAMERA_DEACTIVATE_ON_EXIT = 3 };
 
 void ExitCamera_7(UpdateCam *camera)
 {
-    if (Hero.requestedCamType != camera->type && Hero.state != PLAYER_STATE_NEUTRAL_JUMP) {
+    if (Hero.requestedCamType != camera->type && Hero.state != HERO_STATE_FALL) {
         camera->activation.activate = 0;
         camera->activation.deactivate = CAMERA_DEACTIVATE_ON_EXIT;
     }

@@ -4,6 +4,15 @@
 struct MobyInstance;
 struct FontWindow;
 
+// The pause menu's state; only the state and the memory card icon switch are named so far.
+struct PauseMenuState {
+    int state;                      // 0x000
+    char unk_004[0x138];
+    int hideActivityIcon;           // 0x13C
+};
+
+extern PauseMenuState PauseMenu;
+
 enum { GAME_COMPLETE_MOBY_COUNT = 24 };
 
 struct GameCompleteWidget {

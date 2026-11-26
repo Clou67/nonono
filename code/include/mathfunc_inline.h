@@ -18,6 +18,12 @@ static inline void CopyVec4(Vec4 *destination, Vec4 *source)
     *(Vec4Quad *)destination = *(Vec4Quad *)source;
 }
 
+// Clears a vector with a quadword store, as retail's whole-vector assignments of zero do.
+static inline void ClearVec4(Vec4 *vector)
+{
+    *(Vec4Quad *)vector = 0;
+}
+
 // Retail clears an aligned vector directly from the zero register.
 static inline void ClearVec4Inline(Vec4 *vector)
 {

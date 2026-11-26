@@ -19,6 +19,7 @@ float FastAngleSinF(float angle);
 float FastAddRots(float angle, float delta);
 float FastArcTan(float x, float y);
 float FastDiffRots(float first, float second);
+float FastVec3DistLen(Vec4 *from, Vec4 *to);
 float FastVec3Dist(Vec4 *first, Vec4 *second);
 // Nonzero when the sphere (w is its radius) overlaps the bounding sphere.
 int FastVec3AddSubLen(Vec4 *sphere, BSphere *bounds);
@@ -26,6 +27,7 @@ void FastScaleVec4(Vec4 *out, Vec4 *in, float scale);
 // Counts a timer down to zero; returns nonzero once it has run out.
 int FastDecTimer(int &timer);
 int FastDecTimer(short &timer);
+int FastDecTimer(unsigned char &timer);
 float FastAbsF(float value);
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 float FastVec3Length(float *vec);
