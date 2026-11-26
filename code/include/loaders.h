@@ -506,4 +506,19 @@ extern SpaceTransitionState bootSpaceTransitionState;
 
 char *ResetLevelData(int reload);
 
+
+struct GadgetModelEntry {
+    char unk_00[0x10];
+    int oClass;                 // 0x10
+    char unk_14[0x38];
+};
+
+struct GoldWeaponGif {
+    char unk_00[0x20];
+    unsigned long tex0;         // 0x20
+    unsigned long tex0Register;
+    unsigned long miptbp1;      // 0x30
+    unsigned long miptbp1Register;
+};
+
 #endif

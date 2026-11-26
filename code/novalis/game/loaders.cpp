@@ -2803,7 +2803,7 @@ extern int MobyRefOClasses[];
 extern char *MobyRefData[];
 extern int MobyRefUnk[];
 extern u_long128 MobyRefTexRefs[];
-extern unsigned short MobyRefSounds[][16];
+extern short MobyRefSounds[][16];
 extern SoundDef *LevelSounds;
 extern int LevelSoundCnt;
 extern char LevelProgramEnd[];
@@ -3281,7 +3281,56 @@ void ParseSpaceSceneChunk(int chunk)
     SceneLoad.buffer = MemSlots.vu1_chain[1] + vu1_bufSize;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadMobyModel);
+extern GadgetModelEntry Gadgets[37];
+
+void LoadMobyModel(int oClass, int slot)
+{
+    if (MobyRefCurrent >= 0 && MobyRefOClasses[MobyRefCurrent] == oClass)
+        return;
+
+    for (MobyRefCurrent = 0; MobyRefCurrent < MobyRefCnt; MobyRefCurrent++)
+        if (MobyRefOClasses[MobyRefCurrent] == oClass)
+            break;
+
+    if (slot == -1)
+        slot = MobyRefBuffer == 0;
+
+    MobyRefBuffer = slot;
+    MobyClass *mobyClass = (MobyClass *)(MemSlots.gadgetBuffer + slot * 0x18000);
+
+    FlushCache(0);
+    WadDecompress(MobyRefData[MobyRefCurrent], mobyClass);
+    FlushCache(0);
+
+    int classIndex = (unsigned char)MobyClassLookup[oClass];
+    MobyClasses[classIndex] = mobyClass;
+    MobyMipDists[classIndex] = mobyClass->mipDistance;
+    ParseMobyClass(mobyClass, (short *)MobyTexDefs, (char *)&MobyRefTexRefs[MobyRefCurrent], oClass);
+
+    int bank = savedLevelSoundBank;
+    for (int sound = 0; sound < 16; sound++) {
+        int soundId = MobyRefSounds[MobyRefCurrent][sound];
+        if (soundId >= 0) {
+            MobyClasses[classIndex]->soundDefs[sound].index = soundId;
+            MobyClasses[classIndex]->soundDefs[sound].bank_index = bank;
+        }
+    }
+
+    for (int gadget = 0; gadget < 37; gadget++) {
+        if (Gadgets[gadget].oClass == oClass) {
+            if (GoldWeaponFlags[gadget] != 0) {
+                MobyClass *loaded = MobyClasses[classIndex];
+                if (loaded->metalCount != 0) {
+                    MobyPacket *packet = loaded->packets + loaded->unk_07;
+                    GoldWeaponGif *gif = (GoldWeaponGif *)((char *)packet->gifs + (packet->counts - 4) * 16);
+                    gif->tex0 = VisGifSpecialTemplate3[0];
+                    gif->miptbp1 = VisGifSpecialTemplate3[2];
+                }
+            }
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", QueuePifLoad);
 
