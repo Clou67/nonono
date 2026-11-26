@@ -982,4 +982,45 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadMobyModel);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", QueuePifLoad);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", QueuePifLoad_Raw);
+#define PIF_LOAD_QUEUE_SIZE 64
+
+// One queued clut + texture upload to GS memory.
+struct PifLoad {
+    char *clut;             // 0x00
+    short clutFormat;       // 0x04
+    short clutBlock;        // 0x06
+    char *tex;              // 0x08
+    unsigned char uLog;     // 0x0C
+    unsigned char vLog;     // 0x0D
+    short texBlock;         // 0x0E
+};
+
+extern int GifLoadCnt;
+extern PifLoad GifLoads[];
+
+// Queues an 8-bit texture and its clut for upload and returns the TEX0 register value that
+// will address it.
+unsigned long QueuePifLoad(int uLog, int vLog, char *clut, char *tex, int clutAddr, int texAddr)
+{
+    int tbw = uLog - 6;
+    unsigned long tex0;
+
+    if (tbw < 0)
+        tbw = 0;
+    tbw = 1 << tbw;
+
+    tex0 = SCE_GS_SET_TEX0(texAddr >> 8, tbw, GS_PSMT8, uLog, vLog, 1, 0, clutAddr >> 8, 0, 0, 0, 4);
+
+    if (GifLoadCnt < PIF_LOAD_QUEUE_SIZE) {
+        GifLoads[GifLoadCnt].clut = clut;
+        GifLoads[GifLoadCnt].clutBlock = clutAddr >> 8;
+        GifLoads[GifLoadCnt].clutFormat = 0;
+        GifLoads[GifLoadCnt].tex = tex;
+        GifLoads[GifLoadCnt].uLog = uLog;
+        GifLoads[GifLoadCnt].vLog = vLog;
+        GifLoads[GifLoadCnt].texBlock = texAddr >> 8;
+        GifLoadCnt++;
+    }
+
+    return tex0;
+}
