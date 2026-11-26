@@ -2777,6 +2777,8 @@ struct SoundSpan {
 #define MEGABYTES(bytes) (FastIntToFloat((int)(bytes)) * (1.0f / 1048576.0f))
 #define OS_MEMORY_SIZE 0x100000
 
+extern int MobyRefCurrent;      // the moby reference last loaded, -1 for none
+extern int MobyRefBuffer;       // which of the two reference buffers it went into
 extern unsigned long VisGifSpecialTemplate3[3];
 extern int DrawSdata15F40C;     // the level's texture data
 extern int DrawSdata15F420;     // the level's effect texture data
@@ -2785,8 +2787,6 @@ extern int TfragTexCnt;
 extern int TfragTexLocs[];
 extern int MobySdata15FFC8;     // moby texture count
 extern int MobyTexLocs[];
-extern int MobySdata16000C;
-extern int MobySdata160010;
 extern char MemoryMapNewline[];
 extern char *OcclOct;
 extern int EffectTableCnt;
@@ -2920,9 +2920,9 @@ int InitLevelFromWad(int full, int keep)
             }
         }
 
-        MobySdata16000C = -1;
+        MobyRefCurrent = -1;
         mobyRefEntry = (char *)header + header->mobyRefs;
-        MobySdata160010 = 0;
+        MobyRefBuffer = 0;
         MobyRefCnt = header->mobyRefCnt;
         for (mobyRef = 0; mobyRef < header->mobyRefCnt; mobyRef++, mobyRefEntry += 0x10) {
             MobyRefOClasses[mobyRef] = *(int *)(mobyRefEntry + 4);
