@@ -826,7 +826,99 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", SpacePlate_DrawQu
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", LoadSpacePlate);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", PlaySpacePlate);
+void PlaySpacePlate(
+
+    int language, int firstImage, int lastImage, int duration, int preload)
+{
+    unsigned long long sharedTexture;
+    unsigned long long firstTexture;
+    unsigned long long secondTexture;
+    int frame;
+    int alpha;
+    int fadeInAlpha;
+    float scrollPhase;
+    float scrollStart;
+    float scrollEnd;
+
+    LoadSpacePlate(language, firstImage, lastImage, &sharedTexture, &firstTexture, &secondTexture);
+
+    if (preload != 0) {
+        ReadFileEntryWithRetry(Level);
+        LevelLoad.stage = 0;
+        LevelLoad.hold = 0;
+    }
+
+    sceGsSyncV(0);
+    VU1_initChain();
+
+    for (frame = 0; frame < duration && g_memcard.stage < MC_STAGE_FORMAT &&
+                    g_memcard.nextstage < MC_STAGE_GET_INFO;
+         frame++) {
+        alpha = 0x80;
+        SetupFogColorGsReg();
+        PutDrawBufferSmall();
+        VU1_addGSregister(GS_REG_RGBAQ, (unsigned long long)0x8000 << 16);
+        VU1_addGSregister(GS_REG_CLAMP_1, 0);
+
+        vu1_bufPtr.tag->tag = DMA_TAG_REF | GIF_CLEAR_FRAME_BUF_QWC;
+        fadeInAlpha = frame * 4;
+        if (frame <= 0x1F)
+            alpha = fadeInAlpha;
+        vu1_bufPtr.tag->addr = (unsigned int)gif_clear_frame_buf;
+        vu1_bufPtr.tag->vif0 = 0;
+        vu1_bufPtr.tag->vif1 = VIF_DIRECT | GIF_CLEAR_FRAME_BUF_QWC;
+        vu1_bufPtr.tag++;
+
+        if (duration - 0x10 < frame)
+            alpha = (duration - frame) * 8;
+
+        scrollPhase = FastIntToFloat(frame % 600) * 0.0016666667f;
+        if (firstImage == lastImage) {
+            SpacePlate_DrawQuad(0, Scrn.halfY - 0x20, 0x200, 0x40, (alpha << 24) | 0x808080,
+                                sharedTexture, 0.0f, 4.0f, scrollPhase + 0.0f, scrollPhase + 0.4f);
+            DrawSprite(0, Scrn.halfY - 0x20, 0x200, 0x40, 0, 0, 0x200, 0x40, 0x80808080,
+                       firstTexture);
+        }
+
+        else {
+            scrollStart = scrollPhase + 0.0f;
+            scrollEnd = scrollPhase + 0.4f;
+            SpacePlate_DrawQuad(0, Scrn.halfY - 0x2E, 0x200, 0x40, (alpha << 24) | 0x808080,
+                                sharedTexture, 0.0f, 4.0f, scrollStart, scrollEnd);
+            DrawSprite(0, Scrn.halfY - 0x2E, 0x200, 0x40, 0, 0, 0x200, 0x40, 0x80808080,
+                       firstTexture);
+            if (frame > 0x40) {
+                if (frame < 0x60)
+                    alpha = (frame - 0x40) * 4;
+                SpacePlate_DrawQuad(0, Scrn.halfY, 0x200, 0x40, (alpha << 24) | 0x808080,
+                                    sharedTexture, 0.0f, 4.0f, scrollStart, scrollEnd);
+                DrawSprite(0, Scrn.halfY, 0x200, 0x40, 0, 0, 0x200, 0x40, 0x80808080,
+                           secondTexture);
+            }
+        }
+
+        memcard_Update();
+        UpdateMCState();
+        VU1_syncChain(1);
+        sceGsSyncV(0);
+        ResetGsRegistersPr();
+        VU1_sendChain();
+        VU1_swapChain();
+
+        if (preload != 0) {
+            if (LoadLevelFiles() == 0) {
+                if (duration < frame + 0x14)
+                    duration = frame + 0x14;
+            }
+
+            else {
+                preload = 0;
+            }
+        }
+    }
+
+    FadeToBlack(2);
+}
 
 void DoSpaceTransition(void)
 {

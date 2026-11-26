@@ -691,5 +691,7 @@ snd_ResetStateAndFlushCommands__Fv = 0x0012EB00;
 snd_StreamSafeCdSync__Fi = 0x0012EE08;
 ReadFileEntryWithRetry__Fi = 0x0012F368;
 SpaceTransition_LoadWad__Fv = 0x002A5868;
-PlaySpacePlate__Fiiiii = 0x002A64E0;
 DisplayLoadingScreen__Fi = 0x002A5F10;
+
+LoadSpacePlate__FiiiPUxN23 = 0x002A6180;
+SpacePlate_DrawQuad__FiiiiUxUxffff = 0x002A5FF0;

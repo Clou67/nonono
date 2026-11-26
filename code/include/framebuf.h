@@ -60,6 +60,7 @@ extern qword gif_clear_frame_buf[];
 #define AA_BLUR_REGS_QWC 0x26
 #define AA_DISPLAY_REGS_QWC 0x29
 #define AA_CLEAR_REGS_QWC 0x15
+#define GIF_CLEAR_FRAME_BUF_QWC 0x14
 #define AA_DRAW_ENV_QWC 9
 
 // Quadword of the clear packet holding the RGBAQ register (data in the high half).

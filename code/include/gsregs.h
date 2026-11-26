@@ -21,6 +21,7 @@ union GsTex0 {
 };
 
 // GS register addresses written through packets (A+D).
+#define GS_REG_RGBAQ 0x01
 #define GS_REG_CLAMP_1 0x08
 #define GS_REG_ALPHA_1 0x42
 #define GS_REG_TEST_1 0x47
