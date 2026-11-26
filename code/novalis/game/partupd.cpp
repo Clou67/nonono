@@ -6,6 +6,9 @@
 #include "mathfunc_inline.h"
 #include "vuchain.h"
 #include "gameglobals.h"
+#include "camera.h"
+
+extern float frameTimeSq __attribute__((section(".sdata")));
 
 int CollLine(Vec4 *start, Vec4 *end, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
 
@@ -80,7 +83,116 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_011)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_011);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_012);
+void UpdatePart_012(PartInstance *particle)
+{
+    PartBranchingMotion *motion = &particle->branchingMotion;
+    particle->rot++;
+    if (!(motion->flags & PART_BRANCH_FADING)) {
+        int childIndex;
+        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+        if (motion->flags & PART_BRANCH_GRAVITY)
+            motion->velocity.z += frameTimeSq * 9.8f;
+        {
+            float scaleFactor = 0.8f;
+            if (motion->flags & PART_BRANCH_BOOST)
+                scaleFactor = 0.6f;
+            FastVec3Scale(&motion->velocity, &motion->velocity, scaleFactor);
+        }
+
+        if (particle->timer == FastFloatToInt((float)motion->lifetime * 0.85f) &&
+            motion->generation < 2 && !(motion->flags & PART_BRANCH_GRAVITY)) {
+            for (childIndex = 4; childIndex >= 0; childIndex--) {
+                int childLifetime =
+                    FastFloatToInt((float)motion->lifetime * MB_randRangeFloat(0.9f, 1.1f));
+                int childTimer = motion->timer;
+                float childVelocityScale = MB_randRangeFloat(0.85f, 1.0f);
+                SpawnPart_011(&particle->pos, &motion->velocity, motion->startColor,
+                              motion->endColor, childLifetime, childTimer, motion->generation + 1,
+                              motion->sizeCurve, motion->flags,
+                              motion->velocity.w * childVelocityScale);
+            }
+        }
+
+        if (!(motion->flags & PART_BRANCH_GRAVITY)) {
+            float sizeCurve = motion->sizeCurve;
+            float totalFrames = FastIntToFloat(motion->lifetime);
+            float linearCoeff = (totalFrames * 8.0f - totalFrames * 3.0f * sizeCurve) /
+                                (sizeCurve * 8.0f * sizeCurve + sizeCurve * 8.0f);
+            float quadraticCoeff =
+                (totalFrames * 3.0f + linearCoeff * 8.0f * sizeCurve) / (sizeCurve * -8.0f);
+            float remainingFrames = FastIntToFloat(particle->timer);
+            float scaleFactor = FastFSqrt(linearCoeff * linearCoeff -
+                                          quadraticCoeff * 4.0f * (totalFrames - remainingFrames));
+            float rootPlus = (-linearCoeff + scaleFactor) / (quadraticCoeff + quadraticCoeff);
+            float rootMinus = (-linearCoeff - scaleFactor) / (quadraticCoeff + quadraticCoeff);
+            float referenceDistance;
+            if (rootMinus < rootPlus)
+                particle->scale = rootPlus;
+
+            else
+                particle->scale = rootMinus;
+            referenceDistance = FastVec3Dist(&particle->pos, &GameCamera.position);
+            if (referenceDistance < 10.0f)
+                particle->scale *= referenceDistance * 0.075f + 0.25f;
+        }
+
+        if (motion->flags & PART_BRANCH_BOOST)
+            particle->rgba = FastTweenColor(motion->startColor, 0xFFFFFFF,
+                                            (float)particle->timer / (float)motion->lifetime);
+
+        else
+            particle->rgba = FastTweenColor(motion->endColor, motion->startColor,
+                                            (float)particle->timer / (float)motion->lifetime);
+
+        FastDecTimer(motion->timer);
+        if (FastDecTimer(particle->timer)) {
+            if (motion->flags & PART_BRANCH_BOOST) {
+                int tripledLifetime = motion->lifetime * 3;
+                particle->timer = tripledLifetime;
+                motion->lifetime = tripledLifetime;
+                motion->flags = (motion->flags & ~PART_BRANCH_BOOST) | PART_BRANCH_GRAVITY;
+                FastVec3Normalize(&motion->velocity, &motion->velocity,
+                                  motion->velocity.w * MB_randRangeFloat(1.6f, 2.0f));
+            }
+
+            else {
+                int fadeLifetime;
+                motion->startColor = motion->endColor;
+                motion->endColor = ((unsigned char)particle->gs_alpha == 0x48) ? 0 : 0xF2F3F3F;
+                motion->flags |= PART_BRANCH_FADING;
+                fadeLifetime = MB_randRange(motion->lifetime * 2, motion->lifetime * 3);
+                if (motion->flags & PART_BRANCH_LONG_FADE)
+                    fadeLifetime *= 5;
+                motion->lifetime = fadeLifetime;
+                particle->timer = (unsigned char)fadeLifetime;
+            }
+        }
+    }
+
+    else {
+        int fadeDuration = FastFloatToInt((float)motion->lifetime * 0.75f) + 1;
+        int blendDuration = FastFloatToInt((float)motion->lifetime * 0.25f) + 1;
+        int timer;
+        motion->velocity.z += frameTimeSq * 3.0f;
+        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+        FastVec3Scale(&motion->velocity, &motion->velocity, 0.98f);
+        timer = particle->timer;
+        if (fadeDuration < timer)
+            particle->rgba = FastTweenColor(motion->endColor, motion->startColor,
+                                            (float)(timer - fadeDuration) / (float)blendDuration);
+
+        else if ((unsigned char)particle->gs_alpha == 0x48)
+            particle->timer = 0;
+
+        else
+            particle->rgba = (particle->rgba & 0xFFFFFF) | ((timer * 15 / fadeDuration) << 24);
+
+        if (FrameLoad > 1.0f)
+            FastDecTimer(particle->timer);
+        if (FastDecTimer(particle->timer))
+            DeletePart(particle);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_012);
 

@@ -29,5 +29,7 @@ extern float transStepScaleSq;
 extern float animationSpeed;
 // Seconds the last frame took, as a fraction of a 60Hz frame.
 extern float frameTime;
+extern float frameTimeSq;
+extern float FrameLoad;
 
 #endif

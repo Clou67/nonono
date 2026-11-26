@@ -85,6 +85,24 @@ struct PartSplittingMotion {
     MobyInstance *owner;         // 0x1C
 };
 
+enum PartBranchingFlags {
+    PART_BRANCH_FADING = 1,
+    PART_BRANCH_BOOST = 2,
+    PART_BRANCH_GRAVITY = 4,
+    PART_BRANCH_LONG_FADE = 8
+};
+
+struct PartBranchingMotion {
+    Vec4 velocity;              // w holds the child velocity scale
+    int startColor;             // 0x10
+    int endColor;               // 0x14
+    unsigned char timer;        // 0x18
+    unsigned char flags;        // 0x19
+    unsigned char generation;   // 0x1A
+    unsigned char lifetime;     // 0x1B
+    float sizeCurve;            // 0x1C
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -111,6 +129,7 @@ struct PartInstance {
         PartFollowFade followFade;
         PartTimedScale timedScale;
         PartSplittingMotion splittingMotion;
+        PartBranchingMotion branchingMotion;
     };
 };
 
@@ -152,5 +171,9 @@ PartInstance *SpawnPart_040(Vec4 *position, Vec4 *velocity, int flags, MobyInsta
 void UpdatePart_041(PartInstance *particle);
 PartInstance *SpawnPart_042(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
 void UpdatePart_043(PartInstance *particle);
+
+void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime,
+                   int timer, int generation, float sizeCurve, int flags, float velocityScale);
+void UpdatePart_012(PartInstance *particle);
 
 #endif
