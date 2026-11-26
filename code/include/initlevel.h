@@ -17,8 +17,8 @@ extern unsigned char TieClassLookup[0xC00];
 extern u_long128 TieTexLookup[0x800 / 16];
 extern int TieMipDists[0x80 / 4];
 extern unsigned char ShrubClassLookup[0x400];
-extern char ShrubTexLookup[0x400];
-extern char ShrubMipDists[0x40];
+extern u_long128 ShrubTexLookup[0x400 / 16];
+extern int ShrubMipDists[0x40 / 4];
 
 extern int GSloc;
 extern int GSbase;

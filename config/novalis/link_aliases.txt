@@ -569,6 +569,5 @@ MobyIndexRemap = 0x001ACC00;
 levelBuffers = 0x0015EE4C;
 LevelUnkVars = 0x0014EE90;
 LoadHudBanks__Fv = 0x00253E28;
-ParseShrubClass__FPcP10TextureDefT0T0i = 0x00254E98;
 ParseMobyPack__FPcP15LevelCoreHeader = 0x00253A18;
 UpdateMobysInitial__Fv = 0x002792D0;

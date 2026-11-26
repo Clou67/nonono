@@ -775,7 +775,235 @@ void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oCla
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseShrubClass);
+// A shrub draw's GS register block (the same memory as ShrubDraw): TEX1, CLAMP, MIPTBP1
+// and TEX0, one per qword. Before loading, TEX1 holds the mip distance and filter and
+// CLAMP the wrap modes; the material index sits in the MIPTBP1 slot.
+struct ShrubDrawRegs {
+    GsRegWord tex1;         // 0x00
+    long pad08;
+    GsRegWord clamp;        // 0x10
+    long pad18;
+    GsRegWord miptbp1;      // 0x20
+    long pad28;
+    GsRegWord tex0;         // 0x30
+    long pad38;
+};
+
+// The texture of a shrub class's billboard.
+struct BillboardTexDef {
+    short width;
+    short height;
+    short mipCount;
+    short clut;
+    short tex;
+    short mip1;
+    short mip2;
+    short mip3;
+};
+
+extern short ShrubClassOClasses[];
+extern int ShrubClassIndex;
+
+// Registers a shrub class: relocates its packets, builds its billboard's GS texture
+// registers and each draw's, from the level textures (or the special templates).
+void ParseShrubClass(char *classData, TextureDef *texDefs, char *texRefs, BillboardTexDef *billboardTex, int oClass)
+{
+    ShrubClass *shrubClass = (ShrubClass *)classData;
+    int packet;
+    int index;
+    int mipDist;
+    unsigned char *classTexRefs;
+    ShrubBillboard *packedBillboard;
+    ShrubBillboard *billboard;
+    ShrubDrawList *list;
+    ShrubDrawRegs *regs;
+
+    ShrubClassLookup[oClass] = ShrubClassIndex;
+    ShrubClassOClasses[ShrubClassIndex] = oClass;
+    ShrubClasses[ShrubClassIndex] = shrubClass;
+    shrubClass->s_class = ShrubClassIndex;
+    mipDist = FastFloatToInt(shrubClass->mip_dist * 1024.0f);
+    ShrubMipDists[ShrubClassIndex] = mipDist;
+    ShrubClassIndex++;
+    shrubClass->instances = 0;
+    shrubClass->instance_cnt = 0;
+
+    if (shrubClass->palette != 0)
+        shrubClass->palette = (int *)((int)shrubClass->palette + (int)shrubClass);
+
+    for (packet = 0; packet < shrubClass->packet_cnt; packet++)
+        shrubClass->packets[packet].data = (void *)((int)shrubClass->packets[packet].data + (int)shrubClass);
+
+    packedBillboard = shrubClass->billboard;
+    if (packedBillboard != 0) {
+        int mipDistance;
+        int filter;
+
+        billboard = (ShrubBillboard *)((int)packedBillboard + (int)shrubClass);
+        shrubClass->billboard = billboard;
+        mipDistance = ((GsRegWord *)billboard->tex_1)->w[0];
+        filter = ((GsRegWord *)billboard->tex_1)->w[1];
+        if (billboardTex != 0) {
+            int widths[4];
+            int uLog;
+            int vLog;
+            int gsBlock;
+            unsigned long miptbp1;
+            int width;
+            int level;
+            int mipCount;
+            int clut;
+            int tex;
+            int mip1;
+            int mip2;
+            int mip3;
+
+            width = billboardTex->width;
+            for (level = 0; level < 4; level++) {
+                widths[level] = width >> (level + 6);
+                if (widths[level] <= 0)
+                    widths[level] = 1;
+            }
+
+            uLog = FastLog2(billboardTex->width);
+            vLog = FastLog2(billboardTex->height);
+            mipCount = billboardTex->mipCount;
+            clut = billboardTex->clut;
+            gsBlock = GSmemBase >> 8;
+            tex = billboardTex->tex + gsBlock;
+            mip1 = billboardTex->mip1 + gsBlock;
+            mip2 = billboardTex->mip2 + gsBlock;
+            mip3 = billboardTex->mip3 + gsBlock;
+
+            // The signed/unsigned casts keep the compiler from regrouping the ORs, as in retail.
+            billboard->tex_1[0] = (long)(((unsigned long)(mipCount - 1) << 2) | ((unsigned long)1 << 5) | ((unsigned long)filter << 6))
+                                | ((long)mipDistance << 32);
+            billboard->tex_0[0] = (long)((unsigned long)((long)tex | ((long)widths[0] << 14) | ((long)GS_PSMT8 << 20) | ((long)uLog << 26))
+                                         | ((unsigned long)vLog << 30) | ((unsigned long)1 << 34) | ((unsigned long)(clut + gsBlock) << 37))
+                                | ((long)4 << 61);
+            miptbp1 = (unsigned long)mip1 | ((unsigned long)widths[1] << 14);
+            miptbp1 |= (unsigned long)mip2 << 20;
+            miptbp1 |= (unsigned long)widths[2] << 34;
+            miptbp1 |= (unsigned long)mip3 << 40;
+            miptbp1 |= (unsigned long)widths[3] << 54;
+            billboard->mip_1[0] = miptbp1;
+        } else {
+            int templateIndex;
+            int template3;
+            unsigned long templateTex0;
+            unsigned long templateTex1;
+            unsigned long templateMip;
+            unsigned long filterBits;
+            unsigned long tex1;
+
+            // The last template.
+            for (templateIndex = 0; VisGifTemplates[(templateIndex + 1) * 3] != 0; templateIndex++) {
+            }
+
+            templateTex0 = VisGifTemplates[templateIndex * 3];
+            template3 = templateIndex * 3;
+            templateTex1 = VisGifTemplates[template3 + 1];
+            templateMip = VisGifTemplates[template3 + 2];
+            filterBits = ((unsigned long)filter << 6) | 0x20;
+            tex1 = (templateTex1 & 0x1C) | filterBits | ((unsigned long)mipDistance << 32);
+            billboard->tex_0[0] = templateTex0;
+            billboard->mip_1[0] = templateMip;
+            billboard->tex_1[0] = tex1;
+            // Retail reloads billboardTex->width below rather than reusing it; clearing the
+            // pointer here keeps that.
+            billboardTex = 0;
+        }
+    }
+
+    classTexRefs = (unsigned char *)&ShrubTexLookup[ShrubClassLookup[oClass]];
+    CopyVec4Inline((Vec4 *)classTexRefs, (Vec4 *)texRefs);
+
+    for (packet = 0; packet < shrubClass->packet_cnt; packet++) {
+        list = (ShrubDrawList *)shrubClass->packets[packet].data + 1;
+        regs = (ShrubDrawRegs *)((char *)list + list->skip_qwords * 16 + 0x10);
+        for (index = 0; index < list->draw_cnt; index++) {
+            int material;
+            int clampU;
+            int filter;
+            int mipDistance;
+            int clampV;
+
+            material = classTexRefs[regs->miptbp1.w[0]];
+            mipDistance = regs->tex1.w[0];
+            filter = regs->tex1.w[1];
+            clampU = regs->clamp.w[0];
+            clampV = regs->clamp.w[1];
+            if (texDefs != 0) {
+                TextureDef *texDef;
+                int width;
+                int texWidth;
+                int mipWidth;
+                int uLog;
+                int vLog;
+                int gsBlock;
+                int mip2;
+                int mip1;
+                int mipCount;
+                unsigned long tex0;
+                unsigned long tex1;
+                unsigned long miptbp1;
+                unsigned long clamp;
+
+                texDef = &texDefs[material];
+                width = (unsigned short)texDef->width << 16;
+                texWidth = width >> 22;
+                mipWidth = width >> 23;
+                if (texWidth <= 0)
+                    texWidth = 1;
+
+                if (mipWidth <= 0)
+                    mipWidth = 1;
+
+                uLog = FastLog2(width >> 16);
+                vLog = FastLog2(texDef->height);
+                gsBlock = GSmemBase >> 8;
+                mipCount = texDef->mipCount;
+                width = texDef->clut + gsBlock;
+                mip1 = texDef->mip1 + gsBlock;
+                mip2 = texDef->mip2 + gsBlock;
+                tex1 = (long)(((unsigned long)(mipCount - 1) << 2) | ((unsigned long)1 << 5) | ((unsigned long)filter << 6))
+                     | ((long)mipDistance << 32);
+                clamp = (unsigned long)clampU | ((unsigned long)clampV << 2) | ((unsigned long)material << 24);
+                miptbp1 = (long)(((unsigned long)mipWidth << 14) | ((unsigned long)mip1 << 20) | ((unsigned long)1 << 34)
+                                 | ((unsigned long)mip2 << 40))
+                        | ((long)1 << 54);
+                tex0 = (long)((unsigned long)(((long)texWidth << 14) | ((long)GS_PSMT8 << 20) | ((long)uLog << 26))
+                              | ((unsigned long)vLog << 30) | ((unsigned long)1 << 34) | ((unsigned long)width << 37))
+                     | ((long)4 << 61);
+                regs->tex1.d = tex1;
+                regs->clamp.d = clamp;
+                regs->miptbp1.d = miptbp1;
+                regs->tex0.d = tex0;
+            } else {
+                int template3;
+                unsigned long templateTex0;
+                unsigned long templateTex1;
+                unsigned long templateMip;
+                unsigned long filterBits;
+                unsigned long tex1;
+                unsigned long clamp;
+
+                templateTex0 = VisGifTemplates[material * 3];
+                template3 = material * 3;
+                templateTex1 = VisGifTemplates[template3 + 1];
+                templateMip = VisGifTemplates[template3 + 2];
+                filterBits = ((unsigned long)filter << 6) | 0x20;
+                tex1 = (templateTex1 & 0x1C) | filterBits | ((unsigned long)mipDistance << 32);
+                clamp = (unsigned long)clampU | ((unsigned long)clampV << 2) | ((unsigned long)material << 24);
+                regs->tex1.d = tex1;
+                regs->clamp.d = clamp;
+                regs->miptbp1.d = templateMip;
+                regs->tex0.d = templateTex0;
+            }
+            regs++;
+        }
+    }
+}
 
 // Relocates the level's tfrags and sets up the GS registers of each of their textures.
 void ParseTfrag(char *data, short *texDefs)
@@ -2457,7 +2685,6 @@ extern int LevelUnkVars[16];
 
 void LoadHudBanks(void);
 void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass);
-void ParseShrubClass(char *classData, TextureDef *texDefs, char *texRefs, char *mipDists, int oClass);
 char *ParseMobyPack(char *pack, LevelCoreHeader *header);
 void UpdateMobysInitial(void);
 
@@ -2592,7 +2819,7 @@ int InitLevelFromWad(int full, int keep)
 
         for (i = 0, classEntry = (char *)header + header->shrubClasses; i < header->shrubClassCnt; i++, classEntry += 0x30)
             ParseShrubClass(base + *(int *)classEntry, (TextureDef *)((char *)header + header->shrubTexs), classEntry + 0x10,
-                            classEntry + 0x20, *(int *)(classEntry + 4));
+                            (BillboardTexDef *)(classEntry + 0x20), *(int *)(classEntry + 4));
 
         DrawSdata15F420 = (int)(base + header->fxTexData);
         ParseEffectTexs((int *)((char *)header + header->fxTexs), header->fxTexCnt);
