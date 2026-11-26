@@ -43,6 +43,16 @@ struct SoundVoice {
     unsigned char unk_1C[0x54];
 };
 
+// An ambient sound placed in the level (PS3 names).
+struct SoundInstance {
+    short oClass;
+    short mClass;
+    void *pUpdate;
+    // An index into the gameplay file's pVar table until the level is loaded.
+    int pVar;
+    char unk_0C[0x84];
+};
+
 struct SoundAudioState {
     unsigned char unk_00[0x48];
     int group_volume[6];
@@ -54,10 +64,13 @@ struct SoundAudioState {
     unsigned char reverb_commands;
     int pending_commands;
     SoundVoice voices[30];
+    int soundInstanceCnt;               // 0xD90
+    SoundInstance *soundInstances;      // 0xD94
 };
 
 extern SoundAudioState audioState;
 char sound_Update(void);
+void sound_SetupAmbientFunctions(SoundInstance *sound);
 int sound_LevelPlay(int entry, int flags, int owner);
 
 int sound_SetVol(int handle, int volume);

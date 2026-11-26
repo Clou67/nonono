@@ -693,3 +693,4 @@ cdSlowedDown = 0x0015EEC0;
 cdSpindleControl = 0x0015ED58;
 levelSoundBank = 0x0015ED5C;
 IopLevelTop = 0x01FF8000;
+srand = 0x001160C8;

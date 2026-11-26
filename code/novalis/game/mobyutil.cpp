@@ -964,7 +964,6 @@ void MB_randOffset(Vec4 *vector, float range)
     vector->z += MB_randRangeFloat(-range, range);
 }
 
-extern MobyVolume *CuboidVolumes;
 void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 
 int MB_IsPntInCuboid(Vec4 *point, int index)
@@ -986,7 +985,6 @@ int MB_IsPntInCuboid(Vec4 *point, int index)
     return 0;
 }
 
-extern MobyVolume *CylinderVolumes;
 
 int MB_IsPntInCylinder(Vec4 *point, int index)
 {
@@ -1007,7 +1005,6 @@ int MB_IsPntInCylinder(Vec4 *point, int index)
     return 0;
 }
 
-extern MobyVolume *SphereVolumes;
 void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 
 int MB_IsPntInSphere(Vec4 *point, int index)

@@ -23,4 +23,6 @@ extern int gameLanguage;
 // Play time in game frames.
 extern int TotalPlayTime;
 
+extern float transStepScale;
+
 #endif

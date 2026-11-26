@@ -475,4 +475,7 @@ void Hero_PlayFootStep(int groundType, int whichFoot, int playSound);
 
 void TakeDamage(int damage);
 
+void Hero_ResetHero(void);
+void Hero_InitStuff(void);
+
 #endif

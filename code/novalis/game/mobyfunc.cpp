@@ -2,6 +2,7 @@
 #include "vuchain.h"
 #include "fastfunc.h"
 #include "moby.h"
+#include "mobyutil.h"
 #include "hero.h"
 #include "draw.h"
 #include "sce.h"
@@ -930,7 +931,7 @@ void DrawMobys(void)
     DrawMobysCleanup();
 }
 
-void SetMobyLights(MobyInstance *moby, long long dirIdx, unsigned long long colorIdx, long a, long b);
+
 
 typedef struct EnvSample {
     Vec4 pos;

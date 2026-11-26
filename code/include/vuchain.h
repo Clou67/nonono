@@ -64,7 +64,10 @@ struct MEMSLOTS {
     void *base;
     unsigned char *vu1_chain[2];
     unsigned char *hudHeap;
-    unsigned char unk_10[0x50];
+    unsigned char unk_10[0x8];
+    // Where the level's objects are built from the gameplay file.
+    unsigned char *levelData;
+    unsigned char unk_1C[0x44];
     Vec4 collisionPoint;
 };
 
@@ -176,6 +179,7 @@ void VU1_gsRegsNormal(void);
 void VU1_gsRegsEffects(void);
 void VU1_gsRegsFont(void);
 void VU0_loadMicroProgram(long *data);
+extern long LightVU0Program[];
 void VU1_sendChain(void);
 void VU1_syncChain(int syncFlags);
 void VU1_addDataDirect(int address, void *data, int qcnt);

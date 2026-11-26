@@ -8,6 +8,20 @@
 #include "tfrag.h"
 #include "framebuf.h"
 #include "sce.h"
+#include "gameglobals.h"
+#include "pad.h"
+#include "respawn.h"
+#include "libc.h"
+#include "debug.h"
+#include "viewcontext.h"
+#include "camera.h"
+#include "hero.h"
+#include "help.h"
+#include "lights.h"
+#include "shrub.h"
+#include "tie.h"
+#include "sound.h"
+#include "mobyutil.h"
 #include "fastfunc.h"
 #include "music.h"
 #include "sound.h"
@@ -668,13 +682,1312 @@ void ParseColl(char *data)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", PrintMobyMemory);
+// One moby class's memory use, for the debug listing.
+struct MobyClassSize {
+    float oClass;
+    float size;     // KB
+};
+
+// Prints the level's moby classes by memory use, largest first.
+void PrintMobyMemory(int *classRecord, int count)
+{
+    MobyClassSize classes[512];
+    int i;
+    int j;
+    int k;
+    int sorted;
+
+    for (i = 0; i < count; i++, classRecord += 8) {
+        classes[i].oClass = (float)classRecord[1];
+        if (classRecord[0] == 0) {
+            classes[i].size = 0;
+        } else {
+            // A class's data runs up to the next class's (or the one after it).
+            if (classRecord[8] != 0)
+                classes[i].size = FastIntToFloat(classRecord[8] - classRecord[0]) * (1.0f / 1024.0f);
+            else
+                classes[i].size = FastIntToFloat(classRecord[0x10] - classRecord[0]) * (1.0f / 1024.0f);
+
+            classes[i + 1].oClass = -1.0f;
+            classes[i + 1].size = 0;
+        }
+    }
+
+    do {
+        sorted = 1;
+        for (j = 0; j < count; j++) {
+            if (classes[j].size < classes[j + 1].size) {
+                float oClass = classes[j].oClass;
+                float size = classes[j].size;
+
+                sorted = 0;
+                classes[j].oClass = classes[j + 1].oClass;
+                classes[j].size = classes[j + 1].size;
+                classes[j + 1].oClass = oClass;
+                classes[j + 1].size = size;
+            }
+        }
+    } while (!sorted);
+
+    for (k = 0; k < count; k++) {
+        int oClass = FastFloatToInt(classes[k].oClass);
+
+        printf_stub("moby %d:      %.1fK\n", oClass, classes[k].size);
+    }
+}
 
 void STUB_RET_255950(void *data, int count)
 {
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ResetLevelData);
+// Builds the level's objects from its gameplay file. Unless reload is set, the file is read
+// from the disc first; then it is unpacked into the memory slot's level data and every
+// section is copied to its runtime buffer, starting at that memory. Returns the memory left
+// after the particles.
+char *ResetLevelData(int reload)
+{
+    GameplayHeader *header = (GameplayHeader *)MemSlots.vu1_chain[0];
+    char *mem = (char *)MemSlots.levelData;
+    float *shipSpawn;
+    short *mobyIndexRemap = MobyIndexRemap;
+    // The level in the moby loop, then a group's offset and end flag in the group loop.
+    int levelOrGroup;
+
+    if (reload == 0) {
+        if (videoModePal)
+            music_LoadFileSync(mem, bootAssets.gameplayPal.offset, bootAssets.gameplayPal.length);
+
+        else
+            music_LoadFileSync(mem, bootAssets.gameplayNtsc.offset, bootAssets.gameplayNtsc.length);
+
+        gameplayFile = mem;
+    }
+
+    FlushCache(0);
+    WadDecompress(gameplayFile, header);
+    FlushCache(0);
+
+    FastMemSet(&Hero, 0, 0x2310);
+    FastMemSet(&GameCamera, 0, 0x3A0);
+    FastMemSet(AnimLayerPool, 0, 0x180);
+    srand(1234);
+
+    if (videoModePal) {
+        if (transStepScale == 1.0f)
+            SetNtscPalTiming(1);
+    }
+
+    else if (transStepScale != 1.0f) {
+        SetNtscPalTiming(0);
+    }
+
+    CollOutput.jointCache = CollMobyJointCache;
+    CollOutput.jointCacheKeys = CollJointCacheKeys;
+    CollOutput.jointCacheNext = 0;
+    CollOutput.collCount = 0;
+    CollOutput.damageNext = 0;
+    FastMemSetZero(MobyGrids, 0x10000);
+    FastMemSetZero(MobyGridAlloc, 0x60);
+
+    {
+        int *settings = (int *)((char *)header + header->settings);
+        int *shipSettings;
+
+        VC.backR = *settings++;
+        VC.backG = *settings++;
+        VC.backB = *settings++;
+        DrawSdata15F444 = *settings++;
+        DrawSdata15F445 = *settings++;
+        DrawSdata15F446 = *settings++;
+        shipSpawn = (float *)(settings + 5);
+        shipSettings = settings + 9;
+        DrawSdata15F448 = *(float *)settings;
+        DrawSdata15F44C = *(float *)(settings + 1);
+        DrawSdata15F450 = *(float *)(settings + 2);
+        DrawSdata15F454 = *(float *)(settings + 3);
+        HeroDeathHeight = *(float *)(settings + 4);
+        settings += 12;
+        bootSpaceTransitionState.shipSplinePath = shipSettings[0];
+        bootSpaceTransitionState.shipCameraStartCuboid = shipSettings[1];
+        bootSpaceTransitionState.shipCameraEndCuboid = shipSettings[2];
+    }
+
+    UpdateFog();
+    TfragDrawDist = 512000.0f;
+    TieDrawDist = 720.0f;
+    ShrubDrawDist = 500.0f;
+    MobySdata15FFF0 = 500;
+    PartClipDist = 0x1F4000;
+    SetBackgroundColor(VC.backR, VC.backG, VC.backB);
+    VU0_loadMicroProgram(LightVU0Program);
+
+    FastMemSetZero(PointLights, 0x100);
+    FastMemSetZero(PointLightData, 0x180);
+    FastMemSetZero(DirectionalLights, 0x400);
+
+    {
+        char *section = (char *)header + header->directionalLights;
+        int lightCount = *(int *)section;
+
+        section += 0x10;
+        if (lightCount >= MAX_DIRECTIONAL_LIGHTS) {
+            printf_stub("!!!! Too many directional lights !!!! - Lighting will look bogus as a penalty.\n");
+            lightCount = MAX_DIRECTIONAL_LIGHTS;
+        }
+
+        if (lightCount != 0)
+            FastMemCopy32(DirectionalLights, section, lightCount << 6);
+    }
+
+    if (header->blenders != 0) {
+        char *section = (char *)header + header->blenders;
+
+        BlenderCnt = *(int *)section;
+        section += 0x10;
+        if (BlenderCnt != 0) {
+            FastMemCopy32(BlenderInfo, section, BlenderCnt << 4);
+            FastMemCopy32(Blenders, section + (BlenderCnt << 4), BlenderCnt << 7);
+
+            for (int index = 0; index < BlenderCnt; index++) {
+                Blender *blender = &Blenders[index];
+
+                if (blender->lightA < 0)
+                    blender->lightA = BLENDER_LIGHT_DEFAULT;
+
+                if (blender->lightB < 0)
+                    blender->lightB = BLENDER_LIGHT_DEFAULT;
+            }
+        }
+    }
+
+    else {
+        BlenderCnt = 0;
+    }
+
+    for (int index = 0; index < TfragsCnt; index++)
+        Tfrags[index].point_lights = 0xFFFF;
+
+    {
+        int index = 0;
+
+        while (index < TfragsCnt) {
+            unsigned short *list = (unsigned short *)SPR_TFRAG_LIGHT_LIST;
+
+            for (int count = 0; count < 0x3FF && index < TfragsCnt; count++) {
+                *list = index;
+                list++;
+                index++;
+            }
+
+            *list = 0xFFFF;
+            LightTfrags((void *)SPR_TFRAG_LIGHT_LIST);
+        }
+    }
+
+    if (header->help[0] != 0) {
+        char *messages = (char *)header + header->help[gameLanguage];
+        int size;
+
+        Help.num_message = *(int *)messages;
+        messages += 4;
+        size = *(int *)messages;
+        messages += 4;
+        HelpMsgs = (HelpMsg *)mem;
+        size += 3;
+        size &= ~3;
+        size -= 8;
+        FastMemCopy32(mem, messages, size);
+
+        // The text offsets count from the start of the help section.
+        for (int index = 0; index < Help.num_message; index++) {
+            int delta = (int)HelpMsgs - 8;
+
+            HelpMsgs[index].text += delta;
+        }
+
+        mem = (char *)(((unsigned int)mem + size + 0x3F) & 0xFFFFFFC0);
+    }
+
+    {
+        char *record = (char *)header + header->ties;
+        int count = *(int *)record;
+        int index;
+        int lastClass;
+
+        TieInstances = (TieInstance *)mem;
+        record += 0x10;
+        TieCnt = count;
+        mem += count << 5;
+        if (count != 0)
+            FastMemSet(TieInstances, 0, count << 5);
+
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        TieMatrices = (TieMatrix *)mem;
+        mem += TieCnt * 0x1C0;
+        if (TieCnt != 0)
+            FastMemSet(TieMatrices, 0, TieCnt * 0x1C0);
+
+        lastClass = -1;
+        TieInstanceEnd = TieInstances + TieCnt;
+
+        for (index = 0; index < TieCnt; index++) {
+            TieInstance *tie = TieInstances + index;
+            TieMatrix *matrix = TieMatrices + index;
+            int occlusionId;
+            float scale;
+
+            tie->tieClass = TieClassLookup[*(int *)record];
+            if (tie->tieClass != lastClass) {
+                TieClasses[tie->tieClass]->instances = tie;
+                TieClasses[tie->tieClass]->instance_cnt = 0;
+                lastClass = tie->tieClass;
+            }
+
+            TieClasses[tie->tieClass]->instance_cnt++;
+            tie->matrix = matrix;
+            tie->drawDist = (float)*(int *)(record + 4);
+            tie->point_lights = 0xFFFF;
+            tie->dir_lights_upd = 0;
+            tie->dirLights = 0;
+            occlusionId = *(int *)(record + 0xC);
+            CopyVec4Inline(&matrix->mtx.v0, (Vec4 *)(record + 0x10));
+            CopyVec4Inline(&matrix->mtx.v1, (Vec4 *)(record + 0x20));
+            CopyVec4Inline(&matrix->mtx.v2, (Vec4 *)(record + 0x30));
+            CopyVec4Inline(&matrix->mtx.v3, (Vec4 *)(record + 0x40));
+            tie->occlIndex = occlusionId;
+            record += 0x50;
+
+            matrix->mtx.v3.w = TieClasses[tie->tieClass]->scale;
+            FastVecMtx3Mult((Vec4 *)tie, (Vec4 *)&TieClasses[tie->tieClass]->bsphere, &matrix->mtx);
+            scale = FastVec3Length2(&matrix->mtx.v0);
+            scale = FastMaxF(scale, FastVec3Length2(&matrix->mtx.v1));
+            tie->bSphere.rad = TieClasses[tie->tieClass]->bsphere.rad * FastMaxF(scale, FastVec3Length2(&matrix->mtx.v2));
+            FastScaleVec4((Vec4 *)tie, (Vec4 *)tie, matrix->mtx.v3.w);
+            FastVec3Add((Vec4 *)tie, (Vec4 *)tie, &matrix->mtx.v3);
+
+            TieMatrices[index].mtx.v0.w = 1.0f / FastVec3Length2(&TieMatrices[index].mtx.v0);
+            TieMatrices[index].mtx.v1.w = 1.0f / FastVec3Length2(&TieMatrices[index].mtx.v1);
+            TieMatrices[index].mtx.v2.w = 1.0f / FastVec3Length2(&TieMatrices[index].mtx.v2);
+
+            FastMemCopy32(matrix->colors, record, 0x80);
+            record += 0x80;
+            tie->dirLights = *(unsigned short *)record;
+            record += 0x10;
+        }
+    }
+
+    {
+        unsigned short *list = (unsigned short *)SPR_LIGHT_LIST;
+
+        for (int index = 0; index < TieCnt; index++)
+            *list++ = index;
+
+        *list = 0xFFFF;
+        LightTies((void *)SPR_LIGHT_LIST);
+    }
+
+    {
+        char *record = (char *)header + header->shrubs;
+        int count = *(int *)record;
+        int lastClass;
+        int index;
+
+        ShrubInstances = (ShrubInstance *)mem;
+        record += 0x10;
+        ShrubCnt = count;
+        mem += count << 5;
+        if (count != 0)
+            FastMemSet(ShrubInstances, 0, count << 5);
+
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        ShrubMatrices = (ShrubMatrix *)mem;
+        mem += ShrubCnt << 6;
+        if (ShrubCnt != 0)
+            FastMemSet(ShrubMatrices, 0, ShrubCnt << 6);
+
+        ShrubVertexColors = (unsigned char *)mem;
+        mem += ShrubCnt * 0x60;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (ShrubCnt != 0)
+            FastMemSet(ShrubVertexColors, 0, ShrubCnt * 0x60);
+
+        lastClass = -1;
+        ShrubColorBuffer.colors = ShrubVertexColors;
+        ShrubInstanceEnd = ShrubInstances + ShrubCnt;
+
+        for (index = 0; index < ShrubCnt; index++) {
+            ShrubInstance *shrub = ShrubInstances + index;
+            ShrubMatrix *matrix = ShrubMatrices + index;
+            int shrubClass = ShrubClassLookup[*(int *)record];
+            float scale;
+
+            shrub->s_class = shrubClass;
+            if (shrubClass != lastClass) {
+                lastClass = shrubClass;
+                ShrubClasses[shrubClass]->instances = shrub;
+                ShrubClasses[shrubClass]->instance_cnt = 0;
+            }
+
+            ShrubClasses[shrubClass]->instance_cnt++;
+            shrub->index = index;
+            shrub->draw_dist = *(float *)(record + 4);
+            if (shrub->draw_dist < 16.0f)
+                shrub->draw_dist = 16.0f;
+
+            shrub->dir_lights_upd = 0;
+            shrub->point_lights = 0xFFFF;
+
+            if (ShrubClasses[shrubClass]->billboard != 0) {
+                float billboardDist;
+
+                shrub->bboard_dist = FastFloatToInt(ShrubClasses[shrubClass]->billboard->fade_dist);
+                billboardDist = FastIntToFloat(shrub->bboard_dist) + 24.0f;
+                if (shrub->draw_dist < billboardDist)
+                    shrub->draw_dist = billboardDist;
+            }
+
+            CopyVec4Inline(&matrix->mtx.v0, (Vec4 *)(record + 0x10));
+            CopyVec4Inline(&matrix->mtx.v1, (Vec4 *)(record + 0x20));
+            CopyVec4Inline(&matrix->mtx.v2, (Vec4 *)(record + 0x30));
+            CopyVec4Inline(&matrix->mtx.v3, (Vec4 *)(record + 0x40));
+            record += 0x50;
+
+            matrix->mtx.v3.w = ShrubClasses[shrubClass]->scale;
+
+            {
+                float sideScale = (FastVec3Length2(&matrix->mtx.v0) + FastVec3Length2(&matrix->mtx.v1)) * 0.5f;
+                float upScale = FastVec3Length2(&matrix->mtx.v2);
+                int fixedSide = FastFloatToInt(sideScale * 4096.0f);
+                int fixedUp = FastFloatToInt(upScale * 4096.0f);
+
+                if (fixedUp > 0x10000)
+                    fixedUp = 0x10000;
+
+                if (fixedSide > 0x10000)
+                    fixedSide = 0x10000;
+
+                matrix->packedScale = fixedSide | (fixedUp << 16);
+            }
+
+            {
+                int red;
+                int green;
+                int blue;
+
+                red = *(int *)record;
+                record += 4;
+                green = *(int *)record;
+                record += 4;
+                blue = *(int *)record;
+                record += 8;
+                green = (green << 8) | 0x80000000;
+                matrix->color = (blue << 16) | green | red;
+            }
+
+            shrub->dir_lights = *(unsigned short *)record;
+            record += 0x10;
+
+            FastVecMtx3Mult((Vec4 *)shrub, (Vec4 *)ShrubClasses[shrubClass], &matrix->mtx);
+            scale = FastVec3Length2(&matrix->mtx.v0);
+            scale = FastMaxF(scale, FastVec3Length2(&matrix->mtx.v1));
+            shrub->bSphere.rad = ShrubClasses[shrubClass]->bSphere.rad * FastMaxF(scale, FastVec3Length2(&matrix->mtx.v2));
+            FastScaleVec4((Vec4 *)shrub, (Vec4 *)shrub, matrix->mtx.v3.w);
+            FastVec3Add((Vec4 *)shrub, (Vec4 *)shrub, &matrix->mtx.v3);
+        }
+    }
+
+    {
+        unsigned short *list = (unsigned short *)SPR_LIGHT_LIST;
+
+        for (int index = 0; index < ShrubCnt; index++)
+            *list++ = index;
+
+        *list = 0xFFFF;
+        LightShrubs((void *)SPR_LIGHT_LIST);
+    }
+
+    // Each shrub's colour is the average of its 24 vertex colours.
+    for (int index = 0; index < ShrubCnt; index++) {
+        unsigned char *color = ShrubVertexColors + index * 0x60;
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+        int count = 24;
+
+        for (int vertex = 0; vertex < count; vertex++) {
+            red += color[0];
+            green += color[1];
+            blue += color[2];
+            color += 4;
+        }
+
+        green /= count;
+        blue /= count;
+        red /= count;
+        *(int *)((char *)ShrubMatrices + index * 0x40 + 0x1C) = (blue << 16) | (green << 8) | red;
+    }
+
+    if (header->cameras != 0) {
+        char *record = (char *)header + header->cameras;
+        int count = *(int *)record;
+
+        ImportCameras = (ImportCamera *)mem;
+        record += 0x10;
+        ImportCameraCnt = count;
+        mem += count << 5;
+        if (count != 0)
+            FastMemSet(ImportCameras, 0, count << 5);
+
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+
+        for (int index = 0; index < ImportCameraCnt; index++) {
+            ImportCameras[index].type = *(int *)record;
+            record += 4;
+            ImportCameras[index].pos[0] = ((float *)record)[0];
+            ImportCameras[index].pos[1] = ((float *)record)[1];
+            ImportCameras[index].pos[2] = ((float *)record)[2];
+            record += 0xC;
+            ImportCameras[index].rot[0] = ((float *)record)[0];
+            ImportCameras[index].rot[1] = ((float *)record)[1];
+            ImportCameras[index].rot[2] = ((float *)record)[2];
+            record += 0xC;
+            ImportCameras[index].pVar = *(int *)record;
+            record += 4;
+        }
+    }
+
+    if (header->sounds != 0) {
+        char *record = (char *)header + header->sounds;
+        int count = *(int *)record;
+
+        record += 0x10;
+        audioState.soundInstanceCnt = count;
+        if (count != 0) {
+            int size = count * 0x90;
+            int index;
+
+            audioState.soundInstances = (SoundInstance *)mem;
+            mem += size;
+            mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+            FastMemSet(audioState.soundInstances, 0, size);
+
+            for (index = 0; index < audioState.soundInstanceCnt; index++) {
+                SoundInstance *sound = audioState.soundInstances + index;
+
+                FastMemCopy32(sound, record, 0x90);
+                record += 0x90;
+                sound_SetupAmbientFunctions(sound);
+            }
+        }
+
+        else {
+            audioState.soundInstances = 0;
+        }
+    }
+
+    {
+        char *record = (char *)header + header->mobys;
+        int extraMobys;
+        int spawned = 0;
+        int recordCnt;
+        char *nextRecord;
+        int index;
+
+        recordCnt = *(int *)record;
+        record += 4;
+        extraMobys = *(int *)record;
+        record += 0xC;
+        MobyInstances = (MobyInstance *)mem;
+        FastMemSet(mem, 0, (recordCnt + extraMobys) << 8);
+
+        for (index = 0; index < recordCnt; index++) {
+            int levelFlagIdx;
+            int flags;
+            int uid;
+            int bolts;
+            int boltsAlt;
+            int boltsBase;
+            int boltsAdjusted;
+            unsigned char mapSlot = MAPSLOT_NONE;
+            int skip = 0;
+
+            nextRecord = record + ((*(int *)record >> 2) << 2);
+            record += 4;
+            levelFlagIdx = *(int *)record;
+            record += 4;
+            flags = *(int *)record;
+            record += 4;
+            uid = *(int *)record;
+            record += 4;
+            bolts = *(int *)record;
+            record += 4;
+            boltsAlt = *(int *)record;
+            record += 4;
+            boltsBase = bolts;
+            boltsAdjusted = boltsBase;
+
+            if (flags != 0) {
+                levelOrGroup = Level;
+                if (flags & MOBYSPAWN_MAP_SLOT)
+                    mapSlot = FindOrAssignBoltSourceSlot(levelOrGroup, uid);
+
+                else
+                    mapSlot = MAPSLOT_UNSET;
+
+                if (CheckpointObjState[uid] != 0) {
+                    skip = 1;
+                }
+
+                else if (flags & (MOBYSPAWN_LEVEL_FLAG | MOBYSPAWN_NO_LEVEL_FLAG)) {
+                    if (CheckpointLevelFlags[levelFlagIdx] == 0xFF) {
+                        if (flags & MOBYSPAWN_NO_LEVEL_FLAG) {
+                            boltsBase = boltsAlt;
+                            if ((CheckpointBits[uid >> 5] >> (uid & 0x1F)) & 1)
+                                boltsAdjusted = (boltsBase + 1) / 2;
+
+                            else
+                                boltsAdjusted = boltsBase;
+                        }
+
+                        else {
+                            skip = 1;
+                        }
+                    }
+
+                    else {
+                        if (flags & MOBYSPAWN_LEVEL_FLAG) {
+                            if ((LevelCheckpointBits[Level][uid >> 5] >> (uid & 0x1F)) & 1)
+                                boltsAdjusted = (bolts + 1) / 2;
+                        }
+
+                        else {
+                            skip = 1;
+                        }
+                    }
+                }
+
+                else if (flags & MOBYSPAWN_IF_CHECKPOINT) {
+                    if ((CheckpointBits[uid >> 5] >> (uid & 0x1F)) & 1)
+                        skip = 1;
+                }
+
+                else if ((flags & (MOBYSPAWN_IF_CHECKPOINT | MOBYSPAWN_IF_LEVEL)) == MOBYSPAWN_IF_LEVEL) {
+                    if ((LevelCheckpointBits[Level][uid >> 5] >> (uid & 0x1F)) & 1)
+                        skip = 1;
+                }
+            }
+
+            if (skip) {
+                mobyIndexRemap[index] = -1;
+            }
+
+            else {
+                MobyInstance *moby;
+                int onGround;
+                float groundOffset;
+                int pVar;
+                int red;
+                int green;
+                int blue;
+                int light;
+
+                {
+                    short *slot = mobyIndexRemap + index;
+
+                    *slot = spawned;
+                }
+                moby = MobyInstances + spawned;
+                InitMobyInstance(moby, *(int *)record);
+                record += 4;
+                moby->unkB1 = mapSlot;
+                moby->uid = uid;
+                moby->levelFlagIdx = levelFlagIdx;
+                *(short *)&moby->unkB4[0] = boltsAdjusted;
+                *(short *)&moby->unkB4[2] = boltsBase;
+                if (moby->pClass != 0)
+                    moby->scale = moby->pClass->scale * *(float *)record;
+
+                record += 4;
+                moby->drawDistance = *(unsigned short *)record;
+                record += 4;
+                moby->updateDistance = *(unsigned char *)record;
+                record += 0xC;
+                moby->pos.x = ((float *)record)[0];
+                moby->pos.y = ((float *)record)[1];
+                moby->pos.z = ((float *)record)[2];
+                record += 0xC;
+                moby->rotation.x = ((float *)record)[0];
+                moby->rotation.y = ((float *)record)[1];
+                moby->rotation.z = ((float *)record)[2];
+                record += 0xC;
+                moby->group = *(unsigned char *)record;
+                record += 4;
+                onGround = *(int *)record;
+                record += 4;
+                groundOffset = *(float *)record;
+                record += 4;
+
+                if (onGround != 0) {
+                    float ground = MB_CollLineDown(&moby->pos, 0.5f, 0);
+
+                    if (0.0f < ground)
+                        moby->pos.z = ground + groundOffset;
+                }
+
+                record += 4;
+                pVar = *(int *)record;
+                moby->occlIndex = OCCL_NONE;
+                record += 4;
+                moby->pVar = (void *)pVar;
+                if (*(int *)record == 0)
+                    moby->occlIndex = 0;
+
+                record += 4;
+                if (moby->pClass != 0)
+                    moby->pClass->modeBits |= *(unsigned short *)record;
+
+                moby->modeBits |= *(unsigned short *)record;
+                record += 4;
+                if (moby->pClass != 0)
+                    PostUpdateMoby(moby);
+
+                red = *(int *)record;
+                record += 4;
+                green = *(int *)record;
+                record += 4;
+                blue = *(int *)record;
+                record += 4;
+                light = *(int *)record;
+                record += 4;
+                moby->colorManipulator = (blue << 16) + (green << 8) + red;
+                SetMobyLights(moby, moby->colorManipulator, 0, 0, 0);
+                moby->color = light;
+                if (*(int *)record != -1)
+                    Map_RegisterLevelObject(moby, *(int *)record);
+
+                spawned++;
+            }
+
+            record = nextRecord;
+        }
+
+        MobyInstancePermEnd = MobyInstances + spawned;
+        MobyInstancePermEnd->state = 0xFF;
+        mem += (spawned + extraMobys) << 8;
+        mobyVars = mem;
+        mem += extraMobys << 7;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        MobyInstanceEnd = (MobyInstance *)((int)MobyInstances + ((spawned + extraMobys) << 8) - 0x100);
+    }
+
+    if (header->pvarData != 0) {
+        char *pvarData = (char *)header + header->pvarData;
+        PvarEntry *pvarTable = (PvarEntry *)((char *)header + header->pvarTable);
+        MobyInstance *moby;
+
+        for (int index = 0; index < ImportCameraCnt; index++) {
+            int entry = ImportCameras[index].pVar;
+
+            if (entry < 0) {
+                ImportCameras[index].pVar = 0;
+            }
+
+            else {
+                int size = pvarTable[entry].size;
+                char *source = pvarData + pvarTable[entry].offset;
+
+                ImportCameras[index].pVar = (int)mem;
+                FastMemCopy16(mem, source, size);
+                pvarTable[entry].offset = (int)mem;
+                mem += size;
+            }
+        }
+
+        for (int index = 0; index < audioState.soundInstanceCnt; index++) {
+            int entry = audioState.soundInstances[index].pVar;
+
+            if (entry < 0) {
+                audioState.soundInstances[index].pVar = 0;
+            }
+
+            else {
+                int size = pvarTable[entry].size;
+                char *source = pvarData + pvarTable[entry].offset;
+
+                audioState.soundInstances[index].pVar = (int)mem;
+                FastMemCopy16(mem, source, size);
+                pvarTable[entry].offset = (int)mem;
+                mem += size;
+            }
+        }
+
+        for (moby = MobyInstances; moby != MobyInstancePermEnd; moby++) {
+            int entry = (int)moby->pVar;
+
+            if (entry < 0) {
+                moby->pVar = 0;
+            }
+
+            else {
+                int size = pvarTable[entry].size;
+                char *source = pvarData + pvarTable[entry].offset;
+
+                moby->pVar = mem;
+                FastMemCopy16(mem, source, size);
+                pvarTable[entry].offset = (int)mem;
+                mem += size;
+            }
+        }
+
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+    }
+
+    if (header->mobyLinks != 0) {
+        int *link = (int *)((char *)header + header->mobyLinks);
+        PvarEntry *pvarTable = (PvarEntry *)((char *)header + header->pvarTable);
+
+        while (link[0] >= 0) {
+            int pVar = pvarTable[link[0]].offset;
+            int fieldOffset = link[1];
+
+            if (pVar >= (int)header) {
+                int *field = (int *)(pVar + fieldOffset);
+
+                if (*field >= 0)
+                    *field = mobyIndexRemap[*field];
+            }
+
+            link += 2;
+        }
+    }
+
+    if (header->pvarPointers != 0) {
+        int *fix = (int *)((char *)header + header->pvarPointers);
+        PvarEntry *pvarTable = (PvarEntry *)((char *)header + header->pvarTable);
+
+        while (fix[0] >= 0) {
+            int pVar = pvarTable[fix[0]].offset;
+            int fieldOffset = fix[1];
+
+            if (pVar >= (int)header) {
+                int *field = (int *)(pVar + fieldOffset);
+
+                *field += pVar;
+            }
+
+            fix += 2;
+        }
+    }
+
+    if (header->mobyGroups != 0) {
+        char *section = (char *)header + header->mobyGroups;
+        char *groups = mem;
+        int *offsets;
+        int groupCnt;
+        int size;
+
+        groupCnt = *(int *)section;
+        section += 4;
+        size = *(int *)section;
+        offsets = (int *)(section + 0xC);
+        mem += size;
+        section = (char *)offsets + (groupCnt << 2);
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (size != 0)
+            FastMemCopy16(groups, section, size);
+
+        FastMemSet(MobyGroupEntries, 0, 0x1C0);
+
+        for (int index = 0; index < groupCnt; index++, offsets++) {
+            levelOrGroup = *offsets;
+            if (levelOrGroup >= 0) {
+                int entry = (int)(groups + levelOrGroup);
+                unsigned short *in;
+                short *out;
+
+                MobyGroupEntries[index] = (short *)entry;
+                in = (unsigned short *)entry;
+                out = (short *)in;
+                MobySdata15FFF4 = index + 1;
+
+                do {
+                    int id = *in;
+                    short moby;
+
+                    levelOrGroup = *(short *)in;
+                    entry = (id & 0x7FFF) << 1;
+                    entry += (int)mobyIndexRemap;
+                    levelOrGroup &= MOBY_GROUP_END;
+                    moby = *(short *)entry;
+                    if (moby >= 0)
+                        *out++ = moby;
+
+                    if (levelOrGroup) {
+                        if ((int)MobyGroupEntries[index] < (int)out)
+                            out[-1] |= MOBY_GROUP_END;
+
+                        else
+                            MobyGroupEntries[index] = 0;
+
+                        break;
+                    }
+
+                    in++;
+                } while (!levelOrGroup);
+            }
+        }
+    }
+
+    if (header->sharedData != 0) {
+        char *section = (char *)header + header->sharedData;
+        char *shared = mem;
+        PvarEntry *pvarTable;
+        int size;
+        int fixCnt;
+
+        size = *(int *)section;
+        section += 4;
+        fixCnt = *(int *)section;
+        section += 0xC;
+        mem += size;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (size != 0)
+            FastMemCopy16(shared, section, size);
+
+        section += size;
+        pvarTable = (PvarEntry *)((char *)header + header->pvarTable);
+
+        for (int index = 0; index < fixCnt; index++) {
+            int word = *(int *)section;
+            int fieldOffset = word >> 16;
+            int pVar = pvarTable[word & 0xFFFF].offset;
+
+            if (pVar >= (int)header)
+                *(int *)(pVar + fieldOffset) = (int)(shared + *(int *)(section + 4));
+
+            section += 8;
+        }
+    }
+
+    if (header->splines != 0) {
+        char *section = (char *)header + header->splines;
+        char *source;
+        int size;
+
+        SplineCnt = *(int *)section;
+        source = section + *(int *)(section + 4);
+        size = *(int *)(section + 8);
+        SplineData = mem;
+        mem += size;
+        section += 0x10;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (size != 0)
+            FastMemCopy16(SplineData, source, size);
+
+        for (int index = 0; index < SplineCnt; index++) {
+            Splines[index] = SplineData + *(int *)section;
+            section += 4;
+        }
+    }
+
+    if (header->grindPaths != 0) {
+        char *section = (char *)header + header->grindPaths;
+        char *source;
+        char *data;
+        int count;
+        int size;
+        int index;
+
+        count = *(int *)section;
+        GrindPathCnt = count;
+        source = section + *(int *)(section + 4);
+        size = *(int *)(section + 8);
+        GrindPaths = (GrindPath *)mem;
+        mem += count << 5;
+        section += 0x10;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+
+        if (count > 0) {
+            GrindPath *path = GrindPaths;
+
+            index = count;
+            do {
+                CopyVec4Inline((Vec4 *)&path->bSphere, (Vec4 *)section);
+                section += 0x10;
+                path->unk14 = *(int *)section;
+                section += 0x10;
+                path++;
+            } while (--index != 0);
+        }
+
+        data = mem;
+        mem += size;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (size != 0)
+            FastMemCopy16(data, source, size);
+
+        for (index = 0; index < GrindPathCnt; index++) {
+            GrindPaths[index].data = data + *(int *)section;
+            section += 4;
+        }
+    }
+
+    if (header->pills != 0) {
+        char *section = (char *)header + header->pills;
+        int count = *(int *)section;
+
+        Pills = mem;
+        PillCnt = count;
+        section += 0x10;
+        mem += count * 0x90;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemSet(Pills, 0, count * 0x90);
+
+        for (int index = 0; index < PillCnt; index++) {
+            FastMemCopy32(Pills + index * 0x90, section, 0x90);
+            section += 0x80;
+        }
+    }
+
+    if (header->cuboids != 0) {
+        char *section = (char *)header + header->cuboids;
+        int count = *(int *)section;
+
+        CuboidVolumes = (MobyVolume *)mem;
+        section += 0x10;
+        CuboidCnt = count;
+        mem += count << 7;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemSet(CuboidVolumes, 0, count << 7);
+
+        for (int index = 0; index < CuboidCnt; index++) {
+            FastMemCopy32(CuboidVolumes + index, section, 0x80);
+            section += 0x80;
+        }
+    }
+
+    if (header->spheres != 0) {
+        char *section = (char *)header + header->spheres;
+        int count = *(int *)section;
+
+        SphereVolumes = (MobyVolume *)mem;
+        section += 0x10;
+        SphereCnt = count;
+        mem += count << 7;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemSet(SphereVolumes, 0, count << 7);
+
+        for (int index = 0; index < SphereCnt; index++) {
+            FastMemCopy32(SphereVolumes + index, section, 0x80);
+            section += 0x80;
+        }
+    }
+
+    if (header->cylinders != 0) {
+        char *section = (char *)header + header->cylinders;
+        int count = *(int *)section;
+
+        CylinderVolumes = (MobyVolume *)mem;
+        section += 0x10;
+        CylinderCnt = count;
+        mem += count << 7;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemSet(CylinderVolumes, 0, count << 7);
+
+        for (int index = 0; index < CylinderCnt; index++) {
+            FastMemCopy32(CylinderVolumes + index, section, 0x80);
+            section += 0x80;
+        }
+    }
+
+    if (header->camCollGrid != 0) {
+        char *section = (char *)header + header->camCollGrid;
+        int size = *(int *)section;
+
+        CamCollGrid = mem;
+        section += 0x10;
+        size += 0x4000;
+        mem += size;
+        FastMemCopy32(CamCollGrid, section, size);
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+    }
+
+    if (header->pointLightGrid != 0) {
+        char *section = (char *)header + header->pointLightGrid;
+        int size = *(int *)section;
+
+        PointLightGrid = mem;
+        section += 0x10;
+        size += 0x4000;
+        mem += size;
+        FastMemCopy32(PointLightGrid, section, size);
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+    }
+
+    if (header->pointLights != 0) {
+        char *section = (char *)header + header->pointLights;
+        int count = *(int *)section;
+
+        PointLightRecords = mem;
+        section += 0x10;
+        PointLightRecordCnt = count;
+        mem += count << 5;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemCopy32(PointLightRecords, section, count << 5);
+    }
+
+    if (header->envSamples != 0) {
+        char *section = (char *)header + header->envSamples;
+        int count = *(int *)section;
+
+        EnvSamples = mem;
+        EnvSampleCnt = count;
+        section += 0x10;
+        mem += count * 0x30;
+        mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
+        if (count != 0)
+            FastMemCopy32(EnvSamples, section, count * 0x30);
+    }
+
+    PartInstances = mem;
+    mem += 0x20000;
+    PartIndexTop = -1;
+    PartIndexNext = 0;
+    PartActiveCnt = 0;
+    FastMemSetZero(PartAlloc, 0x200);
+
+    bootSpaceTransitionState.spaceship = 0;
+    if (0.0f < shipSpawn[0]) {
+        MobyInstance *moby;
+
+        if (Level == LEVEL_GEMLIK && bootSpaceTransitionState.shipVariant == SHIP_VARIANT_GEMLIK) {
+            if (SpaceshipPreplaced != 0) {
+                for (moby = MobyInstances; moby->state != 0xFF; moby++) {
+                    if ((short)moby->oClass == SpaceshipOClasses[bootSpaceTransitionState.shipVariant]) {
+                        SetupSpaceShipVars(moby);
+                        MB_SetAnimationNoBlend(moby, 1, 0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (bootSpaceTransitionState.spaceship == 0) {
+            float spawnRotation;
+
+            moby = CreateMoby(SpaceshipOClasses[bootSpaceTransitionState.shipVariant]);
+            moby->pos.x = shipSpawn[0];
+            moby->pos.y = shipSpawn[1];
+            moby->pos.z = shipSpawn[2];
+            spawnRotation = shipSpawn[3];
+            moby->pUpdate = (void *)UpdateMoby_Spaceship;
+            moby->drawDistance = 0xFF;
+            moby->rotation.z = spawnRotation;
+            moby->updateDistance = 16;
+            moby->modeBits &= ~NO_UPDATE;
+            MB_SetAnimationNoBlend(moby, 1, 0);
+            PostUpdateMoby(moby);
+            bootSpaceTransitionState.spaceship = moby;
+            Map_RegisterLevelObject(moby, 0);
+        }
+    }
+
+    if (OcclGrid != 0 && header->occlusion != 0) {
+        int *mapping = (int *)((char *)header + header->occlusion);
+        int *section = mapping;
+        int tfragMappingCnt;
+        int tieMappingCnt;
+        int mobyMappingCnt;
+        int tfragsStale = 1;
+        int tiesStale;
+
+        tfragMappingCnt = mapping[0];
+        tieMappingCnt = mapping[1];
+        mobyMappingCnt = mapping[2];
+        mapping += 4;
+
+        if (TfragsCnt == tfragMappingCnt) {
+            tfragsStale = 0;
+            for (int index = 0; index < tfragMappingCnt; index++) {
+                if (Tfrags[index].occlId != mapping[1])
+                    tfragsStale = 1;
+
+                mapping += 2;
+            }
+        }
+
+        else {
+            mapping += tfragMappingCnt * 2;
+        }
+
+        tiesStale = 1;
+        if (TieInstanceEnd - TieInstances == tieMappingCnt) {
+            tiesStale = 0;
+            for (int index = 0; index < tieMappingCnt; index++) {
+                int id = (unsigned short)mapping[1];
+
+                if (TieInstances[index].occlIndex != id)
+                    tiesStale = 1;
+
+                mapping += 2;
+            }
+        }
+
+        else {
+            mapping += tieMappingCnt * 2;
+        }
+
+        {
+            MobyInstance *moby;
+            int stale = 0;
+            int missing = 0;
+            int occluded = 0;
+
+            for (moby = MobyInstances; moby->state != 0xFF; moby++) {
+                if (moby->occlIndex != OCCL_NONE) {
+                    int uid = (short)moby->uid;
+                    int entry;
+
+                    occluded++;
+                    for (entry = 0; entry < mobyMappingCnt; entry++) {
+                        if (mapping[entry * 2 + 1] == uid)
+                            break;
+                    }
+
+                    if (entry == mobyMappingCnt) {
+                        moby->occlIndex = OCCL_NONE;
+                        stale = 1;
+                        missing++;
+                    }
+
+                    else {
+                        int bit = mapping[entry * 2];
+
+                        moby->occlIndex = ((bit >> 3) << 8) | (1 << (bit & 7));
+                    }
+                }
+            }
+
+            if (stale)
+                printf_stub("***\nocclusion out of date on mobys (%d / %d)\n***\n", missing, occluded);
+        }
+
+        if (tfragsStale) {
+            printf_stub("***\nocclusion out of date on tfrag\n***\n");
+            for (int index = 0; index < TfragsCnt; index++)
+                Tfrags[index].occlIndex = OCCL_NONE;
+        }
+
+        else {
+            mapping = section + 4;
+            for (int index = 0; index < tfragMappingCnt; index++) {
+                int bit = mapping[0];
+
+                Tfrags[index].occlIndex = ((bit >> 3) << 8) | (1 << (bit & 7));
+                mapping += 2;
+            }
+        }
+
+        if (tiesStale) {
+            TieInstance *tie;
+            int missing = 0;
+            int occluded = 0;
+
+            mapping = &section[tfragMappingCnt * 2 + 4];
+            for (tie = TieInstances; tie != TieInstanceEnd; tie++) {
+                int id = tie->occlIndex;
+                int entry;
+
+                occluded++;
+                for (entry = 0; entry < tieMappingCnt; entry++) {
+                    if (mapping[entry * 2 + 1] == id)
+                        break;
+                }
+
+                if (entry == tieMappingCnt) {
+                    tie->occlIndex = OCCL_NONE;
+                    missing++;
+                }
+
+                else {
+                    int bit = mapping[entry * 2];
+
+                    tie->occlIndex = ((bit >> 3) << 8) | (1 << (bit & 7));
+                }
+            }
+
+            printf_stub("***\nocclusion out of date on ties (%d / %d)\n***\n", missing, occluded);
+        }
+
+        else {
+            mapping = &section[tfragMappingCnt * 2 + 4];
+            for (int index = 0; index < tieMappingCnt; index++) {
+                int bit = mapping[0];
+
+                TieInstances[index].occlIndex = ((bit >> 3) << 8) | (1 << (bit & 7));
+                mapping += 2;
+            }
+        }
+
+        Debug.occlusionMode = 2;
+    }
+
+    else {
+        MobyInstance *moby;
+        TieInstance *tie;
+
+        printf_stub("***\nno occlusion\n***\n");
+        for (moby = MobyInstances; moby != MobyInstanceEnd; moby++)
+            moby->occlIndex = OCCL_NONE;
+
+        for (tie = TieInstances; tie != TieInstanceEnd; tie++)
+            tie->occlIndex = OCCL_NONE;
+
+        for (int index = 0; index < TfragsCnt; index++)
+            Tfrags[index].occlIndex = OCCL_NONE;
+
+        Debug.occlusionMode = 0;
+    }
+
+    ResetDrawGlobals();
+    Hero_ResetHero();
+    Hero_InitStuff();
+    InitCameras();
+    UpdateCameras();
+    InitPadRing();
+    EnableFontColors();
+
+    MobyIdListA[0] = 0;
+    MobyIdListB[0] = 0;
+    MobyIdListC[0] = 0;
+    worldUpdateTime = 0;
+    LevelSdata15F63C = 0;
+    if (bootSpaceTransitionState.spaceship != 0)
+        bootSpaceTransitionState.spaceship->lights = Hero.moby->lights;
+
+    switch (Level) {
+    case 2:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 10:
+        ScreenColorEffectLevel = &ScreenColorEffectSpace;
+        break;
+
+    default:
+        ScreenColorEffectLevel = &ScreenColorEffectDefault;
+        break;
+    }
+
+    ScreenColorEffectNow = ScreenColorEffectLevel;
+    return mem;
+}
 
 int SetupLevelWadBuffer(void)
 {
@@ -885,8 +2198,8 @@ char HudBankLabel3[] = "hud bank 3";
 char HudBankLabel4[] = "hud bank 4";
 char MemoryMapNewline[] = "\n";
 
-// The current level's occlusion character table, copied in by InitLevelFromWad.
-unsigned char LevelOcclChars[16] = { 0 };
+// Per mission, 0xFF once its level flag is set (ResetLevelData).
+unsigned char CheckpointLevelFlags[16] = { 0 };
 
 int byteGridStride = 0;
 int byteGridRows = 0;

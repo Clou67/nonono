@@ -17,7 +17,13 @@ struct Tfrag {
     char dir_lights_upd;
     // Four 4-bit point light slots, 0xF is empty.
     unsigned short point_lights;
-    char unk38[8];
+    char unk38[2];
+    // Occlusion bit as (byte << 8) | mask, or OCCL_NONE.
+    unsigned short occlIndex;
+    char unk3C;
+    // The tfrag's id in the gameplay file's occlusion mapping.
+    unsigned char occlId;
+    char unk3E[2];
 };
 
 // Start of the level's tfrag data.
@@ -83,5 +89,7 @@ void SetTfragDists(void);
 void DmaTfragTextures(void);
 void PatchTfragGifs(void);
 void DrawTfrag(void);
+
+void LightTfrags(void *sprStash);
 
 #endif

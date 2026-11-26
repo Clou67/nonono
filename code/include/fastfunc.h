@@ -35,6 +35,10 @@ void FastVec3Scale(Vec4 *out, Vec4 *in, float scale);
 void FastMtx4Identity(float *matrix);
 void FastMtxTransform(Mtx4 *left, Mtx4 *right, Mtx4 *result);
 void FastMemSet(void *destination, int value, int size);
+float FastVec3Length2(Vec4 *vector);
+float FastMaxF(float first, float second);
+// Rotates vector by the 3x3 part of matrix.
+void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 // DMAs quadwords from the scratchpad at spr_address into main memory.
 void FastFromSpr(void *destination, int spr_address, int quadwords);
 

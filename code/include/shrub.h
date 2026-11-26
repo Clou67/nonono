@@ -10,9 +10,9 @@ struct ShrubInstance {
     float draw_dist;
     char pad[2];
     char flags;
-    char bboard_dist;
+    unsigned char bboard_dist;
     short index;
-    char s_class;
+    unsigned char s_class;
     // Set when no point light is left on it.
     char dir_lights_upd;
     unsigned short dir_lights;
@@ -100,5 +100,7 @@ int BuildShrubTextureDma(int gsLocation);
 void DmaShrubTextures(void);
 void PatchShrubGifs(void);
 void DrawShrub(void);
+
+void LightShrubs(void *sprStash);
 
 #endif

@@ -49,8 +49,6 @@ struct CheckpointData {
 
 extern CheckpointData LiveCheckpoint;
 extern CheckpointData CheckpointSet;
-extern unsigned int CheckpointBits[64];
-extern unsigned int LevelCheckpointBits[][64];
 extern unsigned char occlCharTable[][16];
 extern MobyVarList LiveMobyVars;
 extern MobyVarList SavedMobyVars;

@@ -278,12 +278,6 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", SetupFogColorGsReg
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", ResetGsRegistersPr);
 
-// A full-screen colour wash; DrawScreenInsertEffect sets the alpha register from alphaReg and fills the screen.
-struct ScreenInsertEffect {
-    int enabled;
-    unsigned int color;
-    unsigned long alphaReg;
-};
 
 extern float g_SceneFlash;
 // Debug switches for the draw loop.
@@ -294,7 +288,6 @@ struct DrawDebugState {
 };
 
 extern DrawDebugState DrawDebug;
-extern ScreenInsertEffect ScreenColorEffectDefault;
 extern int OcclMode;
 extern int PostDrawCnt;
 extern int PostPreDrawCnt;
@@ -306,7 +299,6 @@ extern unsigned char g_UnderwaterTintG;
 extern unsigned char g_UnderwaterTintB;
 extern unsigned char g_UnderwaterTintA;
 extern unsigned char g_SubtitlesOn;
-extern long LightVU0Program[];
 
 
 void ComposeCameraMatrix(void);
@@ -347,7 +339,7 @@ float DrawSdata15F308 = 0.0f;
 int ScreenColorEffectEnabled = 0;
 ScreenInsertEffect *ScreenColorEffectNow = &ScreenColorEffectDefault;
 int DrawSdata15F314 = 0;
-int ScreenColorEffectLevel = 0;
+ScreenInsertEffect *volatile ScreenColorEffectLevel = 0;
 int DrawSdata15F31C = 0;
 int DrawSdata15F320 = 0;
 int DrawSdata15F324 = 0;

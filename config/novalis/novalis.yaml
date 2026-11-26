@@ -121,8 +121,7 @@ segments:
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]
     - [0xab730, .rodata, game/lights]  # debug strings
-    - [0xab7a0, data]
-    - [0xab8c0, .rodata, game/loaders]  # LoadLevelFiles jump table
+    - [0xab7a0, .rodata, game/loaders]  # moby memory and occlusion messages, LoadLevelFiles jump table
     - [0xab8e0, data]
     - [0xabc30, .rodata, game/main]  # mode switch jump table
     - [0xabc60, data]

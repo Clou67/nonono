@@ -11,10 +11,10 @@ extern char CollJointCacheKeys[];
 extern char MobyClassLookup[0x800];
 extern char MobyTexLookup[0xE00];
 extern unsigned int MobyMipDists[0xE0 / 4];
-extern char TieClassLookup[0xC00];
+extern unsigned char TieClassLookup[0xC00];
 extern char TieTexLookup[0x800];
 extern char TieMipDists[0x80];
-extern char ShrubClassLookup[0x400];
+extern unsigned char ShrubClassLookup[0x400];
 extern char ShrubTexLookup[0x400];
 extern char ShrubMipDists[0x40];
 

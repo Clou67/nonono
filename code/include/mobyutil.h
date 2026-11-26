@@ -241,4 +241,20 @@ int MB_IsPntInCylinder(Vec4 *point, int index);
 
 void MB_ReadDamagePush(Vec4 impact, float *angle, float *speed, float *height);
 
+
+MobyInstance *CreateMoby(int oClass);
+void InitMobyInstance(MobyInstance *moby, int oClass);
+void PostUpdateMoby(MobyInstance *moby);
+void SetMobyLights(MobyInstance *moby, int color, int a, int b, int c);
+void MB_SetAnimationNoBlend(MobyInstance *moby, int animation, int frame);
+void Map_RegisterLevelObject(MobyInstance *moby, int object);
+void SetupSpaceShipVars(MobyInstance *moby);
+void UpdateMoby_Spaceship(MobyInstance *moby);
+
+// The level's trigger volumes, from the gameplay file.
+extern MobyVolume *CuboidVolumes;
+extern MobyVolume *SphereVolumes;
+extern MobyVolume *CylinderVolumes;
+extern AnimLayer AnimLayerPool[];
+
 #endif
