@@ -165,7 +165,6 @@ Hud_DrawTexQuad__Fiiiiii = 0x002500E0;
 Hud_DrawTexQuadF__Fiiiiiiii = 0x00250B00;
 Hud_DrawFlatRect__FiiiiUli = 0x00251528;
 Hud_DrawFlatRectFixed__FiiiiUli = 0x002516B0;
-FastDecTimer__FRi = 0x00220E78;
 DrawTextShadow__Fiiiii = 0x0021C958;
 DrawSprite__FiiiiiiiiUlUl = 0x0021BE90;
 FontSet__Fi = 0x0021AE98;
@@ -305,7 +304,6 @@ WaterSheet_DrawAll__FiP10WaterSheet = 0x002B96E0;
 
 FastAbsF__Ff = 0x00221128;
 
-FastDecTimer__FRs = 0x00220EA8;
 
 DeletePart__FP12PartInstance = 0x0027C5E8;
 
@@ -592,8 +590,6 @@ MB_FindSlotByMask__FP12MobyInstanceii = 0x0026F320;
 MB_SetAnimation__FP12MobyInstanceiii = 0x0026C660;
 WaterTile_PutDrop__FP9WaterTileiiffff = 0x002B82A8;
 Draw_QuickSelectHud__FP8HudEntry = 0x0024D938;
-FastDecTimer_220e78__FPi = 0x00220E78;
-FastDecTimer_220ea8__FPs = 0x00220EA8;
 FastScaleBySpeed__Ff = 0x00220E20;
 FastVec3Length__FP4Vec4 = 0x00221318;
 HandleHeroDeath__Fv = 0x002319B0;

@@ -636,8 +636,6 @@ void Hero_SpawnWaterDrops(int first, int second);
 void Hero_SpawnWaterBubbles(int first, int second);
 void Hero_ThrustToMotion(float scale, float step);
 void Hero_EdgeStop(float first, float second);
-int FastDecTimer_220e78(int *timer);
-int FastDecTimer_220ea8(short *timer);
 void Hero_GunTurnWalk(void);
 void Hero_TurnWalk(void);
 float Hero_GetAnimFrameBlend(float a, float b, float c, float d);
@@ -795,7 +793,7 @@ void Hero_DoBehavior(void)
                 Hero_Turn(transStepScaleSq, transStepScaleSq * 0.0f, frameTime * 174.53293f, 0);
 
                 if (HelpHintTimer > 0) {
-                    if (FastDecTimer_220e78(&HelpHintTimer)) {
+                    if (FastDecTimer(HelpHintTimer)) {
                         if (ActionUsageStats[18].count < 0xFFFF)
                             ActionUsageStats[18].count++;
 
@@ -1013,7 +1011,7 @@ void Hero_DoBehavior(void)
         if (Hero.splashEffectTimer != 0) {
             int bubbleCount;
 
-            FastDecTimer_220ea8(&Hero.splashEffectTimer);
+            FastDecTimer(Hero.splashEffectTimer);
             bubbleCount = Hero.splashEffectTimer >> 2;
 
             if (bubbleCount > 8)
@@ -1159,7 +1157,7 @@ void Hero_DoBehavior(void)
         Hero_GetIdealThrustFromPad(1.0f, 0);
         Hero_Turn(transStepScaleSq * 0.007f, transStepScaleSq * 0.08f, frameTime * 5.2359877f, 0);
         Hero.swimYawSpeed = Hero.turnSpeed;
-        FastDecTimer_220e78(&Hero.swimThrustTimer);
+        FastDecTimer(Hero.swimThrustTimer);
 
         if (Hero.subState == 1)
             Hero.idealSpeed = frameTime * 6.0f;
@@ -1201,7 +1199,7 @@ void Hero_DoBehavior(void)
                 Hero.idealSpeed *= speedScale;
         }
 
-        if (FastDecTimer_220e78(&Hero.swimBubbleTimer)) {
+        if (FastDecTimer(Hero.swimBubbleTimer)) {
             MB_GetBonePos(Hero.moby, 4, &scratch.particle.bonePos);
             ClearVec4(&scratch.particle.offset);
             scratch.particle.offset.x = 0.4f;
@@ -1225,7 +1223,7 @@ void Hero_DoBehavior(void)
         }
 
         if (Hero.state == HERO_STATE_CHARGEUNDER) {
-            if (FastDecTimer_220ea8(&Hero.packParticleTimer)) {
+            if (FastDecTimer(Hero.packParticleTimer)) {
                 MobyInstance *itemMoby;
 
                 itemMoby = Hero.items[3].moby;
@@ -1375,7 +1373,7 @@ void Hero_DoBehavior(void)
         FastVec3Normalize(&Hero.externalMomentum, &Hero.externalMomentum, len);
         CopyVec4Inline(&Hero.velocity, &Hero.externalMomentum);
 
-        if (FastDecTimer_220e78(&Hero.swimBubbleTimer) == 2) {
+        if (FastDecTimer(Hero.swimBubbleTimer) == 2) {
             MB_GetBonePos(Hero.moby, 4, &scratch.particle.bonePos);
             ClearVec4(&scratch.particle.offset);
             scratch.particle.offset.x = 0.4f;
@@ -1437,7 +1435,7 @@ void Hero_DoBehavior(void)
         }
 
         Hero_Turn(transStepScaleSq * 0.007f, transStepScaleSq * 0.08f, frameTime * 5.2359877f, 0);
-        FastDecTimer_220e78(&Hero.swimStrokeTimer);
+        FastDecTimer(Hero.swimStrokeTimer);
 
         if (Hero.state == HERO_STATE_SWIMSURF) {
             float swimSpeed;
@@ -4842,8 +4840,6 @@ int Hero_GadgetTransitions(void);
 int Hero_SwimSurfTransition(void);
 int Hero_UnderwaterTransitions(void);
 int Hero_IdleCycleFiringTransition(void);
-int FastDecTimer_220e78(int *timer);
-int FastDecTimer_220ea8(short *timer);
 int Hero_GetGadgetMoby(int slot);
 int Hero_GetSpecialIdle(int *index);
 float FastScaleBySpeed(float value);
@@ -4933,8 +4929,8 @@ void Hero_Transitions(void)
                 }
             }
 
-            FastDecTimer_220ea8(&Hero.quickSwapTapTimer);
-            FastDecTimer_220ea8(&Hero.quickSwapTapWindow);
+            FastDecTimer(Hero.quickSwapTapTimer);
+            FastDecTimer(Hero.quickSwapTapWindow);
 
             if (padState.bitsOn & PAD_TRIANGLE)
                 Hero.quickSwapTapTimer = FastScaleRoundInt(0x14);
@@ -5078,7 +5074,7 @@ void Hero_Transitions(void)
                     if (FastScaleRoundInt(0xA) < Hero.stateTimer) {
                         if (Hero.items[3].moby2 != 0 &&
                             Hero.items[3].moby2->animationId == 1) {
-                            if (FastDecTimer_220e78(&Hero.slot3AnimTimer)) {
+                            if (FastDecTimer(Hero.slot3AnimTimer)) {
                                 if (0.55850536f > HeroTweaks[3].rot.z &&
                                     HeroTweaks[3].rot.y < 0.34906584f && Hero.items[3].state == 2) {
                                     Hero.slot3AnimTimer = MB_randRange(
@@ -6251,7 +6247,7 @@ void Hero_Transitions(void)
                     {
                         int r1Repeated = 0;
 
-                        FastDecTimer_220e78(&R1RepeatTimer);
+                        FastDecTimer(R1RepeatTimer);
 
                         if (R1RepeatTimer != 0) {
                             r1Repeated = 1;
