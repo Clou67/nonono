@@ -5,6 +5,7 @@
 #include "initlevel.h"
 #include "part.h"
 #include "sky.h"
+#include "tfrag.h"
 #include "framebuf.h"
 #include "sce.h"
 #include "fastfunc.h"
@@ -587,7 +588,71 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseTieClass);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseShrubClass);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseTfrag);
+// Relocates the level's tfrags and sets up the GS registers of each of their textures.
+void ParseTfrag(char *data, short *texDefs)
+{
+    TfragHeader *header = (TfragHeader *)data;
+    float lodDist;
+    char *base;
+
+    float *headerLodDist = &header->lodDist;  // read through a pointer, as retail
+
+    TfragsCnt = header->count;
+    lodDist = *headerLodDist;
+    TfragDists[0] = lodDist * 6.0f;
+    TfragDists[1] = lodDist * 4.0f;
+    TfragDists[2] = lodDist + lodDist;
+    SetTfragDists();
+
+    base = data + header->tfragOffset;
+    Tfrags = (Tfrag *)base;
+
+    int count = TfragsCnt;
+
+    for (int index = 0; index < count; index++)
+        ((Tfrag *)base)[index].data = base + (int)((Tfrag *)base)[index].data;
+
+    for (int tfragIndex = 0; tfragIndex < TfragsCnt; tfragIndex++) {
+        for (int gifIndex = 0; gifIndex < Tfrags[tfragIndex].gifCount; gifIndex++) {
+            unsigned long *gifRegs = (unsigned long *)(Tfrags[tfragIndex].data + Tfrags[tfragIndex].gifOffset + gifIndex * sizeof(TfragGifDef));
+            int texIndex = ((TfragGifDef *)gifRegs)->texIndex;
+            int mipDist = ((TfragGifDef *)gifRegs)->mipDist;
+            int filter = ((TfragGifDef *)gifRegs)->filter;
+            int clampU = ((TfragGifDef *)gifRegs)->clampU;
+            int clampV = ((TfragGifDef *)gifRegs)->clampV;
+            short *texDef = texDefs + texIndex * 8;
+            int texWidth = texDef[TEXDEF_WIDTH] >> 6;
+            int mipWidth = texDef[TEXDEF_WIDTH] >> 7;
+            int uLog;
+            int vLog;
+            int gsBlock;
+            unsigned long tex0, tex1, clamp, miptbp1;
+
+            if (texWidth <= 0)
+                texWidth = 1;
+
+            if (mipWidth <= 0)
+                mipWidth = 1;
+
+            uLog = FastLog2(texDef[TEXDEF_WIDTH]);
+            vLog = FastLog2(texDef[TEXDEF_HEIGHT]);
+            gsBlock = GSmemBase >> 8;
+            tex0 = SCE_GS_SET_TEX0(0, texWidth, GS_PSMT8, uLog, vLog, 1, 0, texDef[TEXDEF_CLUT] + gsBlock, 0, 0, 0, 4);
+            tex1 = SCE_GS_SET_TEX1(0, texDef[TEXDEF_MIP_COUNT] - 1, 1, filter, 0, 0, (unsigned int)mipDist);
+            clamp = (unsigned long)clampU | ((unsigned long)clampV << 2) | ((unsigned long)texIndex << 24);
+            miptbp1 = SCE_GS_SET_MIPTBP1(0, mipWidth, texDef[TEXDEF_MIP1] + gsBlock, 1, texDef[TEXDEF_MIP2] + gsBlock, 1);
+
+            *gifRegs = tex0;
+            gifRegs += 2;
+            *gifRegs = tex1;
+            gifRegs += 2;
+            *gifRegs = clamp;
+            gifRegs += 2;
+            *gifRegs = miptbp1;
+            gifRegs[2] = 0;
+        }
+    }
+}
 
 void ParseColl(char *data)
 {

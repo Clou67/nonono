@@ -214,6 +214,18 @@ struct sceGsLoadImage {
 } __attribute__((aligned(16)));
 
 // Sony libgraph.h register value builder.
+#define SCE_GS_SET_TEX0(tbp, tbw, psm, tw, th, tcc, tfx, cbp, cpsm, csm, csa, cld) \
+    ((unsigned long)(tbp) | ((unsigned long)(tbw) << 14) | ((unsigned long)(psm) << 20) | \
+     ((unsigned long)(tw) << 26) | ((unsigned long)(th) << 30) | ((unsigned long)(tcc) << 34) | \
+     ((unsigned long)(tfx) << 35) | ((unsigned long)(cbp) << 37) | ((unsigned long)(cpsm) << 51) | \
+     ((unsigned long)(csm) << 55) | ((unsigned long)(csa) << 56) | ((unsigned long)(cld) << 61))
+#define SCE_GS_SET_TEX1(lcm, mxl, mmag, mmin, mtba, l, k) \
+    ((unsigned long)(lcm) | ((unsigned long)(mxl) << 2) | ((unsigned long)(mmag) << 5) | \
+     ((unsigned long)(mmin) << 6) | ((unsigned long)(mtba) << 9) | ((unsigned long)(l) << 19) | \
+     ((unsigned long)(k) << 32))
+#define SCE_GS_SET_MIPTBP1(tbp1, tbw1, tbp2, tbw2, tbp3, tbw3) \
+    ((unsigned long)(tbp1) | ((unsigned long)(tbw1) << 14) | ((unsigned long)(tbp2) << 20) | \
+     ((unsigned long)(tbw2) << 34) | ((unsigned long)(tbp3) << 40) | ((unsigned long)(tbw3) << 54))
 #define SCE_GS_SET_ZBUF(zbp, psm, zmsk) ((unsigned long)(zbp) | ((unsigned long)(psm) << 24) | ((unsigned long)(zmsk) << 32))
 
 struct EeSemaParam {

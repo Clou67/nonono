@@ -7,12 +7,36 @@
 // A tfrag (field names from the PS3 project, PS2 offsets). Positions are fixed point.
 struct Tfrag {
     BSphere bSphere;
-    char unk10[0x25];
+    char *data;                     // 0x10: relocated by ParseTfrag
+    char unk14[8];
+    unsigned short gifOffset;       // 0x1C: of the first TfragGifDef in data
+    char unk1E[0xA];
+    unsigned char gifCount;         // 0x28
+    char unk29[0xC];
     // Set when no point light is left on it.
     char dir_lights_upd;
     // Four 4-bit point light slots, 0xF is empty.
     unsigned short point_lights;
     char unk38[8];
+};
+
+// Start of the level's tfrag data.
+struct TfragHeader {
+    int tfragOffset;    // 0x00: from the header
+    int count;          // 0x04
+    float lodDist;      // 0x08
+};
+
+// A tfrag texture's GIF register block before ParseTfrag fills in its GS register words.
+struct TfragGifDef {
+    int texIndex;       // 0x00
+    int unk_04[3];
+    int mipDist;        // 0x10
+    int filter;         // 0x14
+    int unk_18[2];
+    int clampU;         // 0x20
+    int clampV;         // 0x24
+    int unk_28[10];
 };
 
 // A draw in a tfrag's DMA packet. Its texture is picked by stash_index.
