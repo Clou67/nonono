@@ -29,6 +29,7 @@
 #include "draw.h"
 #include "hud.h"
 #include "npc.h"
+#include "stash.h"
 #include "initlevel.h"
 #include "mathfunc_inline.h"
 #include "sce.h"
@@ -400,7 +401,84 @@ char *ParseMobyPack(char *pack, LevelCoreHeader *header)
     return pack;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadHudBanks);
+void Hud_SetupBank(int bank, void *data);
+void Hud_UploadBankIcons(int bank, char *staging, int upload);
+
+#define ALIGN_64(size) (((size) + 0x3F) & ~0x3FU)
+
+// The HUD heap allocator takes the allocation's alignment and source location too (from a
+// debug signature); the release function ignores them.
+#define HUD_HEAP_ALLOC(size, line) \
+    ((void *(*)(int, int, const char *, int))HudHeap_Alloc)(size, 0, "loaders.cpp", line)
+
+// Loads the level's HUD data: the header into the HUD heap, then its banks: bank 0 is
+// decompressed into the second VU1 chain buffer, its icons uploaded and the bank sent to the
+// IOP stash; bank 1 goes into the HUD heap; banks 2 to 4 are sent to the stash.
+void LoadHudBanks(void)
+{
+    LevelWadHeader *wad = (LevelWadHeader *)levelRoot;
+    HudBankHeader *header;
+    void *bank1;
+    int bank;
+    unsigned int size;
+    unsigned int qwords;
+    char *staging;
+    unsigned int *bankSize;
+    int *wadBankSize;
+    HudStateData *hud;
+    MEMSLOTS *slots;
+
+    bankSize = (unsigned int *)HudState.bankSizes;
+    wadBankSize = &wad->hudBanks[0].size;
+    for (bank = 0; bank < 5; bank++) {
+        *bankSize++ = ALIGN_64(*wadBankSize);
+        wadBankSize += 2;
+    }
+
+    size = ALIGN_64(wad->hudHeader.size);
+    slots = &MemSlots;
+    header = (HudBankHeader *)HUD_HEAP_ALLOC(size, 570);
+    hud = &HudState;
+    FastMemCopy16(header, (void *)(wad->hudHeader.offset + (int)wad), size);
+    hud->header = header;
+    hud->icons = (HudIconTableEntry *)((char *)header + header->icons);
+    staging = (char *)slots->vu1_chain[1] + 0x60000;
+    hud->frameRefs = (char *)header + header->frameRefs;
+    hud->palettePages = (char *)header + header->palettePages;
+    hud->imagePages = (char *)header + header->imagePages;
+
+    if (header->hasBank0) {
+        qwords = ALIGN_64(wad->hudBanks[0].size) >> 4;
+        LoadCompressedHudBank(0, staging);
+        hud->header->bankStash[0] = Stash_SendData((void *)(wad->hudBanks[0].offset + (int)wad), qwords, qwords, "hud bank 0");
+        Hud_UploadBankIcons(0, staging, 1);
+    }
+
+    if (hud->header->bank1Size) {
+        bank1 = HUD_HEAP_ALLOC(hud->header->bank1Size, 609);
+        LoadCompressedHudBank(1, (char *)bank1);
+        FlushCache(0);
+        Hud_SetupBank(1, bank1);
+    }
+
+    if (hud->header->hasBank2) {
+        unsigned int bank2Qwords = ALIGN_64(wad->hudBanks[2].size) >> 4;
+
+        hud->header->bankStash[2] = Stash_SendData((void *)(wad->hudBanks[2].offset + (int)wad), bank2Qwords, bank2Qwords, "hud bank 2");
+    }
+
+    if (hud->header->hasBank3) {
+        unsigned int bank3Qwords = ALIGN_64(wad->hudBanks[3].size) >> 4;
+
+        hud->header->bankStash[3] = Stash_SendData((void *)(wad->hudBanks[3].offset + (int)wad), bank3Qwords, bank3Qwords, "hud bank 3");
+    }
+
+    if (hud->header->hasBank4) {
+        unsigned int bank4Qwords = ALIGN_64(wad->hudBanks[4].size) >> 4;
+
+        hud->header->bankStash[4] = Stash_SendData((void *)(wad->hudBanks[4].offset + (int)wad), bank4Qwords, bank4Qwords, "hud bank 4");
+    }
+}
 
 void LoadCompressedHudBank(int bank, char *destination)
 {
@@ -2731,7 +2809,6 @@ extern int LevelSoundCnt;
 extern char LevelProgramEnd[];
 extern int LevelUnkVars[16];
 
-void LoadHudBanks(void);
 void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass);
 void UpdateMobysInitial(void);
 
@@ -3031,12 +3108,7 @@ int InitLevelFromWad(int full, int keep)
 // loaders.cpp's small data, in retail order. Defined after the functions above so they reach it
 // with lui, as retail does.
 
-// LoadHudBanks' timer labels (stand-ins until it is decompiled), then InitLevelFromWad's memory map line break.
-char LoadersTimerLabel[] = "loaders.cpp";
-char HudBankLabel0[] = "hud bank 0";
-char HudBankLabel2[] = "hud bank 2";
-char HudBankLabel3[] = "hud bank 3";
-char HudBankLabel4[] = "hud bank 4";
+// InitLevelFromWad's memory map line break.
 char MemoryMapNewline[] = "\n";
 
 // Per mission, 0xFF once its level flag is set (ResetLevelData).

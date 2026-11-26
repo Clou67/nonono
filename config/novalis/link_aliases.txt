@@ -568,5 +568,6 @@ sound_SetupAmbientFunctions__FP13SoundInstance = 0x002A19A8;
 MobyIndexRemap = 0x001ACC00;
 levelBuffers = 0x0015EE4C;
 LevelUnkVars = 0x0014EE90;
-LoadHudBanks__Fv = 0x00253E28;
 UpdateMobysInitial__Fv = 0x002792D0;
+Hud_SetupBank__FiPv = 0x0024A848;
+Hud_UploadBankIcons__FiPci = 0x0024AB28;

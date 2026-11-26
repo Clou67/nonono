@@ -56,7 +56,8 @@ struct LevelWadHudBank {
 // The start of the level WAD buffer seen as a struct.
 struct LevelWadHeader {
     int soundBank;                    // 0x00
-    char unk_04[0x24];
+    char unk_04[0x1C];
+    LevelWadHudBank hudHeader;        // 0x20
     LevelWadHudBank hudBanks[6];      // 0x28
 };
 
