@@ -1017,7 +1017,7 @@ void Hero_DoBehavior(void)
         bankDamping = transStepScaleSq * 0.2f;
         bankSpring = transStepScaleSq * 0.015f;
         lim = lim + (frameTime * 1.2217305f - lim) * trig;
-        if (((padState.bits & 0x80) && !(padState.bits & 0x40)) || Hero.subState == 1) {
+        if (((padState.bits & PAD_SQUARE) && !(padState.bits & PAD_CROSS)) || Hero.subState == 1) {
             float turnStrength;
 
             turnStrength = padState.analog[11] * 1.5f;
@@ -1039,7 +1039,7 @@ void Hero_DoBehavior(void)
                 turnStrength = 0.35f;
             }
             turn = turnStrength * 1.3613569f;
-        } else if (padState.bits & 0x40) {
+        } else if (padState.bits & PAD_CROSS) {
             float turnStrength;
 
             turnStrength = padState.analog[10] * 1.5f;
@@ -1065,7 +1065,7 @@ void Hero_DoBehavior(void)
             Hero.cwTurnFrames = 0;
             Hero.swimSquareHoldFrames = 0;
         }
-        if (padState.bits & 0x40) {
+        if (padState.bits & PAD_CROSS) {
             Hero.jumpButtonFrames++;
             if (padState.analog[10] > 0.75f) {
                 if (++Hero.swimHardPressFrames > FastScaleRoundInt(0x5A)) {
@@ -1086,7 +1086,7 @@ void Hero_DoBehavior(void)
             Hero.jumpButtonFrames = 0;
             Hero.swimHardPressFrames = 0;
         }
-        if (padState.bitsOn & 0x40) {
+        if (padState.bitsOn & PAD_CROSS) {
             if (worldUpdateTime - Hero.lastCrossPressFrame < FastScaleRoundInt(0x46)) {
                 Hero.swimCrossTapCount++;
             }
@@ -1095,7 +1095,7 @@ void Hero_DoBehavior(void)
         if (Hero.jumpButtonFrames > FastScaleRoundInt(0x46)) {
             Hero.swimCrossTapCount = 0;
         }
-        if (padState.bits & 0x80) {
+        if (padState.bits & PAD_SQUARE) {
             Hero.swimCrossTapCount = 0;
         }
         if (Hero.state == HERO_STATE_IDLEUNDER) {
@@ -1111,7 +1111,7 @@ void Hero_DoBehavior(void)
         if (Hero.subState == 1) {
             Hero.idealSpeed = frameTime * 6.0f;
         } else if (Hero.state == HERO_STATE_CHARGEUNDER) {
-            if (padState.bits & 0xA) {
+            if (padState.bits & (PAD_R2 | PAD_R1)) {
                 Hero.idealSpeed = frameTime * 7.0f;
             } else {
                 Hero.idealSpeed = frameTime * 7.0f * 0.4f;
@@ -1123,7 +1123,7 @@ void Hero_DoBehavior(void)
             float speedScale;
 
             speedScale = Hero.padMagnitude;
-            if ((padState.bits & 0xC0) || Hero.subState == 1) {
+            if ((padState.bits & (PAD_CROSS | PAD_SQUARE)) || Hero.subState == 1) {
                 if (speedScale < 1.0f) {
                     speedScale = 1.0f;
                 }
@@ -1139,7 +1139,7 @@ void Hero_DoBehavior(void)
                     speedScale = minScale;
                 }
             }
-            if (Hero.state != HERO_STATE_CHARGEUNDER || !(padState.bits & 0xA)) {
+            if (Hero.state != HERO_STATE_CHARGEUNDER || !(padState.bits & (PAD_R2 | PAD_R1))) {
                 Hero.idealSpeed *= speedScale;
             }
         }
@@ -2106,11 +2106,11 @@ void Hero_DoBehavior(void)
             airStickSpeed = airAccel;
         }
         Hero_GetIdealThrustFromPad(Hero.padMagnitude * airStickSpeed, 0);
-        if (Hero.padMagnitude > 0.2f && !(padState.bits & 3)) {
+        if (Hero.padMagnitude > 0.2f && !(padState.bits & (PAD_L2 | PAD_R2))) {
             Hero_Turn(transStepScaleSq * 0.027f, transStepScaleSq * 0.3f,
                       frameTime * 5.934119f * Hero.padMagnitude, 0);
         }
-        if (padState.bits & 3) {
+        if (padState.bits & (PAD_L2 | PAD_R2)) {
             float keep;
 
             keep = Hero.idealRotZ;
@@ -5377,7 +5377,7 @@ void Hero_Transitions(void)
                     if (Hero.stateTimer > FastScaleRoundInt(0xF) ||
                         (Hero.prevStateType != HERO_STATE_TYPE_IDLE &&
                          Hero.prevStateType != HERO_STATE_TYPE_RUN)) {
-                        if ((padState.bitsOn & 0x10000) && Hero.weaponUp == 0)
+                        if ((padState.bitsOn & PAD_STICK_FLICK) && Hero.weaponUp == 0)
                             Hero.sharpTurn = 1;
                     }
 
