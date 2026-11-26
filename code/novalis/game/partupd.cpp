@@ -371,7 +371,98 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_025)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_025);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_026);
+void UpdatePart_026(PartInstance *particle)
+{
+    Vec4 nextPosition;
+    PartColorDecayMotion *motion;
+    float red, green, blue, timeScale;
+    int reverseColors;
+    if (particle == 0)
+        return;
+
+    motion = &particle->colorDecayMotion;
+    red = motion->red;
+    reverseColors = 0;
+    green = motion->green;
+    blue = motion->blue;
+    if (red < 0.0f || green < 0.0f || blue < 0.0f) {
+        red = -red;
+        reverseColors = 1;
+        green = -green;
+        blue = -blue;
+    }
+
+    motion->alpha += transStepScale * 0.0f;
+    particle->scale += transStepScale * -100.0f;
+    FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
+    if (motion->velocity.x != 0.0f || motion->velocity.y != 0.0f || motion->velocity.z != 0.0f) {
+        if (CollLine(&particle->pos, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, Hero.moby,
+                     0)) {
+            CopyVec4(&particle->pos, &MemSlots.collisionPoint);
+            FastVecZero(&motion->velocity);
+            particle->scale += particle->scale;
+        }
+
+        else {
+            CopyVec4(&particle->pos, &nextPosition);
+            if (motion->velocity.w != 0.0f)
+                motion->velocity.z += motion->velocity.w;
+
+            else
+                motion->velocity.z += transStepScaleSq * -0.0063f;
+        }
+    }
+
+    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer) || particle->scale < 0.0f ||
+        nextPosition.x < 0.01f || nextPosition.y < 0.01f || nextPosition.z < 0.01f) {
+        DeletePart(particle);
+        return;
+    }
+
+    if (!reverseColors) {
+        red += transStepScale * -0.01f;
+        timeScale = transStepScale;
+        if (red < 0.0f)
+            red = 0.0f;
+        green += timeScale * -0.03001f;
+        if (green < 0.0f)
+            green = 0.0f;
+    }
+
+    else {
+        green += transStepScale * -0.01f;
+        timeScale = transStepScale;
+        if (green < 0.0f)
+            green = 0.0f;
+        red += timeScale * -0.03001f;
+        if (red < 0.0f)
+            red = 0.0f;
+    }
+
+    blue += timeScale * -0.05f;
+    if (blue < 0.0f)
+        blue = 0.0f;
+
+    motion->alpha += timeScale * 0.0f;
+    if (motion->alpha < 0.0f)
+        motion->alpha = 0.0f;
+
+    particle->rgba = Float_To_RGBA(red, green, blue, motion->alpha);
+
+    if (reverseColors > 0) {
+        motion->red = -red;
+        motion->green = -green;
+        motion->blue = -blue;
+    }
+
+    else {
+        motion->red = red;
+        motion->green = green;
+        motion->blue = blue;
+    }
+
+    particle->rot--;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_026);
 

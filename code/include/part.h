@@ -113,6 +113,16 @@ struct PartDriftingMotion {
     int collisionCounter;
 };
 
+enum { PART_COLOR_DECAY_COLLISION_FLAGS = 2 };
+
+struct PartColorDecayMotion {
+    Vec4 velocity;              // w holds the vertical acceleration override
+    float red;
+    float green;
+    float blue;
+    float alpha;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -141,6 +151,7 @@ struct PartInstance {
         PartSplittingMotion splittingMotion;
         PartBranchingMotion branchingMotion;
         PartDriftingMotion driftingMotion;
+        PartColorDecayMotion colorDecayMotion;
     };
 };
 
@@ -188,5 +199,7 @@ void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
 void UpdatePart_012(PartInstance *particle);
 
 void UpdatePart_004(PartInstance *particle);
+
+void UpdatePart_026(PartInstance *particle);
 
 #endif
