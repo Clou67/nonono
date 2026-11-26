@@ -488,7 +488,8 @@ extern short MobyIdListB[];
 extern short MobyIdListC[];
 extern int LevelSdata15F63C;
 
-extern char *PartInstances;
+struct PartInstance;
+extern PartInstance *PartInstances;
 extern int PartIndexTop;
 extern int PartIndexNext;
 extern int PartActiveCnt;

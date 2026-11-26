@@ -301,4 +301,7 @@ extern AnimLayer AnimLayerPool[];
 
 float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int axis);
 
+void CollDamageMobyDirect_2(MobyInstance *moby, int damage, int flags, Vec4 *position,
+                            Vec4 *direction, float scale);
+
 #endif

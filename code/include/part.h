@@ -172,6 +172,28 @@ struct PartSpiralMotion {
     float approachSpeed;
 };
 
+enum PartTweenEmitterPhase {
+    PART_TWEEN_INITIAL = 0,
+    PART_TWEEN_EMITTING = 1,
+    PART_TWEEN_EMITTED = 2
+};
+
+enum { PART_TEXTURE_TWEEN_EMITTER = 58 };
+
+struct PartTweenEmitterMotion {
+    Vec4 velocity;
+    unsigned char singlePhase;
+    unsigned char tweenFrames;
+    unsigned char emitFrames;
+    unsigned char emitCount;
+    unsigned char phase;
+    unsigned char lifetime;
+    unsigned char alpha;
+    unsigned char unk_17;
+    int damage;
+    float damageScale;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -204,6 +226,7 @@ struct PartInstance {
         PartDebrisMotion debrisMotion;
         PartLinkedMotion linkedMotion;
         PartSpiralMotion spiralMotion;
+        PartTweenEmitterMotion tweenEmitterMotion;
     };
 };
 
@@ -261,5 +284,11 @@ void UpdatePart_017(PartInstance *particle);
 void UpdatePart_031(PartInstance *particle);
 
 void UpdatePart_021(PartInstance *particle);
+
+extern PartInstance *PartInstances;
+PartInstance *SpawnPart_058(Vec4 *position, int phase, int tweenFrames, int emitFrames,
+                             int emitCount, int lifetime, int damage, float damageScale,
+                             float speedScale);
+void UpdatePart_059(PartInstance *particle);
 
 #endif

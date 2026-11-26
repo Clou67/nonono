@@ -8,6 +8,7 @@
 #include "gameglobals.h"
 #include "camera.h"
 #include "ambience.h"
+#include "libc.h"
 
 extern float frameTimeSq __attribute__((section(".sdata")));
 
@@ -1244,7 +1245,89 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_058)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_058);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_059);
+void UpdatePart_059(PartInstance *particle)
+{
+    Vec4 scratch;
+    PartTweenEmitterMotion *motion;
+    Vec4 *heroPosition;
+    HeroState *hero;
+    int childIndex;
+    float lifetime;
+    float fraction;
+
+    motion = &particle->tweenEmitterMotion;
+
+    switch (motion->phase) {
+    case PART_TWEEN_INITIAL: {
+        float tweenDuration = FastIntToFloat(motion->tweenFrames);
+        particle->rgba = FastTweenColor(
+            0xFF4080FF, 0, (tweenDuration - FastIntToFloat(particle->timer)) / tweenDuration);
+    }
+
+        if (FastDecTimer(particle->timer)) {
+            if (motion->singlePhase == 1)
+                DeletePart(particle);
+
+            else {
+                motion->phase = PART_TWEEN_EMITTING;
+                particle->timer = motion->emitFrames;
+            }
+        }
+        break;
+    case PART_TWEEN_EMITTING: {
+        float speedScale;
+        for (childIndex = 0; childIndex < motion->emitCount; childIndex++) {
+            CopyVec4Inline(&scratch, &particle->pos);
+            speedScale = 1.0f;
+            MB_randOffset(&scratch, 0.05f);
+            if (particle->timer < FastScaleRoundInt(10))
+                speedScale = FastIntToFloat(particle->timer) / (float)FastScaleRoundInt(10);
+            SpawnPart_058(&scratch, PART_TWEEN_EMITTED, motion->tweenFrames, motion->emitFrames,
+                          motion->emitCount, motion->lifetime, motion->damage, motion->damageScale,
+                          speedScale);
+        }
+    }
+
+        if (FastDecTimer(particle->timer))
+            DeletePart(particle);
+
+        heroPosition = &Hero.position;
+        if (FastVec3DistLen(&particle->pos, heroPosition) < 0.3f) {
+            hero = &Hero;
+            if (hero->position.z < particle->pos.z + 1.2f) {
+                FastSubVec3(&scratch, heroPosition, &particle->pos);
+                FastVec3Normalize(&scratch, &scratch, 1.0f);
+                scratch.z = 1.0f;
+                CollDamageMobyDirect_2(hero->moby, motion->damage, 1, &particle->pos, &scratch,
+                                       motion->damageScale);
+            }
+        }
+        break;
+    case PART_TWEEN_EMITTED:
+        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+        lifetime = FastIntToFloat(motion->lifetime);
+        fraction = lifetime - FastIntToFloat(particle->timer);
+        fraction = fraction / lifetime;
+        particle->rgba = FastTweenColor((motion->alpha << 24) | 0x4060, 0x8FAFFF, fraction);
+        if (fraction < 0.6f)
+            particle->scale += transStepScale * 0.043f * 210000.0f;
+
+        else
+            particle->scale -= transStepScale * 0.08f * 210000.0f;
+
+        particle->tex = PartTextures[PART_TEXTURE_TWEEN_EMITTER][rand() & 7];
+
+        if ((particle - (PartInstance *)PartInstances) & 1)
+            particle->rot++;
+
+        else
+            particle->rot--;
+
+        if (FastDecTimer(particle->timer))
+            DeletePart(particle);
+        break;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_059);
 

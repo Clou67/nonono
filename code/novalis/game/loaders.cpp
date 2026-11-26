@@ -2350,7 +2350,7 @@ char *ResetLevelData(int reload)
             FastMemCopy32(EnvSamples, section, count * 0x30);
     }
 
-    PartInstances = mem;
+    PartInstances = (PartInstance *)mem;
     mem += 0x20000;
     PartIndexTop = -1;
     PartIndexNext = 0;
