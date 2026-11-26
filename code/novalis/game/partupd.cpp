@@ -328,7 +328,68 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_016)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_016);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_017);
+void UpdatePart_017(PartInstance *particle)
+{
+    Vec4 savedPosition;
+    float gravity[4] = {frameTimeSq * 4.8f, frameTimeSq * 24.5f, frameTimeSq * 9.8f,
+                        -(frameTimeSq * 0.24f)};
+    PartDebrisMotion *motion = &particle->debrisMotion;
+    int alpha, spawnLifetime, kind;
+    float distanceOrSpawnScale;
+
+
+    if (motion->kind == PART_DEBRIS_UPWARD_ACCELERATING && FrameLoad > 0.95f)
+        FastDecTimer(particle->timer);
+    if (FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    {
+        float remaining_lifetime_float = FastIntToFloat(particle->timer);
+        particle->rgba = TweenColor(motion->endColor, motion->startColor,
+                                    remaining_lifetime_float / FastIntToFloat(motion->lifetime));
+        alpha = particle->rgba >> 24;
+        distanceOrSpawnScale = FastVec3Dist(&particle->pos, &GameCamera.position);
+        if (particle->timer < FastScaleRoundInt(6))
+            alpha = alpha * particle->timer / FastScaleRoundInt(6);
+        if (distanceOrSpawnScale < 4.0f) {
+
+            DeletePart(particle);
+            return;
+        }
+        if (distanceOrSpawnScale < 8.0f)
+            alpha = FastFloatToInt(FastIntToFloat(alpha) * (distanceOrSpawnScale - 4.0f) * 0.25f);
+
+        particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
+
+        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+        kind = motion->kind;
+        motion->velocity.z -= gravity[kind];
+        CopyVec4Inline(&savedPosition, &particle->pos);
+
+        if (particle->pos.z < motion->velocity.w) {
+            if (kind == PART_DEBRIS_SPAWN_ON_LANDING) {
+                int spawnStartColor, spawnEndColor, minSpawnLifetime;
+                spawnStartColor =
+                    TweenColor(0x7F000000, 0x7F182030, MB_randRangeFloat(0.25f, 1.0f));
+                spawnEndColor = TweenColor(0, 0x5F5F5F, MB_randRangeFloat(0.5f, 1.0f));
+
+                motion->velocity.z = 0;
+                distanceOrSpawnScale = MB_randRangeFloat(200000.0f, 300000.0f);
+                minSpawnLifetime = FastScaleRoundInt(0x5A);
+                spawnLifetime = MB_randRange(minSpawnLifetime, FastScaleRoundInt(0x96));
+                SpawnPart_016(&particle->pos, &motion->velocity, spawnStartColor, spawnEndColor,
+                              distanceOrSpawnScale, spawnLifetime, PART_DEBRIS_UPWARD_ACCELERATING);
+            }
+
+            DeletePart(particle);
+        }
+
+        else
+            particle->rot++;
+    }
+}
 
 void UpdatePart_018(PartInstance *part)
 {

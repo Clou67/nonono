@@ -123,6 +123,20 @@ struct PartColorDecayMotion {
     float alpha;
 };
 
+enum PartDebrisKind {
+    PART_DEBRIS_SPAWN_ON_LANDING = 1,
+    PART_DEBRIS_UPWARD_ACCELERATING = 3
+};
+
+struct PartDebrisMotion {
+    Vec4 velocity;              // w holds the landing height
+    int startColor;
+    int endColor;
+    short lifetime;
+    short kind;
+    float startScale;
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -152,6 +166,7 @@ struct PartInstance {
         PartBranchingMotion branchingMotion;
         PartDriftingMotion driftingMotion;
         PartColorDecayMotion colorDecayMotion;
+        PartDebrisMotion debrisMotion;
     };
 };
 
@@ -201,5 +216,9 @@ void UpdatePart_012(PartInstance *particle);
 void UpdatePart_004(PartInstance *particle);
 
 void UpdatePart_026(PartInstance *particle);
+
+PartInstance *SpawnPart_016(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
+                             float scale, int lifetime, int kind);
+void UpdatePart_017(PartInstance *particle);
 
 #endif
