@@ -621,7 +621,159 @@ void ParseMoby(char *classData, short *texDefs, char *texRefs, int oClass)
     ParseMobyClass(mobyClass, texDefs, texRefs, oClass);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseTieClass);
+// A class draw's GS register block as stored in the level file and filled in by the loader
+// (the same memory as TieDraw / ShrubDraw): TEX0, TEX1, MIPTBP1 and CLAMP, one per qword.
+// Before loading, TEX1 holds the mip distance and filter and CLAMP the wrap modes.
+union GsRegWord {
+    unsigned long d;
+    int w[2];
+};
+
+struct ClassDrawRegs {
+    GsRegWord tex0;         // 0x00
+    long pad08;
+    GsRegWord tex1;         // 0x10
+    long pad18;
+    GsRegWord miptbp1;      // 0x20
+    long pad28;
+    GsRegWord clamp;        // 0x30
+    long pad38;
+    unsigned long end;      // 0x40
+    long pad48;
+};
+
+extern short TieClassOClasses[TIE_CLASS_MAX];
+
+// Registers a tie class: relocates its packets and draws and builds each draw's GS texture
+// registers, from the level texture (or, with no textures, from the special templates).
+void ParseTieClass(char *classData, TextureDef *texDefs, char *texRefs, int oClass)
+{
+    TieClass *tieClass = (TieClass *)classData;
+    int slot;
+    int mipDist;
+    int packet;
+    int draw;
+    int vertNorms;
+    ClassDrawRegs *draws;
+    ClassDrawRegs *regs;
+    unsigned char *classTexRefs;
+    int tex;
+    int mipDistance;
+    int material;
+    int filter;
+    int clampU;
+    int clampV;
+    int vLog;
+    int width;
+    int gsBlock;
+    int mip2;
+    int mip1;
+    int mipCount;
+    int template3;
+    int entry;
+    unsigned long tex1;
+    unsigned long clamp;
+    unsigned long templateTex1;
+    unsigned long templateTex0;
+    unsigned long templateMip;
+    TextureDef *texDef;
+
+    TieClassOClasses[TieClassIndex] = oClass;
+    TieClassLookup[oClass] = TieClassIndex;
+    TieClasses[TieClassIndex] = tieClass;
+    tieClass->class_slot = TieClassIndex;
+    mipDist = FastFloatToInt(tieClass->mip_dist * 1024.0f);
+    slot = TieClassIndex;
+    TieClassIndex = slot + 1;
+    TieMipDists[slot] = mipDist;
+
+    tieClass->instances = 0;
+    tieClass->instance_cnt = 0;
+
+    for (packet = 0; packet < 3; packet++) {
+        if (tieClass->packets[packet] != 0) {
+            tieClass->packets[packet] = (TiePacket *)((int)tieClass->packets[packet] + (int)tieClass);
+            for (entry = 0; entry < tieClass->packet_cnt[packet]; entry++)
+                tieClass->packets[packet][entry].offset += (int)tieClass->packets[packet];
+        }
+    }
+
+    vertNorms = tieClass->vert_norms + (int)tieClass;
+    draws = (ClassDrawRegs *)((int)tieClass->draws + (int)tieClass);
+    tieClass->vert_norms = vertNorms;
+    tieClass->draws = (TieDraw *)draws;
+
+    classTexRefs = (unsigned char *)&TieTexLookup[(unsigned char)TieClassLookup[oClass]];
+    CopyVec4Inline((Vec4 *)classTexRefs, (Vec4 *)texRefs);
+
+    for (draw = 0, regs = draws; draw < tieClass->draw_cnt; draw++, regs++) {
+        mipDistance = regs->tex1.w[0];
+        material = classTexRefs[draw];
+        filter = regs->tex1.w[1];
+        clampU = regs->clamp.w[0];
+        clampV = regs->clamp.w[1];
+
+        if (texDefs != 0) {
+            int texWidth;
+            int mipWidth;
+            int uLog;
+            unsigned long tex0;
+            unsigned long miptbp1;
+
+            texDef = &texDefs[material];
+            width = (unsigned short)texDef->width << 16;
+            texWidth = width >> 22;
+            mipWidth = width >> 23;
+            if (texWidth <= 0)
+                texWidth = 1;
+
+            if (mipWidth <= 0)
+                mipWidth = 1;
+
+            uLog = FastLog2(width >> 16);
+            vLog = FastLog2(texDef->height);
+            gsBlock = GSmemBase >> 8;
+            mip2 = texDef->mip2 + gsBlock;
+            mip1 = texDef->mip1 + gsBlock;
+            width = texDef->clut + gsBlock;
+            mipCount = texDef->mipCount;
+
+            // The signed/unsigned casts keep the compiler from regrouping the ORs, as in retail.
+            tex0 = (long)((unsigned long)(((long)texWidth << 14) | ((long)GS_PSMT8 << 20) | ((long)uLog << 26))
+                          | ((unsigned long)vLog << 30) | ((unsigned long)1 << 34) | ((unsigned long)width << 37))
+                 | ((long)4 << 61);
+            tex1 = (long)(((unsigned long)(mipCount - 1) << 2) | ((unsigned long)1 << 5) | ((unsigned long)filter << 6))
+                 | ((long)mipDistance << 32);
+            miptbp1 = (long)(((unsigned long)mipWidth << 14) | ((unsigned long)mip1 << 20) | ((unsigned long)1 << 34)
+                             | ((unsigned long)mip2 << 40))
+                    | ((long)1 << 54);
+            clamp = (unsigned long)clampU | ((unsigned long)clampV << 2) | ((unsigned long)material << 24);
+
+            regs->tex0.d = tex0;
+            regs->tex1.d = tex1;
+            regs->miptbp1.d = miptbp1;
+            regs->clamp.d = clamp;
+            regs->end = 0;
+        } else {
+            unsigned long filterBits;
+            unsigned long tex1Word;
+            unsigned long clampWord;
+
+            templateTex0 = VisGifTemplates[material * 3];
+            template3 = material * 3;
+            templateTex1 = VisGifTemplates[template3 + 1];
+            templateMip = VisGifTemplates[template3 + 2];
+            filterBits = ((unsigned long)filter << 6) | 0x20;
+            tex1Word = (templateTex1 & 0x1C) | filterBits | ((unsigned long)mipDistance << 32);
+            clampWord = (unsigned long)clampU | ((unsigned long)clampV << 2) | ((unsigned long)material << 24);
+            regs->tex0.d = templateTex0;
+            regs->tex1.d = tex1Word;
+            regs->miptbp1.d = templateMip;
+            regs->clamp.d = clampWord;
+            regs->end = 0;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", ParseShrubClass);
 
@@ -2257,16 +2409,6 @@ struct UnalignedHintTime {
     int nextTime __attribute__((packed, aligned(1)));
 };
 
-// A level texture's definition: where its image is, then its size and GS blocks.
-struct TextureDef {
-    int offset;                 // 0x00: from the texture data
-    unsigned short width;       // 0x04
-    short height;               // 0x06
-    short mipCount;             // 0x08
-    short clut;                 // 0x0A
-    short mip1;                 // 0x0C
-    short mip2;                 // 0x0E
-};
 
 // The core header's sound table: spans of 4-byte sound references (offset from the
 // table, count), the level's own first, then one per moby class.

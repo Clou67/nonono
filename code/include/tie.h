@@ -31,9 +31,15 @@ struct TieDraw {
     unsigned char pad_34[0x1C];
 };
 
+// One entry of a tie class's packet list (offset relocated by ParseTieClass).
+struct TiePacket {
+    int offset;
+    char pad_04[0xC];
+};
+
 // A tie class (RC1 layout; DL's TieClass differs).
 struct TieClass {
-    void *packets[3];
+    TiePacket *packets[3];
     int vert_norms;
     unsigned char pad_10[0x10];
     unsigned char packet_cnt[3];

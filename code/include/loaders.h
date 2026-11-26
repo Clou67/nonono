@@ -125,6 +125,17 @@ extern unsigned long VisGifTemplates[];
 extern unsigned long VisGifSpecialTemplate[3];
 extern unsigned long VisGifSpecialTemplateAlt[3];
 
+// A level texture's definition: where its image is, then its size and GS blocks.
+struct TextureDef {
+    int offset;                 // 0x00: from the texture data
+    unsigned short width;       // 0x04
+    short height;               // 0x06
+    short mipCount;             // 0x08
+    short clut;                 // 0x0A
+    short mip1;                 // 0x0C
+    short mip2;                 // 0x0E
+};
+
 // A class texture definition (8 shorts).
 enum {
     TEXDEF_WIDTH = 2,

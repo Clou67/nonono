@@ -1,6 +1,8 @@
 #ifndef INITLEVEL_H
 #define INITLEVEL_H
 
+#include "sce.h"
+
 // Item each level adds to the vendor list when it is reached (0 for none).
 extern int LevelVendorItems[];
 
@@ -12,8 +14,8 @@ extern char MobyClassLookup[0x800];
 extern char MobyTexLookup[0xE00];
 extern unsigned int MobyMipDists[0xE0 / 4];
 extern unsigned char TieClassLookup[0xC00];
-extern char TieTexLookup[0x800];
-extern char TieMipDists[0x80];
+extern u_long128 TieTexLookup[0x800 / 16];
+extern int TieMipDists[0x80 / 4];
 extern unsigned char ShrubClassLookup[0x400];
 extern char ShrubTexLookup[0x400];
 extern char ShrubMipDists[0x40];
