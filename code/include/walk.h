@@ -146,4 +146,56 @@ float walk_SolveStepTiming(MobyInstance *moby, w_2legData *walker);
 void walk_UpdateStateMachine(float speed, float angle, float accel, MobyInstance *moby,
                              w_2legData *walker, unsigned int contacts);
 
+// Older, simpler layouts of the same walker structs, kept for reference. They do not match retail
+// (no anims[] table, no jumpPos, 16-bit onground/state, one twist per leg), so nothing uses them.
+//
+// struct legData {
+//     char jiFoot;
+//     char jiHeel;
+//     char jiAnkle;
+//     char jiHip;
+//     float frAct;
+//     float frDest;
+//     float frSpeed;
+//     Manipulator MAnkle;
+//     Manipulator MHip;
+//     void *_pBHip;
+//     float twistLow;
+//     float twistHigh;
+//     short idle;
+//     short _2mainIdle;
+// };
+//
+// struct _2legAnim {
+//     int anim;
+//     float stride;
+//     float frame0;
+//     float frames;
+//     int fromIdle;
+//     int pad[3];
+//     float heelRange[2];
+//     float heelDown[2];
+//     float heelUp[2];
+//     float footRange[2];
+//     float footDown[2];
+//     float footUp[2];
+// };
+//
+// struct _2legData {
+//     Vec4 fpos[5];
+//     short onground;
+//     short state;
+//     float yrot;
+//     float yrSpeed;
+//     short idle;
+//     short stand;
+//     _2legAnim walk;
+//     _2legAnim run;
+//     float speed;
+//     int counter;
+//     int moveJoint;
+//     int pad[1];
+//     legData legs[2];
+// };
+
 #endif
