@@ -70,6 +70,8 @@ segments:
     - [0x1668, lit4]
     - [0x1750, .sdata, game/galaxymap]  # MediumFontHeight
     - [0x1754, lit4]
+    - [0x17d8, .sdata, game/hero]  # slide anim frames, pack jump velocity keys
+    - [0x17f8, lit4]
     - [0x1d00, .sdata, game/loaders]  # ship texture defs, hud bank labels, occlusion chars, byte grid
     - [0x1db0, .sdata, game/main]  # ClearMem warning, system misc timer label
     - [0x1dc8, lit4]
@@ -120,6 +122,8 @@ segments:
     - [0xaab90, .rodata, game/freeze]  # jump tables
     - [0xaace0, .rodata, game/help]  # jump tables
     - [0xaad50, data]
+    - [0xab190, .rodata, game/hero]  # TransitionMovement jump tables
+    - [0xab3f0, data]
     - [0xab730, .rodata, game/lights]  # debug strings
     - [0xab7a0, .rodata, game/loaders]  # moby memory and occlusion messages, LoadLevelFiles jump table
     - [0xabc30, .rodata, game/main]  # mode switch jump table

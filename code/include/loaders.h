@@ -2,6 +2,7 @@
 #define LOADERS_H
 
 #include "moby.h"
+#include "mobyutil.h"
 
 struct MobyClass;
 
@@ -90,18 +91,6 @@ struct HeroCollHeader {
 
 extern HeroCollHeader *HeroCollision;
 
-// The result of the last collision query; only the fields known so far.
-struct CollOutputData {
-    char *grid;               // 0x00: the env collision grid
-    char *jointCache;         // 0x04
-    char *jointCacheKeys;     // 0x08
-    int jointCacheNext;       // 0x0C
-    int collCount;            // 0x10
-    int damageNext;           // 0x14
-    char unk_18[0x68];
-};
-
-extern CollOutputData CollOutput;
 extern char CollMobyJointCache[];
 
 // A texture in GS memory; TEX0 is built when it is first drawn.

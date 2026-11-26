@@ -390,13 +390,6 @@ void MB_SetZBoundsFromPos(MobyInstance *moby, float z)
     moby->shadowRange = z + padding;
 }
 
-struct CollisionOutput {
-    char unk_00[0x20];
-    Vec4 position;
-};
-
-extern CollisionOutput CollOutput;
-
 void MB_SetZBoundsFromGround(MobyInstance *moby)
 {
     Vec4 ground;
@@ -414,8 +407,8 @@ void MB_SetZBoundsFromGround(MobyInstance *moby)
     start.z += clearance;
 
     if (CollLine(&start, &ground, COLLISION_PROBE_FLAGS | COLL_LINE_GROUND_QUERY, 0, 0)) {
-        moby->shadowPlane = CollOutput.position.z - padding;
-        moby->shadowRange = CollOutput.position.z + padding;
+        moby->shadowPlane = CollOutput.ip.z - padding;
+        moby->shadowRange = CollOutput.ip.z + padding;
     }
 
     else {
@@ -1281,11 +1274,9 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_ToastMessag
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PathEvalSpline);
 
-enum { HERO_STATE_TYPE_LEDGE = 3 };
-
 int MB_HeroStandingOnMoby(MobyInstance *moby)
 {
-    if (Hero.stateType == HERO_STATE_TYPE_LEDGE || Hero.state == PLAYER_STATE_EDGE_JUMP) {
+    if (Hero.stateType == HERO_STATE_TYPE_LEDGE || Hero.state == HERO_STATE_LEDGE_JUMP) {
         if (Hero.ledgeMoby == moby)
             return 1;
     }

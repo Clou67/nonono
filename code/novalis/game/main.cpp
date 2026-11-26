@@ -14,13 +14,6 @@
 #include "galaxymap.h"
 #include "sound.h"
 
-// How long a level has been visited and played, kept per level in the save.
-struct LevelRecord {
-    unsigned short visits;
-    unsigned short playTime; // longest stay, in 10 second units
-    unsigned int flags;
-};
-
 // Pause menu state; only the memory card icon switch is named so far.
 struct PauseMenuState {
     char unk_000[0x13C];
@@ -30,7 +23,7 @@ struct PauseMenuState {
 
 extern char bss_start[];
 extern char bss_end[];
-extern LevelRecord LevelRecords[];
+
 extern unsigned char g_MiscLevelFlags[] __attribute__((section(".data")));
 extern PauseMenuState PauseMenu;
 extern int g_newlevel;
@@ -133,14 +126,14 @@ void startLevel(void)
     if (LevelVisited[Level] == 0) {
         LevelVisited[Level] = 1;
     }
-    if (LevelRecords[Level].visits < 0xFFFF) {
-        LevelRecords[Level].visits++;
+    if (UsageStats[Level].count < 0xFFFF) {
+        UsageStats[Level].count++;
     }
     per = 600;
-    if (FastScaleRoundInt(TotalPlayTime) / per > LevelRecords[Level].playTime) {
-        LevelRecords[Level].playTime = FastScaleRoundInt(TotalPlayTime) / 600;
+    if (FastScaleRoundInt(TotalPlayTime) / per > UsageStats[Level].latestTimeBucket) {
+        UsageStats[Level].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
     }
-    LevelRecords[Level].flags = LevelRecords[Level].flags | (1 << Level) | 0x80000000;
+    UsageStats[Level].levelMask = UsageStats[Level].levelMask | (1 << Level) | 0x80000000;
     snd_UnkFunction_0012eaf0();
 
     while (!g_newlevel) {
@@ -288,8 +281,8 @@ void startLevel(void)
             hud_InitBanks();
         }
         per = 600;
-        if (FastScaleRoundInt(TotalPlayTime) / per > LevelRecords[Level].playTime) {
-            LevelRecords[Level].playTime = FastScaleRoundInt(TotalPlayTime) / 600;
+        if (FastScaleRoundInt(TotalPlayTime) / per > UsageStats[Level].latestTimeBucket) {
+            UsageStats[Level].latestTimeBucket = FastScaleRoundInt(TotalPlayTime) / 600;
         }
     }
     DoSpaceTransition();
