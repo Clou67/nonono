@@ -245,6 +245,8 @@ int sceSifCallRpc(SifRpcClient *client, int command, int mode, void *send, int s
                   void *receive, int receiveSize, void (*callback)(void *), void *callbackData);
 int sceCdRead(unsigned int sector, unsigned int sectors, void *destination, sceCdRMode *mode);
 int sceCdSync(int mode);
+int sceCdGetError(void);
+int sceCdBreak(void);
 int sceCdReadClock(sceCdCLOCK *clock);
 int sceScfGetLocalTimefromRTC(sceCdCLOCK *clock);
 void FlushCache(int operation);

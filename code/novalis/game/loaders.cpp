@@ -9,6 +9,7 @@
 #include "sce.h"
 #include "fastfunc.h"
 #include "music.h"
+#include "sound.h"
 #include "wad.h"
 #include "draw.h"
 #include "hud.h"
@@ -495,7 +496,179 @@ int SetupLevelWadBuffer(void)
     return 1;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", LoadLevelFiles);
+
+#define SECTOR_SHIFT 11
+#define ROUND_UP_4K(bytes) (((bytes) + 0xFFF) & 0xFFFFF000)
+
+// How long a stalled read may run before the drive is slowed down and the read retried.
+#define CD_STALL_FRAMES 720
+
+enum LevelLoadStage {
+    LOAD_STAGE_SOUND_BANK_READ,
+    LOAD_STAGE_SPACESHIP_READ,
+    LOAD_STAGE_GAMEPLAY_READ,
+    LOAD_STAGE_STOP_SOUNDS,
+    LOAD_STAGE_UNLOAD_BANK,
+    LOAD_STAGE_RESOLVE_UNLOAD,
+    LOAD_STAGE_LOAD_BANK,
+    LOAD_STAGE_RESOLVE_BANK,
+};
+
+// Start of the sound bank archive; the bank itself sits bankOffset bytes in.
+struct SoundBankWad {
+    int unk_0[2];
+    int bankOffset;
+};
+
+// Top of the IOP memory the level streams its archives into, working downwards.
+extern char IopLevelTop[];
+extern short SpaceshipVariant[];
+// State of the level file load (one small-data object).
+struct LevelLoadState {
+    unsigned short stage;
+    short hold;               // set while the level must not swap sound banks yet
+    SoundBankWad *soundBank;  // IOP sound bank archive
+    char *gameplay;           // IOP gameplay archive
+    char *spaceships;         // IOP spaceship archive
+};
+
+extern LevelLoadState LevelLoad;
+extern int cdStallFrames;
+extern int cdSlowedDown;
+extern int cdSpindleControl;
+extern unsigned int levelSoundBank;
+extern int videoModePal;
+
+int music_LoadBankFromEE(void *destination, int sector, int sectors);
+void sound_LoadBankCB(unsigned int bank, unsigned long userData);
+
+// One step of streaming the level's IOP files (sound bank, spaceship and gameplay
+// archives) and swapping in the new sound bank. Returns 1 once everything is loaded.
+int LoadLevelFiles(void)
+{
+    int ship = SpaceshipVariant[0] + 1;
+    int bytes;
+    int sector;
+    int sectors;
+    char *gameplayBuffer;
+    char *spaceshipBuffer;
+    char *soundBankBuffer;
+
+    if (sceCdSync(1) != 0) {
+        cdStallFrames++;
+
+        if (cdSpindleControl == 1 && cdStallFrames > CD_STALL_FRAMES) {
+            int retryStage;
+
+            cdSlowedDown = cdSpindleControl;
+            retryStage = LevelLoad.stage - 1;
+            cdSpindleControl = 0;
+            if ((unsigned short)retryStage < 3)
+                LevelLoad.stage = retryStage;
+
+            sceCdBreak();
+        }
+        return 0;
+    }
+
+    if (sceCdGetError() != 0 && cdSlowedDown == 0) {
+        int retryStage;
+
+        cdSlowedDown = 1;
+        retryStage = LevelLoad.stage - 1;
+        cdSpindleControl = 0;
+        if ((unsigned short)retryStage < 3)
+            LevelLoad.stage = retryStage;
+    }
+
+    switch ((short)LevelLoad.stage) {
+    case LOAD_STAGE_SOUND_BANK_READ:
+        if (videoModePal)
+            bytes = ROUND_UP_4K(bootAssets.gameplayPal.length << SECTOR_SHIFT);
+        else
+            bytes = ROUND_UP_4K(bootAssets.gameplayNtsc.length << SECTOR_SHIFT);
+
+        gameplayBuffer = IopLevelTop - bytes;
+        bytes = ROUND_UP_4K(bootAssets.spaceships[ship].length << SECTOR_SHIFT);
+        spaceshipBuffer = gameplayBuffer - bytes;
+        sectors = bootAssets.soundBank.length;
+        bytes = ROUND_UP_4K(sectors << SECTOR_SHIFT);
+        soundBankBuffer = spaceshipBuffer - bytes;
+        sector = bootAssets.soundBank.offset;
+
+        LevelLoad.spaceships = spaceshipBuffer;
+        LevelLoad.gameplay = gameplayBuffer;
+        LevelLoad.soundBank = (SoundBankWad *)soundBankBuffer;
+
+        music_LoadBankFromEE(soundBankBuffer, sector, sectors);
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_SPACESHIP_READ:
+        music_LoadBankFromEE(LevelLoad.spaceships, bootAssets.spaceships[ship].offset, bootAssets.spaceships[ship].length);
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_GAMEPLAY_READ:
+        if (videoModePal)
+            music_LoadBankFromEE(LevelLoad.gameplay, bootAssets.gameplayPal.offset, bootAssets.gameplayPal.length);
+        else
+            music_LoadBankFromEE(LevelLoad.gameplay, bootAssets.gameplayNtsc.offset, bootAssets.gameplayNtsc.length);
+
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_STOP_SOUNDS:
+        if (LevelLoad.hold)
+            return 0;
+
+        snd_StopAllSounds();
+
+        if (levelSoundBank != 0)
+            LevelLoad.stage++;
+        else
+            LevelLoad.stage = LOAD_STAGE_LOAD_BANK;
+        break;
+
+    case LOAD_STAGE_UNLOAD_BANK:
+        if (snd_FlushSoundCommands())
+            return 0;
+
+        snd_UnloadBank(levelSoundBank);
+        levelSoundBank = 0;
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_RESOLVE_UNLOAD:
+        if (snd_FlushSoundCommands())
+            return 0;
+
+        snd_ResolveBankXREFS();
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_LOAD_BANK:
+        if (snd_FlushSoundCommands())
+            return 0;
+
+        levelSoundBank = 0xFFFFFFFF;
+        snd_BankLoadFromEE_CB((char *)(LevelLoad.soundBank->bankOffset + (int)LevelLoad.soundBank), sound_LoadBankCB, (unsigned int)&levelSoundBank);
+        LevelLoad.stage++;
+        break;
+
+    case LOAD_STAGE_RESOLVE_BANK:
+        if (snd_FlushSoundCommands())
+            return 0;
+
+        if (levelSoundBank == 0xFFFFFFFF)
+            return 0;
+
+        snd_ResolveBankXREFS();
+        return 1;
+    }
+
+    return 0;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/loaders", InitLevelFromWad);
 

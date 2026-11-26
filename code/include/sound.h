@@ -3,7 +3,12 @@
 
 void snd_PauseAllSoundsInGroup(int group);
 void snd_ContinueAllSoundsInGroup(int group);
-void snd_FlushSoundCommands(void);
+int snd_FlushSoundCommands(void);
+void snd_StopAllSounds(void);
+void snd_UnloadBank(int bank);
+void snd_ResolveBankXREFS(void);
+typedef void (*SndCompleteProc)(unsigned int result, unsigned long userData);
+void snd_BankLoadFromEE_CB(void *eeLocation, SndCompleteProc callback, unsigned long userData);
 void snd_SetMasterVolume(int group, int volume);
 
 // Sound system state (only the fields known so far).

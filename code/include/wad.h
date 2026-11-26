@@ -35,7 +35,11 @@ struct BootAssets {
     WadEntry allText;               // 0x1528
     WadEntry weaponScenes[14];      // 0x1530 (Wrench things[28]: NTSC then PAL)
     WadEntry palWeaponScenes[14];   // 0x15A0
-    char unk_1610[0x2AFC - 0x1610];
+    char unk_1610[0x2968 - 0x1610];
+    WadEntry soundBank;             // 0x2968 IOP sound bank archive
+    WadEntry gameplayNtsc;          // 0x2970
+    WadEntry gameplayPal;           // 0x2978
+    char unk_2980[0x2AFC - 0x2980];
     NpcSceneSectors scenes[1];  // 0x2AFC; count unknown
 };
 
