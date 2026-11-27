@@ -197,7 +197,6 @@ void MB_InitMoveVars(MoveVars *vars)
 }
 
 int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement,
-
                       float speedScale)
 {
     Vec4 startPosition;
@@ -1442,7 +1441,6 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
                          float glowScale, float whiteGlowScale, float minGlowDistance,
                          float effectScale, int soundId, float flashRadius, int shakeCamera,
                          int debrisCount, int reductionLevel,
-
                          unsigned char colorSwap)
 {
     Vec4 baseVelocity;

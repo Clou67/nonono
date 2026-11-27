@@ -66,9 +66,10 @@ extern char BoltFloatScaleFormat[];
 extern MobyPath *Splines[];
 
 int MB_SplineIntersect(int splineIndex, Vec4 *start, Vec4 *end, Vec4 *intersection);
-void SpawnBoltByValue(MobyInstance *moby, Vec4 *position, Vec4 *velocity, int flags, int value, int counted);
-void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int flags, int splineIndex);
-
+void SpawnBoltByValue(MobyInstance *moby, Vec4 *position, Vec4 *velocity, int flags, int value,
+                      int counted);
+void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int flags,
+                        int splineIndex);
 
 // Trail of translucent copies that follow a moby.
 struct MotionBlur {
@@ -141,8 +142,8 @@ enum MoveResult {
 };
 
 int GetGroundZ(Vec4 *position, MobyInstance *ignore, int flags, float down, float up);
-int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement, float speedScale);
-
+int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement,
+                      float speedScale);
 
 void MB_UnlockLevel(int level);
 void MB_UnlockItem(int item, char equip);
@@ -310,7 +311,8 @@ unsigned int ReorderRGB(unsigned int rgba, int mask);
 
 void MB_SetStateByGroup(int group, int value);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags);
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed,
+                          float stepHeight, int flags);
 
 void MB_RotateMoby(MobyInstance *moby, float xAngle, float yAngle, float zAngle);
 
@@ -379,19 +381,28 @@ enum {
     EXPLOSION_DAMAGE_STRENGTH = 1
 };
 
-MobyInstance *M122_SpawnDebris(Vec4 *position, Vec4 *velocity, int lifetime, int variant, int flags);
-int M112_SpawnGlow(MobyInstance *owner, Vec4 *position, Vec4 *velocity, float scale, int lifetime, int red, int green, int blue, int alpha);
-void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float effectScale, int soundId, float flashRadius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap);
+MobyInstance *M122_SpawnDebris(Vec4 *position, Vec4 *velocity, int lifetime, int variant,
+                               int flags);
+int M112_SpawnGlow(MobyInstance *owner, Vec4 *position, Vec4 *velocity, float scale, int lifetime,
+                   int red, int green, int blue, int alpha);
+void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius,
+                         float damageHp, int burstCount, int particlePairCount, int smokeCount,
+                         float glowScale, float whiteGlowScale, float minGlowDistance,
+                         float effectScale, int soundId, float flashRadius, int shakeCamera,
+                         int debrisCount, int reductionLevel, unsigned char colorSwap);
 
 float MB_BlendAnimFrame(MobyInstance *moby);
 int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion);
 void MB_MistDeathEffect(MobyInstance *moby, Vec4 *velocity, int primitiveMask);
 void M775_SpawnSplash(Vec4 *position, float scale);
-void OrganicDeltAngSpeed(MobyInstance *moby, float *speed, float target, float gain, float damping, float limit);
+void OrganicDeltAngSpeed(MobyInstance *moby, float *speed, float target, float gain, float damping,
+                         float limit);
 int CollHotspot(void);
-int CollMobySphere(float radius, Vec4 *center, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
+int CollMobySphere(float radius, Vec4 *center, int flags, MobyInstance *ignore,
+                   COLL_DAM_IN *damage);
 int CollSphere(Vec4 *center, float radius, int flags, MobyInstance *ignore);
-void CollDamageMobyDirect_2(MobyInstance *target, MobyInstance *damager, int flags, Vec4 *position, Vec4 *momentum, float damage);
+void CollDamageMobyDirect_2(MobyInstance *target, MobyInstance *damager, int flags, Vec4 *position,
+                            Vec4 *momentum, float damage);
 extern MobyInstance *HeroSphereQueryResults[];
 void Map_RegisterLevelObject(MobyInstance *moby, int object);
 void SetupSpaceShipVars(MobyInstance *moby);
