@@ -1,4 +1,5 @@
 #include "common.h"
+#include "env.h"
 #include "vuchain.h"
 #include "fastfunc.h"
 #include "moby.h"
@@ -37,8 +38,6 @@ void UpdateNumSpawnableMobys(void)
 }
 
 extern unsigned char *mobyVars;
-
-extern void *MobyClassUpdate[];
 
 void InitMobyInstance(MobyInstance *moby, int oClass);
 
@@ -82,7 +81,7 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
 
     moby->alpha = 0x80;
     moby->mClass = classIndex;
-    moby->damage = 0xFF;
+    moby->hitSlot = 0xFF;
     moby->group = 0xFF;
     moby->unk71 = 0xFF;
     moby->lodTransition = 0xFF;
@@ -159,16 +158,16 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
 
 void UpdateMobyGrids(MobyInstance *moby, unsigned int bounds);
 
-void DeleteMoby(MobyInstance *moby)
+void DeleteMoby(MobyInstance *pMoby)
 {
-    if (moby < MobyInstancePermEnd)
-        moby->state = 0xFD;
+    if (pMoby < MobyInstancePermEnd)
+        pMoby->state = 0xFD;
 
     else
-        moby->state = 0xFE;
+        pMoby->state = 0xFE;
 
-    moby->lights = (unsigned long long)(worldUpdateTime + 2);
-    UpdateMobyGrids(moby, 0x80807F7F);
+    pMoby->lights = (unsigned long long)(worldUpdateTime + 2);
+    UpdateMobyGrids(pMoby, 0x80807F7F);
 }
 
 extern unsigned char debugFontBuffer[] __attribute__((section(".data")));
@@ -194,16 +193,16 @@ void UpdateMobyFrameData(MobyInstance *moby)
 
 void MB_PlayMobyDesiredSound(MobyInstance* pMoby) {
     int channel;
-    SoundAudioState* state;
+    SoundVoiceWindow* voice;
 
     if (pMoby->soundChannel != 0xFF) {
         channel = pMoby->soundChannel;
-        state = (SoundAudioState*)((SoundVoice*)&audioState + channel);
+        voice = (SoundVoiceWindow *)((SoundVoice *)&audioState + channel);
 
-        if (state->voices[0].pMoby != pMoby)
+        if (voice->voice.pMoby != pMoby)
             pMoby->soundChannel = 0xFF;
             
-        else if (state->voices[0].soundId != pMoby->soundDesired) {
+        else if (voice->voice.soundId != pMoby->soundDesired) {
             sound_KillChannel(channel);
             pMoby->soundChannel = 0xFF;
         }
@@ -553,48 +552,48 @@ void MB_InitAnimLayerBuffer(AnimLayer *layer, int seq, int frame, MobySeqFrame *
     FlushCache(0);
 }
 
-void AttachManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator)
+void AttachManipulator(MobyInstance *pMoby, int animJoint, Manipulator *pManip)
 {
-    if (manipulator->state == 0) {
-        manipulator->animJoint = animJoint;
-        manipulator->state = 1;
+    if (pManip->state == 0) {
+        pManip->animJoint = animJoint;
+        pManip->state = 1;
 
-        manipulator->rot.w = 1.0f;
-        manipulator->scale.x = 1.0f;
-        manipulator->scale.y = 1.0f;
-        manipulator->scale.z = 1.0f;
+        pManip->q.w = 1.0f;
+        pManip->scale.x = 1.0f;
+        pManip->scale.y = 1.0f;
+        pManip->scale.z = 1.0f;
 
-        unsigned char *joint = *(unsigned char **)((unsigned char *)moby->pClass->animationJoints + manipulator->animJoint * 4 + 4);
-        manipulator->jointId = joint[*joint + 4] * 0x40 + 0x70000000;
+        unsigned char *joint = *(unsigned char **)((unsigned char *)pMoby->pClass->animationJoints + pManip->animJoint * 4 + 4);
+        pManip->jointId = joint[*joint + 4] * 0x40 + 0x70000000;
 
-        manipulator->pChain = moby->pManipulators;
-        moby->pManipulators = manipulator;
+        pManip->pChain = pMoby->pManipulators;
+        pMoby->pManipulators = pManip;
     }
 }
 
-void DetachManipulator(MobyInstance *moby, Manipulator *manipulator)
+void DetachManipulator(MobyInstance *pMoby, Manipulator *pManip)
 {
-    if (manipulator == 0)
+    if (pManip == 0)
         return;
 
-    if (moby->pManipulators == manipulator) {
-        moby->pManipulators = manipulator->pChain;
+    if (pMoby->pManipulators == pManip) {
+        pMoby->pManipulators = pManip->pChain;
     } else {
-        Manipulator *previous = moby->pManipulators;
+        Manipulator *previous = pMoby->pManipulators;
 
         for (;;) {
             if (previous->pChain == 0)
                 break;
-            if (previous->pChain == manipulator)
+            if (previous->pChain == pManip)
                 break;
             previous = previous->pChain;
         }
 
-        if (previous->pChain == manipulator)
-            previous->pChain = manipulator->pChain;
+        if (previous->pChain == pManip)
+            previous->pChain = pManip->pChain;
     }
 
-    FastMemSet(manipulator, 0, sizeof(Manipulator));
+    FastMemSet(pManip, 0, sizeof(Manipulator));
 }
 
 int AnimCache_Register(MobyInstance *moby)
@@ -933,25 +932,8 @@ void DrawMobys(void)
 
 
 
-typedef struct EnvSample {
-    Vec4 pos;
-    int  colorR;
-    int  colorG;
-    int  colorB;
-    int  lights;
-    int  reverbDepth;
-    unsigned char   reverbType;
-    unsigned char   reverbDelay;
-    unsigned char   reverbFeedback;
-    unsigned char   hasReverb;
-    int  musicTrack;
-    int  unk2C;
-} EnvSample;
-
-extern int EnvSampleCnt;        // 0x160014
-extern EnvSample* EnvSamples;   // 0x160040
 extern SoundAudioState audioState;
-extern MusicTransition musicTransition;
+extern MusicGlobals musicGlobals;
 
 void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     Vec4 diff;
@@ -990,9 +972,9 @@ void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     }
 
     if (EnvSamples[bestIdx].musicTrack >= 0) {
-        if (musicTransition.primary_bank == 0) {
-            if ((*(int *)&musicTransition.unk20[0] & 0xFFFFFF) == 0xFF0000) {
-                musicTransition.primary_track = (unsigned short)EnvSamples[bestIdx].musicTrack;
+        if (musicGlobals.play.status == 0) {
+            if ((musicGlobals.transitionRequest & 0xFFFFFF) == 0xFF0000) {
+                musicGlobals.play.track = (unsigned short)EnvSamples[bestIdx].musicTrack;
             }
         }
     }

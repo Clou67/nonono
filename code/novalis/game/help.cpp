@@ -135,7 +135,7 @@ void Help_Skip(void)
 int Help_QueueMessage(int id, int flag)
 {
     if (Help.state == HELP_STATE_IDLE && Help.message_id == HELP_NO_MESSAGE) {
-        if (musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == HELP_NO_MESSAGE) {
+        if (musicGlobals.speech.handle == 0 && musicGlobals.queuedSpeech == HELP_NO_MESSAGE) {
             if (HelpDataMessages[flag].timesUsed != HELP_TIMES_USED_MAX) {
                 Help.message_id = id;
                 Help.message_flg = flag;
@@ -154,9 +154,9 @@ void Help_Kill(void)
         int vag = HelpMsgs[Help.message_index].vag;
 
         if (vag != HELP_NO_VAG) {
-            if (vag == musicTransition.speechId - MUSIC_SPEECH_ID_BASE) {
-                if ((unsigned short)(musicTransition.state - MUSIC_STATE_FINISHING) >= 2) {
-                    musicTransition.state = MUSIC_STATE_STOPPING;
+            if (vag == musicGlobals.speech.track - MUSIC_SPEECH_ID_BASE) {
+                if ((unsigned short)(musicGlobals.speech.status - MUSIC_STATE_FINISHING) >= 2) {
+                    musicGlobals.speech.status = MUSIC_STATE_STOPPING;
                 }
             }
         }
@@ -360,8 +360,8 @@ void Help_Update(void)
         MB_RequestHelpMessage(HELP_MESSAGE_SELECTOR, 0);
 
         vag = HelpMsgs[Help.message_index].vag;
-        if (vag >= 0 && musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == -1) {
-            musicTransition.queuedSpeech = vag + MUSIC_SPEECH_ID_BASE;
+        if (vag >= 0 && musicGlobals.speech.handle == 0 && musicGlobals.queuedSpeech == -1) {
+            musicGlobals.queuedSpeech = vag + MUSIC_SPEECH_ID_BASE;
         }
 
         if (padState.bitsOn & PAD_TRIANGLE) {
@@ -389,7 +389,7 @@ void Help_Update(void)
             Help.counter = 0;
             Help_RecordLevel();
         } else if (Help.counter >= FastScaleRoundInt(HELP_PROMPT_FRAMES)) {
-            if (musicTransition.state == MUSIC_STATE_READY || (vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicTransition.speechId - MUSIC_SPEECH_ID_BASE) {
+            if (musicGlobals.speech.status == MUSIC_STATE_READY || (vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicGlobals.speech.track - MUSIC_SPEECH_ID_BASE) {
                 Help.state = HELP_STATE_PROMPT_TO_BOX;
                 Help.counter = 0;
             }
@@ -425,7 +425,7 @@ void Help_Update(void)
             Help.counter = HELP_TEXT_FADE_FRAMES - Help.counter;
         } else if (Help.counter >= HELP_TEXT_FADE_FRAMES) {
             vag = HelpMsgs[Help.message_index].vag;
-            if (vag != -1 && vag == musicTransition.speechId - MUSIC_SPEECH_ID_BASE && musicTransition.state == MUSIC_STATE_READY) {
+            if (vag != -1 && vag == musicGlobals.speech.track - MUSIC_SPEECH_ID_BASE && musicGlobals.speech.status == MUSIC_STATE_READY) {
                 music_PlayPreseekedSpeech();
             }
             Help.state = HELP_STATE_TEXT_SHOWN;
@@ -439,7 +439,7 @@ void Help_Update(void)
 
         MB_RequestHelpMessage(HELP_MESSAGE_SELECTOR, 0);
 
-        if ((Help.counter >= FastScaleRoundInt(HELP_TEXT_SHOWN_FRAMES) && ((vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicTransition.speechId - MUSIC_SPEECH_ID_BASE || (musicTransition.speechHandle == 0 && musicTransition.queuedSpeech == -1))) || (padState.bitsOn & PAD_TRIANGLE)) {
+        if ((Help.counter >= FastScaleRoundInt(HELP_TEXT_SHOWN_FRAMES) && ((vag = HelpMsgs[Help.message_index].vag) == -1 || vag != musicGlobals.speech.track - MUSIC_SPEECH_ID_BASE || (musicGlobals.speech.handle == 0 && musicGlobals.queuedSpeech == -1))) || (padState.bitsOn & PAD_TRIANGLE)) {
             Help_RecordUse();
             Help_RecordTime();
             Help.state = HELP_STATE_TEXT_FADE_OUT;
@@ -462,8 +462,8 @@ void Help_Update(void)
         MB_RequestHelpMessage(HELP_MESSAGE_SELECTOR, 0);
 
         vag = HelpMsgs[Help.message_index].vag;
-        if (vag != -1 && vag == musicTransition.speechId - MUSIC_SPEECH_ID_BASE && (unsigned short)(musicTransition.state - MUSIC_STATE_FINISHING) >= 2) {
-            musicTransition.state = MUSIC_STATE_STOPPING;
+        if (vag != -1 && vag == musicGlobals.speech.track - MUSIC_SPEECH_ID_BASE && (unsigned short)(musicGlobals.speech.status - MUSIC_STATE_FINISHING) >= 2) {
+            musicGlobals.speech.status = MUSIC_STATE_STOPPING;
         }
 
         if (Help.counter >= HELP_TRANSITION_FRAMES) {

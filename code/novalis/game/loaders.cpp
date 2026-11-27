@@ -200,8 +200,7 @@ int ParseGsRamTextures(PifHeader *pif, unsigned long long *gsRegisters)
 
 TEXT_PADDING(0x27BD0060, 0x00000000);
 
-// Copies the level's particle texture data into PartTexData, points each particle class's
-// texture slot into it, and builds the GS addresses of each particle texture.
+// Relocates the per-class texture-selection records and packs the GS palette/texture descriptors.
 void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
 {
     int classCount = header[0];
@@ -211,33 +210,33 @@ void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
 
     for (int index = 0; index < classCount; index++, texOffset++) {
         if (*texOffset == 0)
-            PartTextures[index] = PartTexData;
+            PartClassTexs[index] = PartClassData;
 
         else
-            PartTextures[index] = (unsigned char *)(*texOffset - (dataOffset - (int)PartTexData));
+            PartClassTexs[index] = (unsigned char *)(*texOffset - (dataOffset - (int)PartClassData));
     }
 
-    FastMemCopy32(PartTexData, (char *)header + dataOffset, dataSize);
+    FastMemCopy32(PartClassData, (char *)header + dataOffset, dataSize);
 
     for (PartTexCnt = 0; PartTexCnt < count; PartTexCnt++) {
-        int texBlock = gsBase + *texDefs++;
-        int texWidth = *texDefs++;
-        int clutBlock = gsBase + *texDefs++;
-        int clutSize = *texDefs++;
+        int paletteAddress = gsBase + *texDefs++;
+        int paletteDescriptor = *texDefs++;
+        int textureAddress = gsBase + *texDefs++;
+        int textureDimension = *texDefs++;
 
-        PartTexs[PartTexCnt].unk_00 = (texBlock << 4) + texWidth;
-        PartTexs[PartTexCnt].unk_04 = (clutBlock << 4) + FastLog2(clutSize);
+        PartTexs[PartTexCnt].pal = (paletteAddress << 4) + paletteDescriptor;
+        PartTexs[PartTexCnt].tex = (textureAddress << 4) + FastLog2(textureDimension);
     }
 }
 
 // Each texture definition is {clut address, texture address, width, height}.
-void ParseEffectTexs(int *texDefs, int count)
+void ParseEffectTexs(int *tex_defs, int tex_cnt)
 {
-    for (EffectTexCnt = 0; EffectTexCnt < count; EffectTexCnt++) {
-        int clutAddr = *texDefs++;
-        int texAddr = *texDefs++;
-        int width = *texDefs++;
-        int height = *texDefs++;
+    for (EffectTexCnt = 0; EffectTexCnt < tex_cnt; EffectTexCnt++) {
+        int clutAddr = *tex_defs++;
+        int texAddr = *tex_defs++;
+        int width = *tex_defs++;
+        int height = *tex_defs++;
 
         EffectTexs[EffectTexCnt].palOfs = clutAddr >> 4;
         EffectTexs[EffectTexCnt].texOfs = texAddr >> 4;
@@ -1386,21 +1385,22 @@ char *ResetLevelData(int reload)
     FastMemSetZero(MobyGridAlloc, 0x60);
 
     {
+        // GameplaySettings is decoded as words here; the float entries keep their stored bits.
         int *settings = (int *)((char *)header + header->settings);
         int *shipSettings;
 
         VC.backR = *settings++;
         VC.backG = *settings++;
         VC.backB = *settings++;
-        DrawSdata15F444 = *settings++;
-        DrawSdata15F445 = *settings++;
-        DrawSdata15F446 = *settings++;
+        level_FogR = *settings++;
+        level_FogG = *settings++;
+        level_FogB = *settings++;
         shipSpawn = (float *)(settings + 5);
         shipSettings = settings + 9;
-        DrawSdata15F448 = *(float *)settings;
-        DrawSdata15F44C = *(float *)(settings + 1);
-        DrawSdata15F450 = *(float *)(settings + 2);
-        DrawSdata15F454 = *(float *)(settings + 3);
+        level_FogNearDist = *(float *)settings;
+        level_FogFarDist = *(float *)(settings + 1);
+        level_FogNearIntensity = *(float *)(settings + 2);
+        level_FogFarIntensity = *(float *)(settings + 3);
         HeroDeathHeight = *(float *)(settings + 4);
         settings += 12;
         bootSpaceTransitionState.shipSplinePath = shipSettings[0];
@@ -1898,8 +1898,8 @@ char *ResetLevelData(int reload)
                 moby->unkB1 = mapSlot;
                 moby->uid = uid;
                 moby->levelFlagIdx = levelFlagIdx;
-                *(short *)&moby->unkB4[0] = boltsAdjusted;
-                *(short *)&moby->unkB4[2] = boltsBase;
+                moby->bolts = boltsAdjusted;
+                moby->baseBolts = boltsBase;
                 if (moby->pClass != 0)
                     moby->scale = moby->pClass->scale * *(float *)record;
 
@@ -2000,7 +2000,7 @@ char *ResetLevelData(int reload)
         }
 
         for (int index = 0; index < audioState.soundInstanceCnt; index++) {
-            int entry = audioState.soundInstances[index].pVar;
+            int entry = (int)audioState.soundInstances[index].pVar;
 
             if (entry < 0) {
                 audioState.soundInstances[index].pVar = 0;
@@ -2010,7 +2010,7 @@ char *ResetLevelData(int reload)
                 int size = pvarTable[entry].size;
                 char *source = pvarData + pvarTable[entry].offset;
 
-                audioState.soundInstances[index].pVar = (int)mem;
+                audioState.soundInstances[index].pVar = mem;
                 FastMemCopy16(mem, source, size);
                 pvarTable[entry].offset = (int)mem;
                 mem += size;
@@ -2250,7 +2250,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->cuboids;
         int count = *(int *)section;
 
-        CuboidVolumes = (MobyVolume *)mem;
+        CuboidVolumes = (Cuboid *)mem;
         section += 0x10;
         CuboidCnt = count;
         mem += count << 7;
@@ -2268,7 +2268,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->spheres;
         int count = *(int *)section;
 
-        SphereVolumes = (MobyVolume *)mem;
+        SphereVolumes = (Sphere *)mem;
         section += 0x10;
         SphereCnt = count;
         mem += count << 7;
@@ -2286,7 +2286,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->cylinders;
         int count = *(int *)section;
 
-        CylinderVolumes = (MobyVolume *)mem;
+        CylinderVolumes = (Cylinder *)mem;
         section += 0x10;
         CylinderCnt = count;
         mem += count << 7;
@@ -2341,13 +2341,13 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->envSamples;
         int count = *(int *)section;
 
-        EnvSamples = mem;
+        EnvSamples = (EnvSample *)mem;
         EnvSampleCnt = count;
         section += 0x10;
-        mem += count * 0x30;
+        mem += count * sizeof(EnvSample);
         mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
         if (count != 0)
-            FastMemCopy32(EnvSamples, section, count * 0x30);
+            FastMemCopy32(EnvSamples, section, count * sizeof(EnvSample));
     }
 
     PartInstances = (PartInstance *)mem;
@@ -2381,7 +2381,7 @@ char *ResetLevelData(int reload)
             moby->pos.y = shipSpawn[1];
             moby->pos.z = shipSpawn[2];
             spawnRotation = shipSpawn[3];
-            moby->pUpdate = (void *)UpdateMoby_Spaceship;
+            moby->pUpdate = UpdateMoby_Spaceship;
             moby->drawDistance = 0xFF;
             moby->rotation.z = spawnRotation;
             moby->updateDistance = 16;
@@ -3062,8 +3062,8 @@ int InitLevelFromWad(int full, int keep)
             printf_stub("sky:            %.1fK\n", KILOBYTES(CollOutput.grid - (char *)Sky));
 
         printf_stub("collision:      %.1fK\n", KILOBYTES(DrawSdata15F40C - (int)CollOutput.grid));
-        printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].unk_04 >> 4) - DrawSdata15F40C));
-        printf_stub("particle vram:  %.1fK\n", KILOBYTES(EffectTextureData - (PartTexs[0].unk_04 >> 4)));
+        printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].tex >> 4) - DrawSdata15F40C));
+        printf_stub("particle vram:  %.1fK\n", KILOBYTES(EffectTextureData - (PartTexs[0].tex >> 4)));
         printf_stub("effects vram:   %.1fK\n", KILOBYTES((char *)MobyClasses[0] - (char *)EffectTextureData));
         printf_stub("mobys:          %.1fK\n", KILOBYTES((char *)TieClasses[0] - (char *)MobyClasses[0]));
         if (header->shrubClassCnt)
@@ -3122,20 +3122,20 @@ float byteGridMax = 0;
 unsigned char *byteGridData = 0;
 
 // Starts streaming a chunk of the current npc scene from the disc into the scene buffer.
-int PreLoadNpcChunk(int chunk)
+int PreLoadNpcChunk(int chunk_id)
 {
     unsigned char *buffer = SceneLoad.buffer;
     int sector;
     int length;
 
     if (videoModePal) {
-        length = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
-        sector = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
+        length = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id + 1] - bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id];
+        sector = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id];
     }
 
     else {
-        length = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
-        sector = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
+        length = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id + 1] - bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id];
+        sector = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id];
     }
 
     if (length > 0) {
@@ -3275,9 +3275,9 @@ void LoadSpaceScene(int scene, int fadeFrames)
     SetSceneChunks();
 }
 
-void ParseSpaceSceneChunk(int chunk)
+void ParseSpaceSceneChunk(int chunk_id)
 {
-    SceneLoad.buffer = SceneLoad.chunks[chunk];
+    SceneLoad.buffer = SceneLoad.chunks[chunk_id];
     ParseNpcChunk();
     SceneLoad.buffer = MemSlots.vu1_chain[1] + vu1_bufSize;
 }
@@ -3351,41 +3351,39 @@ struct PifLoad {
 extern int GifLoadCnt;
 extern PifLoad GifLoads[];
 
-unsigned long QueuePifLoad(PifHeader *pif)
+unsigned long QueuePifLoad(PifHeader *pPif)
 {
-    PifParser parsed;
+    PifParser pp;
 
-    parsed.pClut = pif + 1;
-    parsed.cSize = 0x400;
-    parsed.uLog = FastLog2(pif->uSize);
-    parsed.vLog = FastLog2(pif->vSize);
+    pp.pClut = pPif + 1;
+    pp.cSize = 0x400;
+    pp.uLog = FastLog2(pPif->uSize);
+    pp.vLog = FastLog2(pPif->vSize);
 
-    parsed.pTex[0] = (char *)(pif + 1) + parsed.cSize;
+    pp.pTex[0] = (char *)(pPif + 1) + pp.cSize;
     int address = GSloc;
     int clutBlock = address >> 8;
     address += 0x400;
     int textureBlock = address >> 8;
-    GSloc = address + (1 << (parsed.uLog + parsed.vLog));
+    GSloc = address + (1 << (pp.uLog + pp.vLog));
 
-    int tbw = parsed.uLog - 6;
+    int tbw = pp.uLog - 6;
     if (tbw < 0)
         tbw = 0;
     tbw = 1 << tbw;
 
     GsTex0 textureRegister;
-    textureRegister.bits = (unsigned long)textureBlock | ((unsigned long)tbw << 14) |
-        ((unsigned long)GS_PSMT8 << 20) | ((unsigned long)parsed.uLog << 26);
-    textureRegister.bits = textureRegister.bits | ((unsigned long)parsed.vLog << 30) |
-        ((unsigned long)1 << 34) | ((unsigned long)clutBlock << 37);
+    textureRegister.bits = (unsigned long)textureBlock | ((unsigned long)tbw << 14) | ((unsigned long)GS_PSMT8 << 20) | ((unsigned long)pp.uLog << 26);
+    textureRegister.bits = textureRegister.bits | ((unsigned long)pp.vLog << 30) | ((unsigned long)1 << 34) | ((unsigned long)clutBlock << 37);
     unsigned long tex0 = textureRegister.bits | ((unsigned long)4 << 61);
 
     if (GifLoadCnt < PIF_LOAD_QUEUE_SIZE) {
-        GifLoads[GifLoadCnt].clut = (char *)parsed.pClut;
+        GifLoads[GifLoadCnt].clut = (char *)pp.pClut;
         GifLoads[GifLoadCnt].clutBlock = clutBlock;
         GifLoads[GifLoadCnt].clutFormat = 0;
-        GifLoads[GifLoadCnt].tex = (char *)parsed.pTex[0];
-        GifLoads[GifLoadCnt].uLog = parsed.uLog;
-        GifLoads[GifLoadCnt].vLog = parsed.vLog;
+        GifLoads[GifLoadCnt].tex = (char *)pp.pTex[0];
+        GifLoads[GifLoadCnt].uLog = pp.uLog;
+        GifLoads[GifLoadCnt].vLog = pp.vLog;
         GifLoads[GifLoadCnt].texBlock = textureBlock;
         GifLoadCnt++;
     }

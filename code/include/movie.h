@@ -50,10 +50,10 @@ extern volatile int decodeMode;
 extern int GoodiesMenuUnlocked;
 
 int playMpegMovie(int sector, int size, unsigned char *decoder_buffer, MoviePlayer *player, int language);
-int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file);
+int readMpeg(VideoDec *vd, ReadBuf *rb, StrFile *file);
 void switchThread(void);
 int isAudioOK(void);
-int initAll(int sector, int size, int language);
+int initAll(int lsn, int size, int language);
 void termAll(void);
 void ErrMessage(char *message);
 void proceedAudio(void);

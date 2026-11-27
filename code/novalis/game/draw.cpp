@@ -689,25 +689,20 @@ void DisableFontColors(void)
     FontColorsEnabled = 0;
 }
 
-struct FontGlyph {
-    unsigned char u;
-    unsigned char v;
-    signed char yOff;
-    signed char width;
-};
+
 
 int FontLenWithTable(char *text, int length, unsigned char *metrics)
 {
-    const FontGlyph *glyphs = (const FontGlyph *)metrics;
+    const fontLetter *glyphs = (const fontLetter *)metrics;
     int total = 0;
     int index = 0;
     if (length != 0 && *(unsigned char *)text != 0) {
         unsigned char *cursor = (unsigned char *)text;
         do {
             int code = *cursor++;
-            int width = glyphs[code].width;
-            if (width)
-                total += width;
+            int spacing = glyphs[code].spacing;
+            if (spacing)
+                total += spacing;
             index++;
         } while (index != length && *cursor != 0);
     }
@@ -717,9 +712,9 @@ int FontLenWithTable(char *text, int length, unsigned char *metrics)
 int FontLenWithTable(char *text, int length, unsigned char *metrics);
 extern unsigned char FontNormalMetrics[];
 
-int FontLen(char *text, int length)
+int FontLen(char *s, int len)
 {
-    return FontLenWithTable(text, length, FontNormalMetrics);
+    return FontLenWithTable(s, len, FontNormalMetrics);
 }
 
 extern unsigned char FontSmallMetrics[];
@@ -786,22 +781,22 @@ void FontPrintLargeRight(int x, int y, unsigned long rgba, char *text, int lengt
     FontPrint(x, y, rgba, text, length, tex0, FontLargeMetrics);
 }
 
-int FontPrintCenter(int x, int y, unsigned long rgba, char *text, int length)
+int FontPrintCenter(int xpos, int ypos, unsigned long rgba, char *s, int len)
 {
-    x -= (FontLen(text, length) >> 1);
+    xpos -= (FontLen(s, len) >> 1);
     unsigned long tex0 = FontSet(FONT_MEDIUM);
 
-    FontPrint(x, y, rgba, text, length, tex0, FontNormalMetrics);
-    return x;
+    FontPrint(xpos, ypos, rgba, s, len, tex0, FontNormalMetrics);
+    return xpos;
 }
 
-int FontPrintCenterSmall(int x, int y, unsigned long rgba, char *text, int length)
+int FontPrintCenterSmall(int xpos, int ypos, unsigned long rgba, char *s, int len)
 {
-    x -= (FontLenSmall(text, length) >> 1);
+    xpos -= (FontLenSmall(s, len) >> 1);
     unsigned long tex0 = FontSet(FONT_SMALL);
 
-    FontPrint(x, y, rgba, text, length, tex0, FontSmallMetrics);
-    return x;
+    FontPrint(xpos, ypos, rgba, s, len, tex0, FontSmallMetrics);
+    return xpos;
 }
 
 int FontPrintCenterLarge(int x, int y, unsigned long rgba, char *text, int length)
@@ -833,10 +828,10 @@ void FontPrintWindowMedium(FontWindow *window, unsigned long rgba, char *text, i
     FontPrintWindow(window, rgba, text, length, tex0, FontNormalMetrics);
 }
 
-void FontPrintWindowSmall(FontWindow *window, unsigned long rgba, char *text, int length)
+void FontPrintWindowSmall(FontWindow *window, unsigned long rgba, char *s, int len)
 {
     unsigned long tex0 = FontSet(FONT_SMALL);
-    FontPrintWindow(window, rgba, text, length, tex0, FontSmallMetrics);
+    FontPrintWindow(window, rgba, s, len, tex0, FontSmallMetrics);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/draw", func_0021E118);
@@ -901,13 +896,13 @@ int DrawSdata15F434 = 0;
 int EffectTableCnt = 0;
 int *EffectTableEntries = 0;
 int *EffectTableOffsets = 0;
-unsigned char DrawSdata15F444 = 0;
-unsigned char DrawSdata15F445 = 0;
-unsigned char DrawSdata15F446 = 0;
-float DrawSdata15F448 = 0.0f;
-float DrawSdata15F44C = 0.0f;
-float DrawSdata15F450 = 0.0f;
-float DrawSdata15F454 = 0.0f;
+unsigned char level_FogR = 0;
+unsigned char level_FogG = 0;
+unsigned char level_FogB = 0;
+float level_FogNearDist = 0.0f;
+float level_FogFarDist = 0.0f;
+float level_FogNearIntensity = 0.0f;
+float level_FogFarIntensity = 0.0f;
 int DrawSdata15F458 = 0;
 int FontColorsEnabled = 0;
 int DrawSdata15F460 = 0;

@@ -1,49 +1,49 @@
 #include "readbuf.h"
 
-void readBufCreate(ReadBuf *buffer)
+void readBufCreate(ReadBuf *b)
 {
-    buffer->capacity = READ_BUF_CAPACITY;
-    buffer->put_pos = 0;
-    buffer->count = 0;
+    b->size = READ_BUF_CAPACITY;
+    b->put = 0;
+    b->count = 0;
 }
 
-void readBufDelete(ReadBuf *buffer)
+void readBufDelete(ReadBuf *b)
 {
 }
 
 int readBufBeginPut(ReadBuf *buffer, unsigned char **destination)
 {
-    int free_space = buffer->capacity - buffer->count;
+    int free_space = buffer->size - buffer->count;
 
     if (free_space != 0)
-        *destination = buffer->data + buffer->put_pos;
+        *destination = buffer->data + buffer->put;
 
     return free_space;
 }
 
-void readBufEndPut(ReadBuf *buffer, int size)
+void readBufEndPut(ReadBuf *b, int size)
 {
-    int free_space = buffer->capacity - buffer->count;
+    int free_space = b->size - b->count;
     int written = size < free_space ? size : free_space;
 
-    buffer->put_pos = (buffer->put_pos + written) % buffer->capacity;
-    buffer->count += written;
+    b->put = (b->put + written) % b->size;
+    b->count += written;
 }
 
 int readBufBeginGet(ReadBuf *buffer, unsigned char **source)
 {
     if (buffer->count != 0) {
-        int get_pos = (buffer->put_pos - buffer->count + buffer->capacity) % buffer->capacity;
+        int get_pos = (buffer->put - buffer->count + buffer->size) % buffer->size;
         *source = buffer->data + get_pos;
     }
 
     return buffer->count;
 }
 
-int readBufEndGet(ReadBuf *buffer, int size)
+int readBufEndGet(ReadBuf *b, int size)
 {
-    int consumed = size < buffer->count ? size : buffer->count;
-    buffer->count -= consumed;
+    int consumed = size < b->count ? size : b->count;
+    b->count -= consumed;
 
     return consumed;
 }

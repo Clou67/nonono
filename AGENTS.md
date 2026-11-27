@@ -90,7 +90,7 @@ Rules:
   }
   ```
 - **Braces:** an `if`/`else` branch with a single statement has no braces, and each branch of an `if`/`else if`/`else` chain is separated by a blank line. Branches with more than one statement keep their braces.
-- **Line wrapping:** do not wrap a statement across lines unless it is absolutely justified. A single statement that fits on one line (the project limit is 100 columns) stays on one line; do not let a formatter break an assignment or a call across 3-4 lines. Only wrap when the line would truly exceed the limit. An `else` with a single statement is `else` on its own line, then the statement indented under it, with the statement itself on one line if it fits.
+- **Line wrapping:** do not wrap function signatures, declarations, calls, conditions, assignments or other statements across lines. There is no column limit; keep each signature or statement on one line regardless of length. Keep block bodies and logical steps on separate lines as usual. An `else` with a single statement stays on its own line, followed by the statement indented on one line. Configure formatters with `ColumnLimit: 0` and do not introduce automatic line wrapping.
   ```cpp
   if (slots == POINT_LIGHT_SLOTS_EMPTY)
       tie->point_lights = light | 0xFFF0;

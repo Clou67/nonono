@@ -582,7 +582,7 @@ void UpdateModeFreeze(void)
         if (padState.bitsOn & PAD_TRIANGLE) {
             MobyInstance *moby = Hero.moby;
 
-            moby->enabled = 0;
+            moby->drawn = 0;
             moby->collision = 0;
             moby->modeBits |= DISABLED;
             Hero_RevertToRatchet();

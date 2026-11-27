@@ -6,66 +6,66 @@ enum {
     VO_TAG_FILLED = 2
 };
 
-void voBufCreate(VoBuf *buffer, VoData *data, VoTag *tag, int size)
+void voBufCreate(VoBuf *f, VoData *data, VoTag *tag, int size)
 {
-    buffer->count = 0;
-    buffer->data = data;
-    buffer->tag = tag;
-    buffer->size = size;
-    buffer->write = 0;
+    f->count = 0;
+    f->data = data;
+    f->tag = tag;
+    f->size = size;
+    f->write = 0;
 
     for (int slot = 0; slot < size; slot++)
-        buffer->tag[slot].status = VO_TAG_EMPTY;
+        f->tag[slot].status = VO_TAG_EMPTY;
 }
 
-void voBufDelete(VoBuf *buffer)
+void voBufDelete(VoBuf *f)
 {
 }
 
-void voBufReset(VoBuf *buffer)
+void voBufReset(VoBuf *f)
 {
-    buffer->count = 0;
-    buffer->write = 0;
+    f->count = 0;
+    f->write = 0;
 }
 
-int voBufIsFull(VoBuf *buffer)
+int voBufIsFull(VoBuf *f)
 {
-    return buffer->count == buffer->size;
+    return f->count == f->size;
 }
 
-void voBufIncCount(VoBuf *buffer)
+void voBufIncCount(VoBuf *f)
 {
     DIntr();
-    buffer->tag[buffer->write].status = VO_TAG_FILLED;
-    buffer->count++;
-    buffer->write = (buffer->write + 1) % buffer->size;
+    f->tag[f->write].status = VO_TAG_FILLED;
+    f->count++;
+    f->write = (f->write + 1) % f->size;
     EIntr();
 }
 
-VoData *voBufGetData(VoBuf *buffer)
+VoData *voBufGetData(VoBuf *f)
 {
-    if (voBufIsFull(buffer))
+    if (voBufIsFull(f))
         return 0;
 
-    return &buffer->data[buffer->write];
+    return &f->data[f->write];
 }
 
-int voBufIsEmpty(VoBuf *buffer)
+int voBufIsEmpty(VoBuf *f)
 {
-    return buffer->count == 0;
+    return f->count == 0;
 }
 
-VoTag *voBufGetTag(VoBuf *buffer)
+VoTag *voBufGetTag(VoBuf *f)
 {
-    if (voBufIsEmpty(buffer))
+    if (voBufIsEmpty(f))
         return 0;
 
-    int slot = (buffer->write - buffer->count + buffer->size) % buffer->size;
-    return &buffer->tag[slot];
+    int slot = (f->write - f->count + f->size) % f->size;
+    return &f->tag[slot];
 }
 
-void voBufDecCount(VoBuf *buffer)
+void voBufDecCount(VoBuf *f)
 {
-    if (buffer->count > 0)
-        buffer->count--;
+    if (f->count > 0)
+        f->count--;
 }

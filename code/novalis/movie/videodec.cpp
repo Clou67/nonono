@@ -39,31 +39,31 @@ int videoDecBeginPut(VideoDec *decoder, unsigned char **first, int *firstSize, u
     return viBufBeginPut(&decoder->vibuf, first, firstSize, second, secondSize);
 }
 
-void videoDecEndPut(VideoDec *decoder, int size)
+void videoDecEndPut(VideoDec *vd, int size)
 {
-    viBufEndPut(&decoder->vibuf, size);
+    viBufEndPut(&vd->vibuf, size);
 }
 
-void videoDecReset(VideoDec *decoder)
+void videoDecReset(VideoDec *vd)
 {
-    decoder->state = 0;
+    vd->state = 0;
 }
 
-int videoDecDelete(VideoDec *decoder)
+int videoDecDelete(VideoDec *vd)
 {
-    viBufDelete(&decoder->vibuf);
-    videoDecRelease(&decoder->mpeg);
+    viBufDelete(&vd->vibuf);
+    videoDecRelease(&vd->mpeg);
     return 1;
 }
 
-void videoDecAbort(VideoDec *decoder)
+void videoDecAbort(VideoDec *vd)
 {
-    decoder->state = 1;
+    vd->state = 1;
 }
 
-unsigned int videoDecGetState(VideoDec *decoder)
+unsigned int videoDecGetState(VideoDec *vd)
 {
-    return decoder->state;
+    return vd->state;
 }
 
 unsigned int videoDecSetState(VideoDec *decoder, unsigned int state)
@@ -83,9 +83,9 @@ int videoDecPutTs(VideoDec *decoder, long pts, long dts, unsigned char *position
     return viBufPutTs(&moviePlayer->video_dec.vibuf, &timestamp);
 }
 
-int videoDecInputCount(VideoDec *decoder)
+int videoDecInputCount(VideoDec *vd)
 {
-    return viBufCount(&decoder->vibuf);
+    return viBufCount(&vd->vibuf);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/movie/videodec", func_0031CBA8);
@@ -97,7 +97,7 @@ enum {
     VIDEO_DECODER_FLUSHING = 2
 };
 
-int videoDecFlush(VideoDec *decoder)
+int videoDecFlush(VideoDec *vd)
 {
     unsigned char sequenceEnd[4] = { 0x00, 0x00, 0x01, 0xB7 };
     unsigned char *first;
@@ -105,7 +105,7 @@ int videoDecFlush(VideoDec *decoder)
     unsigned char *second;
     int secondSize;
 
-    videoDecBeginPut(decoder, &first, &firstSize, &second, &secondSize);
+    videoDecBeginPut(vd, &first, &firstSize, &second, &secondSize);
 
     if (firstSize + secondSize < (int)sizeof(sequenceEnd))
         return 0;
@@ -115,21 +115,21 @@ int videoDecFlush(VideoDec *decoder)
                           (unsigned char *)(((unsigned int)second & MPEG_PHYSICAL_ADDRESS_MASK) | MPEG_UNCACHED_ACCELERATED_BASE),
                           secondSize, sequenceEnd, sizeof(sequenceEnd), 0, 0);
     videoDecEndPut(&moviePlayer->video_dec, copied);
-    viBufFlush(&decoder->vibuf);
+    viBufFlush(&vd->vibuf);
 
-    if (decoder->state == 0)
-        decoder->state = VIDEO_DECODER_FLUSHING;
+    if (vd->state == 0)
+        vd->state = VIDEO_DECODER_FLUSHING;
     return 1;
 }
 #else
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/movie/videodec", videoDecFlush__FP8VideoDec);
 #endif
 
-int videoDecIsFlushed(VideoDec *decoder)
+int videoDecIsFlushed(VideoDec *vd)
 {
     int flushed = 0;
-    if (videoDecInputCount(decoder) == 0)
-        flushed = videoDecIsDecoderEmpty(&decoder->mpeg) > 0;
+    if (videoDecInputCount(vd) == 0)
+        flushed = videoDecIsDecoderEmpty(&vd->mpeg) > 0;
     return flushed;
 }
 
@@ -138,9 +138,9 @@ enum {
     VIDEO_DECODER_FINISHED = 3
 };
 
-void videoDecMain(void *argument)
+void videoDecMain(void *pvd)
 {
-    VideoDec *decoder = (VideoDec *)argument;
+    VideoDec *decoder = (VideoDec *)pvd;
     viBufReset(&decoder->vibuf);
     voBufReset(&moviePlayer->vo_buf);
     decBs0(decoder);
@@ -154,11 +154,11 @@ void videoDecMain(void *argument)
 void setImageTag(unsigned int (*packets)[2], VoData *frame, int width, int height);
 void printf_stub(const char *format, ...);
 
-int decBs0(VideoDec *decoder)
+int decBs0(VideoDec *vd)
 {
     int result = 1;
-    while (!sceMpegIsEnd(&decoder->mpeg)) {
-        if (videoDecGetState(decoder) == VIDEO_DECODER_ABORTED) {
+    while (!sceMpegIsEnd(&vd->mpeg)) {
+        if (videoDecGetState(vd) == VIDEO_DECODER_ABORTED) {
             result = -1;
             printf_stub("decode thread: aborted\n");
             break;
@@ -168,12 +168,12 @@ int decBs0(VideoDec *decoder)
         while ((frame = voBufGetData(&moviePlayer->vo_buf)) == 0) {
             switchThread();
         }
-        if (sceMpegGetPicture(&decoder->mpeg, frame, 0x340) < 0)
+        if (sceMpegGetPicture(&vd->mpeg, frame, 0x340) < 0)
             ErrMessage("sceMpegGetPicture() decode error");
 
-        if (decoder->mpeg.frameCount == 0) {
-            int width = decoder->mpeg.width;
-            int height = decoder->mpeg.height;
+        if (vd->mpeg.frameCount == 0) {
+            int width = vd->mpeg.width;
+            int height = vd->mpeg.height;
             for (int index = 0; index < moviePlayer->vo_buf.size; index++) {
                 setImageTag(moviePlayer->vo_buf.tag[index].v,
                             &moviePlayer->vo_buf.data[index], width, height);
@@ -183,19 +183,19 @@ int decBs0(VideoDec *decoder)
         switchThread();
     }
 
-    sceMpegReset(&decoder->mpeg);
+    sceMpegReset(&vd->mpeg);
     return result;
 }
 
 void printf_stub(const char *format, ...);
 
-int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument)
+int mpegError(sceMpeg *mp, sceMpegCbDataError *cberror, void *anyData)
 {
-    printf_stub("%s\n", data->message);
+    printf_stub("%s\n", cberror->message);
     return 1;
 }
 
-int mpegNodata(sceMpeg *mpeg, sceMpegCbData *data, void *argument)
+int mpegNodata(sceMpeg *mp, sceMpegCbData *cbdata, void *anyData)
 {
     switchThread();
     viBufAddDMA(&moviePlayer->video_dec.vibuf);

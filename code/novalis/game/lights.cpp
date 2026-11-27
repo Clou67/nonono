@@ -66,7 +66,7 @@ int CreatePointLightRGB(Vec4 &pos, float radius, float backlight, int rgb)
     return index;
 }
 
-int CreatePointLight(Vec4 &pos, float radius, float backlight, float red, float green, float blue)
+int CreatePointLight(Vec4 &pos, float radius, float backlight, float r, float g, float b)
 {
     PointLight *light;
     PL_Data *data;
@@ -88,9 +88,9 @@ int CreatePointLight(Vec4 &pos, float radius, float backlight, float red, float 
 
     CopyVec4Inline(&light->pos, &pos);
     light->pos.w = radius;
-    light->color.x = red;
-    light->color.y = green;
-    light->color.z = blue;
+    light->color.x = r;
+    light->color.y = g;
+    light->color.z = b;
     light->color.w = backlight;
 
     FastMemSetZero(data, sizeof(PL_Data));
@@ -100,12 +100,12 @@ int CreatePointLight(Vec4 &pos, float radius, float backlight, float red, float 
     return index;
 }
 
-void DeletePointLight(int light)
+void DeletePointLight(int index)
 {
-    DetachPointLight(light);
+    DetachPointLight(index);
 
-    FastMemSetZero(&PointLights[light], sizeof(PointLight));
-    FastMemSetZero(&PointLightData[light], sizeof(PL_Data));
+    FastMemSetZero(&PointLights[index], sizeof(PointLight));
+    FastMemSetZero(&PointLightData[index], sizeof(PL_Data));
 }
 
 void UpdatePointLights(void)
@@ -119,7 +119,7 @@ void UpdatePointLights(void)
     DirectionalLights[CAMERA_LIGHT].color1.z = 0.8f;
     DirectionalLights[CAMERA_LIGHT].color1.w = -0.3f;
 
-    yaw = FastAddRots(GameCamera.rot.radius, -0.8f);
+    yaw = FastAddRots(GameCamera.rot.z, -0.8f);
     DirectionalLights[CAMERA_LIGHT].direction1.x = FastAngleSinF(yaw) * 0.866f;
     DirectionalLights[CAMERA_LIGHT].direction1.y = FastAngleCosF(yaw) * 0.866f;
     DirectionalLights[CAMERA_LIGHT].direction1.z = -0.5f;
@@ -268,7 +268,7 @@ void RefreshPointLight(int light)
     AttachPointLight(light);
 }
 
-void DetachPointLight(int light)
+void DetachPointLight(int index)
 {
     PL_Data *data;
     unsigned short slots;
@@ -277,13 +277,13 @@ void DetachPointLight(int light)
     unsigned short slot2;
     unsigned short slot3;
 
-    data = &PointLightData[light];
+    data = &PointLightData[index];
 
     // The light's index as it appears in each of the four slots.
-    slot0 = light;
-    slot1 = light << 4;
-    slot2 = light << 8;
-    slot3 = light << 12;
+    slot0 = index;
+    slot1 = index << 4;
+    slot2 = index << 8;
+    slot3 = index << 12;
 
     // Take the light out of its slot and shift the slots above it down.
     {

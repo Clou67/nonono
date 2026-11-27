@@ -6,22 +6,22 @@
 #include "vtbl.h"
 #include "camera.h"
 
-void Camera_ClearPolar(float *polar)
+void Camera_ClearPolar(Polar *polar)
 {
-    polar[0] = 0.0f;
-    polar[1] = 0.0f;
-    polar[2] = 0.0f;
-    polar[3] = 0.0f;
-    polar[4] = 0.0f;
+    polar->azimuth = 0.0f;
+    polar->elevation = 0.0f;
+    polar->radius = 0.0f;
+    polar->rotY = 0.0f;
+    polar->rotZ = 0.0f;
 }
 
-void Cam_CopyRotWrapped(float *out, float *polar, float yawOffset)
+void Cam_CopyRotWrapped(Polar *out, Polar *polar, float yawOffset)
 {
-    out[0] = FastAddRots(polar[0], yawOffset);
-    out[1] = polar[1];
-    out[2] = polar[2];
-    out[3] = polar[3];
-    out[4] = polar[4];
+    out->azimuth = FastAddRots(polar->azimuth, yawOffset);
+    out->elevation = polar->elevation;
+    out->radius = polar->radius;
+    out->rotY = polar->rotY;
+    out->rotZ = polar->rotZ;
 }
 
 struct CameraControlBlock {
@@ -77,24 +77,24 @@ void camera_HandleCollWithHero(UpdateCam *camera)
     }
 }
 
-void Camera_runSetupToNewCam(UpdateCam *camera)
+void Camera_runSetupToNewCam(UpdateCam *pCam)
 {
-    void (*callback)(UpdateCam *) = cameraupdate_vtbl[camera->funcIdx].activate;
+    void (*callback)(UpdateCam *) = cameraupdate_vtbl[pCam->funcIdx].activate;
 
     if (callback)
-        callback(camera);
+        callback(pCam);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_switchtoNewCam);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_ActivationCheckPriority);
 
-void Camera_Exit(UpdateCam *camera)
+void Camera_Exit(UpdateCam *pCam)
 {
-    void (*callback)(UpdateCam *) = cameraupdate_vtbl[camera->funcIdx].exit;
+    void (*callback)(UpdateCam *) = cameraupdate_vtbl[pCam->funcIdx].exit;
 
     if (callback)
-        callback(camera);
+        callback(pCam);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", UpdateAllCameras);

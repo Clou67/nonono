@@ -3,6 +3,7 @@
 
 struct Vec4;
 struct Mtx4;
+struct Mtx3;
 struct BSphere;
 
 // Stops in the debugger; used when a save is bigger than its buffer.
@@ -45,12 +46,19 @@ float FastVec3Length2(Vec4 *vector);
 float FastMaxF(float first, float second);
 // Rotates vector by the 3x3 part of matrix.
 void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
+void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx3 *matrix);
 // DMAs quadwords from the scratchpad at spr_address into main memory.
 void FastFromSpr(void *destination, int spr_address, int quadwords);
 
 void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
 void FastVecZero(Vec4 *vector);
+void FastVecDivScalar(Vec4 *out, Vec4 *vector, float divisor);
+// Scales a joint position from the scratchpad into a working vector.
+void ScaleJointPosition(Vec4 *out, Vec4 *joint, float scale);
 void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
+void FastVec3RSqrtScale(Vec4 *out, Vec4 *vector, float length);
+void FastVec4ScaleLength(Vec4 *out, Vec4 *vector, float maximum);
+int FastBsphereCheck(Vec4 *sphere, float radius);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 
 void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);

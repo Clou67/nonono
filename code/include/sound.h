@@ -1,6 +1,9 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+#include "moby.h"
+#include "volume.h"
+
 void sound_LoadBankCB(unsigned int bank, unsigned long userData);
 
 void snd_PauseAllSoundsInGroup(int group);
@@ -29,55 +32,64 @@ struct SoundDef {
 
 struct Vec4;
 
-struct SoundData {
-    char unk_00[8];
-    SoundDef *pSoundDef;
-};
-
-struct MobyInstance;
-
 struct SoundVoice {
-    unsigned char unk_00[4];
-    unsigned char inUse;
-    unsigned char unk_05[9];
+    unsigned int handle; // 0x00
+    unsigned char status;
+    unsigned char flags;
+    unsigned char unk_06[2];
+    SoundDef *pSoundDef;
+    unsigned short soundIndex;
     short soundId;
-    int volume;
+    int volume; // 0x10
     int pitch_bend;
     MobyInstance *pMoby;
-    unsigned char unk_1C[0x54];
+    int ownerContext;
+    Vec4 pos; // 0x20
+    Vec4 offset;
+    unsigned int occlpos; // 0x40
+    unsigned char occl[36];
+    unsigned char unk_68[8];
 };
 
-// An ambient sound placed in the level (PS3 names).
+// An ambient sound placed in the level (PS3 / DL names).
+struct SoundInstance;
+typedef void (*SoundUpdateFunc)(SoundInstance *sound);
+
 struct SoundInstance {
     short oClass;
     short mClass;
-    void *pUpdate;
+    SoundUpdateFunc pUpdate;
     // An index into the gameplay file's pVar table until the level is loaded.
-    int pVar;
-    char unk_0C[0x84];
+    void *pVar;
+    float range; // 0x0C
+    Cuboid cuboid; // 0x10
 };
 
 struct SoundAudioState {
-    union {
-        struct {
-            unsigned char unk_00[0x48];
-            int group_volume[6];
-            int reverb_owner;
-            int reverb_depth;
-            unsigned char reverb_type;
-            unsigned char reverb_delay;
-            unsigned char reverb_feedback;
-            unsigned char reverb_commands;
-            int pending_commands;
-            SoundVoice voices[30];
-        };
+    Vec4 cam_history[4]; // 0x00
+    int cam_history_pos;
+    int load_busy;
+    int group_volume[6]; // 0x48
+    int reverb_owner;
+    int reverb_depth;
+    unsigned char reverb_type;
+    unsigned char reverb_delay;
+    unsigned char reverb_feedback;
+    unsigned char reverb_commands;
+    int pending_commands;
+    SoundVoice voices[30]; // 0x70
+    int soundInstanceCnt; // 0xD90
+    SoundInstance *soundInstances;
+    int occlFrame;
+    int unk_D9C;
+    Vec4 occlSamples[6]; // 0xDA0
+};
 
-        // The same memory as voice-sized rows: the header is row 0 and voices[n] is row n + 1.
-        SoundVoice rows[31];
-    };
-
-    int soundInstanceCnt;               // 0xD90
-    SoundInstance *soundInstances;      // 0xD94
+// Retail indexes from the pool base and accesses a voice one stride later.
+// This is an overlapping access window, not an array of headers or a second pool layout.
+struct SoundVoiceWindow {
+    unsigned char preceding[sizeof(SoundVoice)];
+    SoundVoice voice;
 };
 
 extern SoundAudioState audioState;
@@ -91,7 +103,7 @@ int sound_SetPitch(int handle, int pitch);
 
 void sound_SetReverb(int owner, int type, int depth, int delay, int feedback);
 
-int sound_GetFadeChannel(SoundData *channel, Vec4 *position);
+int sound_GetFadeChannel(SoundVoice *channel, Vec4 *position);
 
 void sound_KillChannel(int handle);
 int sound_PlayMobySound(int sound, int flags, MobyInstance *moby);

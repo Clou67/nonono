@@ -1,17 +1,17 @@
 #include "common.h"
 #include "framebuf.h"
 
-void SetupFS_AA_buffer(int drawWidth, int drawHeight, int dispWidth, int dispHeight, int offsetX, int offsetY)
+void SetupFS_AA_buffer(int bx, int by, int sx, int sy, int ofx, int ofy)
 {
     qword *regs;
 
     pAAbuff = &aaBuff;
-    aaBuff.drawW = drawWidth;
-    aaBuff.drawH = drawHeight;
-    aaBuff.dispW = dispWidth;
-    aaBuff.dispH = dispHeight;
-    aaBuff.dispOfsX = offsetX;
-    aaBuff.dispOfsY = offsetY;
+    aaBuff.drawW = bx;
+    aaBuff.drawH = by;
+    aaBuff.dispW = sx;
+    aaBuff.dispH = sy;
+    aaBuff.dispOfsX = ofx;
+    aaBuff.dispOfsY = ofy;
     aaBuff.update_context = 0;
     aaBuff.dispPSM = 0;
     aaBuff.drawPSM = 0;
@@ -21,7 +21,7 @@ void SetupFS_AA_buffer(int drawWidth, int drawHeight, int dispWidth, int dispHei
     aaBuff.drawFBP = GSmemDraw >> 13;
     aaBuff.zFBP = GSmemZbuf >> 13;
 
-    sceGsSetDefDispEnv(&aaBuff.disp, 0, dispWidth, dispHeight, offsetX, offsetY);
+    sceGsSetDefDispEnv(&aaBuff.disp, 0, sx, sy, ofx, ofy);
     pAAbuff->disp.dispfb.FBP = aaBuff.dispFBP;
 
     sceGsSetDefDrawEnv(&pAAbuff->drawLarge, aaBuff.drawPSM, aaBuff.drawW, aaBuff.drawH, 3, aaBuff.zPSM);
@@ -156,9 +156,9 @@ void SetupFS_AA_buffer(int drawWidth, int drawHeight, int dispWidth, int dispHei
     }
 }
 
-void SetBackgroundColor(int red, int green, int blue)
+void SetBackgroundColor(int r, int g, int b)
 {
-    QWORD_HI(aaClearRegs[AA_CLEAR_REGS_RGBAQ]) = (long)red | ((long)green << 8) | ((long)blue << 16) | 0x80000000L;
+    QWORD_HI(aaClearRegs[AA_CLEAR_REGS_RGBAQ]) = (long)r | ((long)g << 8) | ((long)b << 16) | 0x80000000L;
 }
 
 void PutDispBuffer(void)

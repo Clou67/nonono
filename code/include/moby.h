@@ -1,6 +1,12 @@
 #ifndef MOBY_H
 #define MOBY_H
 
+struct Vec3 {
+    float x;
+    float y;
+    float z;
+};
+
 // Quadword vector; the VU loads it with lq/sq, so it is 16-byte aligned.
 struct Vec4 {
     float x;
@@ -16,6 +22,12 @@ struct Mtx4 {
     Vec4 v3;
 };
 
+struct Mtx3 {
+    Vec4 v0;
+    Vec4 v1;
+    Vec4 v2;
+};
+
 struct BSphere {
     float x;
     float y;
@@ -27,11 +39,25 @@ enum { COLLPRIM_JOINT = 2, COLLPRIM_PILL = 3, COLLPRIM_CAPSULE = 4 };
 
 struct JointPair { short a; short b; };
 
+enum { COLLPRIM_RANDOM_POINTS = 0x20000, COLLPRIM_LAST = 0x80000000 };
+
+union CollPrimShape {
+    float length;
+    int joint;
+    JointPair ends;
+};
+
 struct CollPrim {
-    unsigned char collType;
-    unsigned char _pad01;
-    short sets;
     union {
+        unsigned int flags;
+        struct {
+            unsigned char collType;
+            unsigned char _pad01;
+            short sets;
+        };
+    };
+    union {
+        CollPrimShape shape;
         float length;
         int joint;
         struct {
@@ -50,6 +76,8 @@ struct MobyCollPrims {
     short primSetB;
     int unk04;
     int count;
+    int unk0C;
+    CollPrim primitives[0]; // 0x10
 };
 
 struct MobySeqFrame {
@@ -113,6 +141,7 @@ struct SoundDef;
 // The animation pointer table follows the 0x48-byte RaC1 class header.
 struct MobyInstance;
 typedef int (*MobyClassCallback)(MobyInstance *moby);
+typedef void (*MobyUpdateFunc)(MobyInstance *moby);
 
 struct MobyClassCallbacks {
     int unk_00;
@@ -166,7 +195,7 @@ struct Manipulator {
     int jointId;
     Manipulator *pChain;
     float interp;
-    Vec4 rot;
+    Vec4 q; // Quaternion in x/y/z/w representation (DL: q).
     Vec4 scale;
     Vec4 trans;
 };
@@ -195,6 +224,8 @@ enum MobyModeBit {
 // A moby (game object) instance, 0x100 bytes.
 struct AnimLayer;
 
+enum { MOBY_ANIMATION_ENDED = 2 };
+
 struct MobyInstance {
     BSphere bSphere;
     Vec4 pos;
@@ -203,10 +234,10 @@ struct MobyInstance {
     unsigned char mClass;
     unsigned char alpha;
     MobyClass *pClass;
-    void *pChain;
+    MobyInstance *pChain;
     float scale;
     unsigned char updateDistance;
-    unsigned char enabled;
+    unsigned char drawn; // 0x31: visibility from the draw pass, not an enable switch
     short drawDistance;
     unsigned short modeBits;
     unsigned short occlIndex;
@@ -229,11 +260,11 @@ struct MobyInstance {
     Manipulator *pManipulators;
     void *pPreviousAnimationData;
     void *pCurrentAnimationData;
-    unsigned char unk70;
+    unsigned char animationFlags;
     unsigned char unk71;
     unsigned char lodTransition;
     unsigned char metal;
-    void *pUpdate;
+    MobyUpdateFunc pUpdate;
     void *pVar;
     unsigned char soundDesired;
     unsigned char soundChannel;
@@ -248,7 +279,7 @@ struct MobyInstance {
         unsigned short *collision;
         MobyCollPrims *pCollPrims;
     };
-    float *collisionMesh;
+    unsigned int collisionDisable; // 0x98: one disable bit per collision primitive
     int collQueryStamp;
     union {
         unsigned int collCount;
@@ -259,7 +290,7 @@ struct MobyInstance {
             unsigned char gridMaxY;
         };
     };
-    unsigned char damage;
+    unsigned char hitSlot; // 0xA4: collision hit-message slot, 0xFF for none
     unsigned char previousAnimationId;
     unsigned short oClass;
     int handle;
@@ -267,9 +298,10 @@ struct MobyInstance {
     unsigned char levelFlagIdx;
     unsigned char unkB1;
     unsigned short uid;
-    char unkB4[4];
-    MobyInstance *unkB8;
-    unsigned char setByGroup;
+    short bolts; // 0xB4: adjusted bolt drop
+    short baseBolts; // 0xB6: unadjusted bolt drop
+    MobyInstance *pParent; // 0xB8: spawner
+    unsigned char command; // 0xBC: command supplied by group and scripted events
     unsigned char shadowIndex;
     char unkBE[2];
     Mtx4 transform;
@@ -283,9 +315,11 @@ void SetLevelFlag(int flag);
 extern int StashedMobyClassDists[];
 
 // Loaded moby classes by mClass, the next free mClass and each mClass's oClass.
-extern MobyClass *MobyClasses[];
+enum { MOBY_CLASS_CAPACITY = 0xE0 };
+extern MobyClass *MobyClasses[MOBY_CLASS_CAPACITY];
+extern MobyUpdateFunc MobyClassUpdate[MOBY_CLASS_CAPACITY];
 extern int MobyClassIndex;
-extern short MobyOClasses[];
+extern short MobyOClasses[MOBY_CLASS_CAPACITY];
 
 void SetupMobyFunctions(int oClass);
 
@@ -341,5 +375,7 @@ void MB_UpdateAnimLayer(MobyInstance *moby, AnimLayer *layer);
 extern Vec4 LightDirection __attribute__((section(".data")));
 void MB_GetLightDirection(MobyInstance *moby, Vec4 *out);
 void MB_UpdateLightAngle(void);
+
+void MobyComputeJointMtxs(MobyInstance *moby, int count, Mtx4 *out);
 
 #endif

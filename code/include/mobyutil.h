@@ -4,9 +4,72 @@
 enum { MOBY_GROUP_INDEX_MASK = 0x7FFF };
 
 #include "moby.h"
+#include "volume.h"
 
 struct MobyPath;
 struct Manipulator;
+
+enum KickFlags { KICK_NO_TURN = 4, KICK_STOP_AT_LEDGE = 0x10, KICK_STOP_AFTER_COLLISION = 0x20 };
+
+enum KickResult {
+    KICK_GROUNDED = 1,
+    KICK_COLLISION = 2,
+    KICK_ANIMATION_ENDED = 0x40,
+    KICK_OUT_OF_BOUNDS = 0x100
+};
+
+// Shared PS2 knockback record; field names from DL's KickVars debug type.
+struct KickVars {
+    Vec4 kickVel; // 0x00
+    float grav; // 0x10
+    float drag;
+    float xySpeed;
+    float zSpeed;
+    int radius; // 0x20: in 1/1024 world units
+    int flag;
+    float zOfs;
+    short timeout; // 0x2C
+    unsigned char effectType;
+    unsigned char effectPrimMask;
+    float xyBounceDamp;
+    float zBounceDamp;
+    float wallBounceDamp;
+    unsigned char kickActive;
+    unsigned char type;
+    short stage;      // 0x3E
+    float faceAng; // 0x40
+    float faceSpeed;
+    float faceLimit;
+    float minXySpeed;
+    float peakFrame; // 0x50
+    float landFrame;
+    float prevZHeight; // 0x58
+    float hitWater; // 0x5C
+};
+
+enum BoltDropFlags {
+    BOLT_DROP_INHERIT_VELOCITY = 4,
+    BOLT_DROP_THREE_COINS = 8,
+    BOLT_DROP_UNCOUNTED = 0x20
+};
+
+struct BoltSourceVars {
+    unsigned char unk_00[0x20];
+    Vec4 velocity; // 0x20: inherited by spawned bolts
+};
+
+// Adaptive drop statistics count frames and bolts in uncleared missions.
+extern int CountAdaptiveBolts;
+extern int AdaptiveBoltFrames;
+extern int AdaptiveBoltCount;
+extern char BoltScaleFiveMessage[];
+extern char BoltIntegerScaleFormat[];
+extern char BoltFloatScaleFormat[];
+extern MobyPath *Splines[];
+
+int MB_SplineIntersect(int splineIndex, Vec4 *start, Vec4 *end, Vec4 *intersection);
+void SpawnBoltByValue(MobyInstance *moby, Vec4 *position, Vec4 *velocity, int flags, int value, int counted);
+void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int flags, int splineIndex);
 
 // Trail of translucent copies that follow a moby.
 struct MotionBlur {
@@ -48,9 +111,9 @@ struct MoveVars {
 
 int MB_RequestHelpMessage(int selector, int messageId);
 
-void DeleteMoby(MobyInstance *moby);
-void AttachManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator);
-void DetachManipulator(MobyInstance *moby, Manipulator *manipulator);
+void DeleteMoby(MobyInstance *pMoby);
+void AttachManipulator(MobyInstance *pMoby, int animJoint, Manipulator *pManip);
+void DetachManipulator(MobyInstance *pMoby, Manipulator *pManip);
 void MB_ToastMessageByIndex(int level);
 extern MobyInstance *MobyInstances;
 
@@ -58,15 +121,33 @@ void CreateMotionBlur(MobyInstance *pMoby, MotionBlur *blur);
 void DeleteMotionBlur(MotionBlur *blur);
 void MB_ToastMessage(int message, int time);
 void MB_ToggleManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator, float scale);
-float MB_WrapRot(float angle);
+float MB_WrapRot(float ang);
 int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment, float *fraction, int wrap, float limit, float step, float tolerance);
 void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group);
 void MB_InitMoveVars(MoveVars *vars);
 
+enum MoveFlags {
+    MOVE_NO_GRAVITY = 1,
+    MOVE_USE_HEADING = 4,
+    MOVE_ALLOW_FALLING = 8,
+    MOVE_GROUND_QUERY = 0x20
+};
+
+enum MoveResult {
+    MOVE_WALL = 1,
+    MOVE_BLOCKED = 2,
+    MOVE_ARRIVED = 4,
+    MOVE_FALLING = 8,
+    MOVE_UNSAFE_GROUND = 0x20
+};
+
+int GetGroundZ(Vec4 *position, MobyInstance *ignore, int flags, float down, float up);
+int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement, float speedScale);
+
 void MB_UnlockLevel(int level);
 void MB_UnlockItem(int item, char equip);
 
-float Lerp(float from, float to, float weight);
+float Lerp(float val0, float val1, float alpha);
 
 struct COLL_DAM_IN {
     Vec4 momentum;
@@ -120,20 +201,14 @@ struct COLLOUTPUT {
 
 extern COLLOUTPUT CollOutput;
 
-struct MobyVolume {
-    Vec4 axisX;
-    Vec4 axisY;
-    Vec4 axisZ;
-    Vec4 origin;
-    Mtx4 inverseTransform;
-};
+
 
 struct Vec4;
 struct Mtx4;
 
 void MB_SetZBoundsFromPos(MobyInstance *moby, float z);
 
-int TweenColor(int from, int to, float fraction);
+int TweenColor(int col0, int col1, float step);
 
 int DecAlpha(int *rgba, int decrement);
 
@@ -146,6 +221,7 @@ void *MB_GetPvarsIfMobyHasThem(MobyInstance *moby);
 void MB_CopyHeroLights(MobyInstance *moby);
 
 int MB_randInt(int limit);
+int MB_randPrimPoints(MobyInstance *pMoby, float pointDensity, int maxPoints, Vec4 *pPoints, int primMask);
 
 int MB_randRange(int low, int high);
 
@@ -155,7 +231,7 @@ float MB_randRangeSigned(float low, float high);
 
 float MB_randRot(void);
 
-void MB_randVector(Vec4 *vector, float low, float high);
+void MB_randVector(Vec4 *v, float min, float max);
 
 void SetCollDamIn(COLL_DAM_IN &damage, MobyInstance *damager, int damageFlags, float damageHp);
 
@@ -167,7 +243,7 @@ int MB_GetPVarsField10(MobyInstance *moby);
 
 void MB_TransformToQuat(Vec4 *quaternion, Mtx4 *transform);
 
-float Delt(float &value, float target, float step);
+float Delt(float &val, float target, float speed);
 
 void MB_AxisAngleToQuat(Vec4 *quaternion, Vec4 *axis, float angle);
 
@@ -198,7 +274,7 @@ int MB_GetUnspentGoldBolts(void);
 
 void MB_SetGroupField(int group, int value);
 
-float MB_CosineInterpolate(float start, float end, float weight);
+float MB_CosineInterpolate(float a, float b, float x);
 
 float MB_lerpRotCosine(float start, float end, float weight);
 
@@ -212,7 +288,7 @@ void MB_BobMotion(MobyInstance *moby, float *phase, float *offset, float height,
 
 void MB_SphericalToVector(Vec4 *out, float radius, float azimuth, float elevation);
 
-void MB_randSphere(Vec4 *out, float minimum, float maximum);
+void MB_randSphere(Vec4 *v, float minRad, float maxRad);
 
 void MB_randOffset(Vec4 *vector, float range);
 
@@ -222,13 +298,13 @@ void MB_QuatToEuler(Vec4 *out, Vec4 *angles);
 
 void MB_RotateQuatAxisAngle(Vec4 *out, Vec4 *vector, Vec4 *axis, float angle);
 
-unsigned int Float_To_RGBA(float red, float green, float blue, float alpha);
+unsigned int Float_To_RGBA(float r, float g, float b, float alpha);
 
 unsigned int ReorderRGB(unsigned int rgba, int mask);
 
 void MB_SetStateByGroup(int group, int value);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float stepHeight, int radiusFixed, int flags);
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags);
 
 void MB_RotateMoby(MobyInstance *moby, float xAngle, float yAngle, float zAngle);
 
@@ -240,13 +316,13 @@ int MB_HasCollPrims(MobyInstance *moby);
 
 float MB_CollLineDown(Vec4 *position, float height, int flags);
 
-float DeltAng(float &angle, float target, float speed, int direction);
+float DeltAng(float &val, float target, float speed, int turnDir);
 
-float AccelDelt(float &value, float target, float &speed, float gain, float damping, float limit);
+float AccelDelt(float &val, float target, float &speed, float gain, float damp, float limit);
 
 float MB_RoundToDecimals(float value, int digits);
 
-float SubRots(float target, float angle, int direction);
+float SubRots(float rot1, float rot2, int turnDir);
 
 int MB_SolveQuad(float first, float second, float third, float *largerRoot, float *smallerRoot);
 
@@ -258,17 +334,17 @@ void GainDampLimit(float delta, float &speed, float gain, float damping, float l
 
 void MB_CosineInterpolateAngVec(float fraction, Vec4 *out, Vec4 *from, Vec4 *to);
 
-int MB_isCrate(MobyInstance *moby);
+int MB_isCrate(MobyInstance *pMoby);
 
 void MB_DistributeBoltsNearHero(MobyInstance *moby);
 
-float AccelDeltAng(float &angle, float target, float &speed, float gain, float damping, float limit, int direction);
+float AccelDeltAng(float &val, float target, float &speed, float gain, float damp, float limit, int turnDir);
 
 bool MB_isAmmo(MobyInstance *moby);
 
 int MB_HeroStandingOnMoby(MobyInstance *moby);
 
-int MB_MayaFrameTrigger(MobyInstance *moby, float frame);
+int MB_MayaFrameTrigger(MobyInstance *pMoby, float frameTrig);
 
 void MB_SetZBoundsFromGround(MobyInstance *moby);
 
@@ -291,21 +367,38 @@ void MB_SetAnimationNoBlend(MobyInstance *moby, int animation, int frame);
 void MB_SetAnimation(MobyInstance *moby, int animation, int frame, int blend);
 
 // The frame the moby is currently showing, including the blend fraction.
+enum {
+    EXPLOSION_DAMAGE_FLAGS = 0x810001,
+    EXPLOSION_DAMAGE_CLASS = 2,
+    EXPLOSION_DAMAGE_STRENGTH = 1
+};
+
+MobyInstance *Spawn_Moby122(Vec4 *pos, Vec4 *vel, int timer, int type, int reorder);
+MobyInstance *Spawn_Moby112(MobyInstance *pParent, Vec4 *pos, Vec4 *vel, float scale, int lifeSpan, int r, int g, int b, int a);
+void MB_genericExplosion(MobyInstance *pMoby, void *unused, Vec4 *pos, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float scale, int sound, float pointlight_radius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap);
+
 float MB_BlendAnimFrame(MobyInstance *moby);
+int MB_UpdateKick(MobyInstance *moby, KickVars *motion);
+void MB_MistDeathEffect(MobyInstance *moby, Vec4 *velocity, int primitiveMask);
+void M775_SpawnSplash(Vec4 *position, float scale);
+void OrganicDeltAngSpeed(MobyInstance *moby, float *speed, float target, float gain, float damping, float limit);
+int CollHotspot(void);
+int CollMobySphere(float radius, Vec4 *center, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
+int CollSphere(Vec4 *center, float radius, int flags, MobyInstance *ignore);
+void CollDamageMobyDirect_2(MobyInstance *target, MobyInstance *damager, int flags, Vec4 *position, Vec4 *momentum, float damage);
+extern MobyInstance *HeroSphereQueryResults[];
 void Map_RegisterLevelObject(MobyInstance *moby, int object);
 void SetupSpaceShipVars(MobyInstance *moby);
 void UpdateMoby_Spaceship(MobyInstance *moby);
 
 // The level's trigger volumes, from the gameplay file.
-extern MobyVolume *CuboidVolumes;
-extern MobyVolume *SphereVolumes;
-extern MobyVolume *CylinderVolumes;
+extern Cuboid *CuboidVolumes;
+extern Sphere *SphereVolumes;
+extern Cylinder *CylinderVolumes;
 extern AnimLayer AnimLayerPool[];
 
 float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int axis);
 
-void CollDamageMobyDirect_2(MobyInstance *moby, int damage, int flags, Vec4 *position,
-                            Vec4 *direction, float scale);
 
 // Four signed bytes: xyz normalized to the largest component, plus a shared scale.
 void MB_compressVector(Vec4 *vector, unsigned int *packed);

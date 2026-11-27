@@ -56,7 +56,7 @@ int audioDecCreate(_AudioDec *decoder, unsigned char *buffer, int buffer_size, u
     return 1;
 }
 
-int audioDecDelete(_AudioDec *decoder)
+int audioDecDelete(_AudioDec *ad)
 {
     snd_CloseMovieSound();
     return 1;
@@ -64,25 +64,25 @@ int audioDecDelete(_AudioDec *decoder)
 
 TEXT_PADDING(0x27BD0010, 0);
 
-void audioDecStart(_AudioDec *decoder)
+void audioDecStart(_AudioDec *ad)
 {
-    snd_StartMovieSound(decoder->iopBuff,
-                        (decoder->iopBuffSize / ADPCM_BLOCK_SIZE) * ADPCM_BLOCK_SIZE,
-                        decoder->iopZero, decoder->sshd.rate, decoder->sshd.ch);
-    decoder->state = AUDIO_DEC_PLAYING;
+    snd_StartMovieSound(ad->iopBuff,
+                        (ad->iopBuffSize / ADPCM_BLOCK_SIZE) * ADPCM_BLOCK_SIZE,
+                        ad->iopZero, ad->sshd.rate, ad->sshd.ch);
+    ad->state = AUDIO_DEC_PLAYING;
 }
 
-void audioDecReset(_AudioDec *decoder)
+void audioDecReset(_AudioDec *ad)
 {
     snd_ResetMovieSound();
-    decoder->state = AUDIO_DEC_HEADER_PENDING;
-    decoder->hdrCount = 0;
-    decoder->put = 0;
-    decoder->count = 0;
-    decoder->totalBytes = 0;
-    decoder->iopLastPos = 0;
-    decoder->totalBytesSent = 0;
-    decoder->iopZero = 0;
+    ad->state = AUDIO_DEC_HEADER_PENDING;
+    ad->hdrCount = 0;
+    ad->put = 0;
+    ad->count = 0;
+    ad->totalBytes = 0;
+    ad->iopLastPos = 0;
+    ad->totalBytesSent = 0;
+    ad->iopZero = 0;
 }
 
 void audioDecBeginPut(_AudioDec *decoder, unsigned char **first, int *first_size, unsigned char **second, int *second_size)
@@ -121,28 +121,28 @@ void audioDecBeginPut(_AudioDec *decoder, unsigned char **first, int *first_size
     }
 }
 
-void audioDecEndPut(_AudioDec *decoder, int size)
+void audioDecEndPut(_AudioDec *ad, int size)
 {
-    if (decoder->state == AUDIO_DEC_HEADER_PENDING) {
-        if (decoder->type != sceMpegStrDATA) {
-            int header_space = STREAM_HEADER_SIZE - decoder->hdrCount;
+    if (ad->state == AUDIO_DEC_HEADER_PENDING) {
+        if (ad->type != sceMpegStrDATA) {
+            int header_space = STREAM_HEADER_SIZE - ad->hdrCount;
             int header_bytes = header_space < size ? header_space : size;
-            decoder->hdrCount += header_bytes;
-            if (decoder->hdrCount >= STREAM_HEADER_SIZE)
-                decoder->state = AUDIO_DEC_PRESET;
+            ad->hdrCount += header_bytes;
+            if (ad->hdrCount >= STREAM_HEADER_SIZE)
+                ad->state = AUDIO_DEC_PRESET;
 
             size -= header_bytes;
         }
 
         else {
-            decoder->state = AUDIO_DEC_PRESET;
+            ad->state = AUDIO_DEC_PRESET;
         }
     }
 
-    decoder->size = decoder->size / ADPCM_BLOCK_SIZE * ADPCM_BLOCK_SIZE;
-    decoder->put = (decoder->put + size) % decoder->size;
-    decoder->count += size;
-    decoder->totalBytes += size;
+    ad->size = ad->size / ADPCM_BLOCK_SIZE * ADPCM_BLOCK_SIZE;
+    ad->put = (ad->put + size) % ad->size;
+    ad->count += size;
+    ad->totalBytes += size;
 }
 
 int audioDecIsPageFull(_AudioDec *decoder)
@@ -150,10 +150,10 @@ int audioDecIsPageFull(_AudioDec *decoder)
     return decoder->iopLastPos >= ADPCM_PAGE_SIZE;
 }
 
-void audioDecSend(_AudioDec *decoder)
+void audioDecSend(_AudioDec *ad)
 {
-    if (decoder->state != AUDIO_DEC_HEADER_PENDING)
-        sendADPCM(decoder);
+    if (ad->state != AUDIO_DEC_HEADER_PENDING)
+        sendADPCM(ad);
 }
 
 void sendToSPU(_AudioDec *decoder, unsigned char *source, int size, int offset)
@@ -177,57 +177,57 @@ void sendToSPU(_AudioDec *decoder, unsigned char *source, int size, int offset)
     snd_UpdateMovieADPCM(size, offset);
 }
 
-void sendADPCM(_AudioDec *decoder)
+void sendADPCM(_AudioDec *ad)
 {
     int available = 0;
 
-    switch (decoder->state) {
+    switch (ad->state) {
     case AUDIO_DEC_PRESET:
-        if (decoder->count < ADPCM_PAGE_SIZE)
+        if (ad->count < ADPCM_PAGE_SIZE)
             return;
 
-        available = ADPCM_PAGE_SIZE - decoder->iopLastPos;
+        available = ADPCM_PAGE_SIZE - ad->iopLastPos;
         break;
 
     case AUDIO_DEC_PLAYING:
-        available = (snd_GetMovieNAX() - decoder->spuPos) & (ADPCM_PAGE_SIZE - 1);
+        available = (snd_GetMovieNAX() - ad->spuPos) & (ADPCM_PAGE_SIZE - 1);
         break;
 
     case AUDIO_DEC_PAUSED:
         return;
     }
 
-    while (available >= ADPCM_BLOCK_SIZE && decoder->count >= decoder->sshd.ch * ADPCM_BLOCK_SIZE) {
-        for (int channel = 0; channel < decoder->sshd.ch; channel++) {
-            unsigned char *read_cursor = decoder->data + (decoder->put - decoder->count + decoder->size) % decoder->size;
-            read_cursor += channel * decoder->sshd.interSize;
+    while (available >= ADPCM_BLOCK_SIZE && ad->count >= ad->sshd.ch * ADPCM_BLOCK_SIZE) {
+        for (int channel = 0; channel < ad->sshd.ch; channel++) {
+            unsigned char *read_cursor = ad->data + (ad->put - ad->count + ad->size) % ad->size;
+            read_cursor += channel * ad->sshd.interSize;
             unsigned char *write_cursor = movieAdpcmStagingBuffer;
             int copied = 0;
 
             while (copied < ADPCM_BLOCK_SIZE) {
-                for (int byte_index = 0; byte_index < decoder->sshd.interSize; byte_index++) {
+                for (int byte_index = 0; byte_index < ad->sshd.interSize; byte_index++) {
                     *write_cursor++ = *read_cursor++;
                     copied++;
                 }
-                read_cursor += decoder->sshd.interSize * (decoder->sshd.ch - 1);
+                read_cursor += ad->sshd.interSize * (ad->sshd.ch - 1);
             }
 
-            if (decoder->spuPos + ADPCM_BLOCK_SIZE == ADPCM_PAGE_SIZE)
+            if (ad->spuPos + ADPCM_BLOCK_SIZE == ADPCM_PAGE_SIZE)
                 movieAdpcmStagingBuffer[ADPCM_BLOCK_SIZE - ADPCM_FRAME_SIZE + ADPCM_FLAGS_OFFSET] =
                     ADPCM_LOOP_END | ADPCM_LOOP_REPEAT;
 
-            if (decoder->spuPos == 0) {
+            if (ad->spuPos == 0) {
                 unsigned char *staging_buffer = movieAdpcmStagingBuffer;
                 staging_buffer[ADPCM_FLAGS_OFFSET] = ADPCM_LOOP_START | ADPCM_LOOP_REPEAT;
                 staging_buffer[ADPCM_FRAME_SIZE + ADPCM_FLAGS_OFFSET] = ADPCM_LOOP_REPEAT;
             }
-            sendToSPU(decoder, movieAdpcmStagingBuffer, ADPCM_BLOCK_SIZE,
-                      channel * ADPCM_PAGE_SIZE + decoder->spuPos);
+            sendToSPU(ad, movieAdpcmStagingBuffer, ADPCM_BLOCK_SIZE,
+                      channel * ADPCM_PAGE_SIZE + ad->spuPos);
         }
 
-        decoder->spuPos = (decoder->spuPos + ADPCM_BLOCK_SIZE) % ADPCM_PAGE_SIZE;
-        decoder->count -= decoder->sshd.ch * ADPCM_BLOCK_SIZE;
-        decoder->iopLastPos += ADPCM_BLOCK_SIZE;
+        ad->spuPos = (ad->spuPos + ADPCM_BLOCK_SIZE) % ADPCM_PAGE_SIZE;
+        ad->count -= ad->sshd.ch * ADPCM_BLOCK_SIZE;
+        ad->iopLastPos += ADPCM_BLOCK_SIZE;
         available -= ADPCM_BLOCK_SIZE;
     }
 }

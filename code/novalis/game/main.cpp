@@ -94,7 +94,7 @@ void startLevel(void)
     gameMode = GAME_MODE_SPACE;
     one = 1;
     InitLevel();
-    musicTransition.primary_track = 0;
+    musicGlobals.play.track = 0;
     InitLevelFromWad(1, 0);
     Debug.update = 0xF;
     Debug.tvMode = videoModePal;
@@ -110,7 +110,7 @@ void startLevel(void)
     sceGsSyncV(0);
     PutDispBuffer();
 
-    music_StartTrack(musicTransition.primary_track, 1, 0x400);
+    music_StartTrack(musicGlobals.play.track, 1, 0x400);
     if ((Level == one && g_SeenPlanets[3] == 0) || (Level == 0 && g_MiscLevelFlags[0] != 0)) {
         music_Unpause();
     } else {
@@ -271,7 +271,7 @@ void startLevel(void)
             music_Stop();
             InitLevelFromWad(0, reloadMode);
             gameMode = GAME_MODE_NORMAL;
-            music_StartTrack(musicTransition.primary_track, 1, 0x400);
+            music_StartTrack(musicGlobals.play.track, 1, 0x400);
             hud_InitBanks();
         }
         per = 600;

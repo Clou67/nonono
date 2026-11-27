@@ -54,13 +54,13 @@ struct _AudioDec {
 };
 
 int audioDecCreate(_AudioDec *decoder, unsigned char *buffer, int buffer_size, unsigned char *staging_buffer);
-int audioDecDelete(_AudioDec *decoder);
-void audioDecStart(_AudioDec *decoder);
-void audioDecReset(_AudioDec *decoder);
+int audioDecDelete(_AudioDec *ad);
+void audioDecStart(_AudioDec *ad);
+void audioDecReset(_AudioDec *ad);
 void audioDecBeginPut(_AudioDec *decoder, unsigned char **first, int *first_size,
                       unsigned char **second, int *second_size);
-void audioDecEndPut(_AudioDec *decoder, int size);
+void audioDecEndPut(_AudioDec *ad, int size);
 int audioDecIsPageFull(_AudioDec *decoder);
-void audioDecSend(_AudioDec *decoder);
+void audioDecSend(_AudioDec *ad);
 
 #endif

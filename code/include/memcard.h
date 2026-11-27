@@ -42,6 +42,18 @@ struct mc_data {
     int mark;       // set by memcard_RestoreData: 1 same size, -1 shorter, -2 longer
 };
 
+// Whole-save payload: block sizes followed by game data and per-level blocks.
+struct mc_save_header {
+    int gameSize;
+    int levelSize;
+};
+
+// Header enclosing a checksummed sequence of mc_chunk records.
+struct mc_block_header {
+    int size;
+    int checksum;
+};
+
 // One chunk in a save block: its id, size, then the data.
 struct mc_chunk {
     int iff;

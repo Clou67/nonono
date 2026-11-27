@@ -61,7 +61,7 @@ int playMpegMovie(int sector, int size, unsigned char *decoder_buffer, MoviePlay
     return 0;
 }
 
-int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file)
+int readMpeg(VideoDec *vd, ReadBuf *rb, StrFile *file)
 {
     const unsigned long skip_chord = ((unsigned long)PAD_START << 32)
                                    | PAD_L1 | PAD_L2 | PAD_R1 | PAD_R2;
@@ -76,7 +76,7 @@ int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file)
     FlushCache(2);
     sceGsSyncV(0);
 
-    while (decode_remaining >= MOVIE_MIN_DEMUX_SIZE && videoDecGetState(decoder) != MOVIE_DECODER_END) {
+    while (decode_remaining >= MOVIE_MIN_DEMUX_SIZE && videoDecGetState(vd) != MOVIE_DECODER_END) {
         UpdatePad();
         int skip_mode = decodeMode;
 
@@ -97,23 +97,23 @@ int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file)
             }
         }
 
-        int space = readBufBeginPut(buffer, &write_ptr);
+        int space = readBufBeginPut(rb, &write_ptr);
 
         if (read_remaining > 0 && space >= MOVIE_READ_SIZE) {
             int transferred = strFileRead(file, write_ptr, MOVIE_READ_SIZE, 0);
             read_remaining -= transferred;
-            readBufEndPut(buffer, transferred);
+            readBufEndPut(rb, transferred);
         }
 
         proceedAudio();
         switchThread();
 
-        int available = readBufBeginGet(buffer, &read_ptr);
+        int available = readBufBeginGet(rb, &read_ptr);
 
         if (available > 0) {
-            int transferred = sceMpegDemuxPssRing(&decoder->mpeg, read_ptr, available, buffer, buffer->capacity);
+            int transferred = sceMpegDemuxPssRing(&vd->mpeg, read_ptr, available, rb, rb->size);
             decode_remaining -= transferred;
-            readBufEndGet(buffer, transferred);
+            readBufEndGet(rb, transferred);
         }
 
         proceedAudio();
@@ -125,12 +125,12 @@ int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file)
         }
     }
 
-    while (!videoDecFlush(decoder)) {
+    while (!videoDecFlush(vd)) {
         proceedAudio();
         switchThread();
     }
 
-    while (!videoDecIsFlushed(decoder) && videoDecGetState(decoder) != MOVIE_DECODER_END) {
+    while (!videoDecIsFlushed(vd) && videoDecGetState(vd) != MOVIE_DECODER_END) {
         proceedAudio();
         switchThread();
     }
@@ -153,7 +153,7 @@ int isAudioOK(void)
     return audioDecIsPageFull(&moviePlayer->audio_dec);
 }
 
-int initAll(int sector, int size, int language)
+int initAll(int lsn, int size, int language)
 {
     const unsigned int dma_enable = 1;
     const unsigned int gif_acknowledge = 1 << MOVIE_GIF_DMA_CHANNEL;
@@ -193,7 +193,7 @@ int initAll(int sector, int size, int language)
     movieDecoderThread = thread_id;
     _StartThread(thread_id, &moviePlayer->video_dec);
 
-    if (!strFileBegin(&moviePlayer->str_file, sector, size)) {
+    if (!strFileBegin(&moviePlayer->str_file, lsn, size)) {
         opened = 0;
         printf_stub("Can't Open movie\n");
     } else {

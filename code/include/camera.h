@@ -17,8 +17,21 @@ struct CameraControlActivation {
 
 struct CameraControlBlock;
 
+// Five-component polar camera record from the DL debug types.
+struct Polar {
+    float azimuth;
+    float elevation;
+    float radius;
+    float rotY;
+    float rotZ;
+};
+
 struct UpdateCam {
-    char unk_00[0x70];
+    Mtx3 mtx; // 0x00
+    Vec4 pos; // 0x30
+    Vec4 rot; // 0x40
+    Polar pol; // 0x50
+    Vec3 lPos; // 0x64
     CameraControlBlock *control;
     CameraControlActivation activation;
     short importCameraIdx;
@@ -29,12 +42,6 @@ struct UpdateCam {
     short funcIdx;
     short active;
     char unk_90[0x10];
-};
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
 };
 
 struct PolarSm {
@@ -167,9 +174,7 @@ struct GAMECAMERA {
             float posW;
         };
     };
-    // radius holds the yaw.
-    PolarSm rot;
-    float rotW;
+    Vec4 rot; // Euler rotation; z is yaw.
     // Up and down, and back and forth.
     CamOffsetRec shake;
     CamOffsetRec shakeFwd;
@@ -187,17 +192,17 @@ struct GAMECAMERA {
 
 extern GAMECAMERA GameCamera;
 
-void Camera_ClearPolar(float *polar);
+void Camera_ClearPolar(Polar *polar);
 
 void Camera_DeactivateCurrent(void);
 
-void Camera_runSetupToNewCam(UpdateCam *camera);
+void Camera_runSetupToNewCam(UpdateCam *pCam);
 
-void Camera_Exit(UpdateCam *camera);
+void Camera_Exit(UpdateCam *pCam);
 
 void Camera_CopyLastPolarToQuat(void);
 
-void Cam_CopyRotWrapped(float *out, float *polar, float yawOffset);
+void Cam_CopyRotWrapped(Polar *out, Polar *polar, float yawOffset);
 
 void Camera_CopyLastQuatToPolar(void);
 

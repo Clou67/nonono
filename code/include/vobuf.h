@@ -20,14 +20,14 @@ struct VoBuf {
     int size;
 };
 
-void voBufCreate(VoBuf *buffer, VoData *data, VoTag *tag, int size);
-void voBufDelete(VoBuf *buffer);
-void voBufReset(VoBuf *buffer);
-int voBufIsFull(VoBuf *buffer);
-void voBufIncCount(VoBuf *buffer);
-VoData *voBufGetData(VoBuf *buffer);
-int voBufIsEmpty(VoBuf *buffer);
-VoTag *voBufGetTag(VoBuf *buffer);
-void voBufDecCount(VoBuf *buffer);
+void voBufCreate(VoBuf *f, VoData *data, VoTag *tag, int size);
+void voBufDelete(VoBuf *f);
+void voBufReset(VoBuf *f);
+int voBufIsFull(VoBuf *f);
+void voBufIncCount(VoBuf *f);
+VoData *voBufGetData(VoBuf *f);
+int voBufIsEmpty(VoBuf *f);
+VoTag *voBufGetTag(VoBuf *f);
+void voBufDecCount(VoBuf *f);
 
 #endif

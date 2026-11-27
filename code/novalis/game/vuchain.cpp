@@ -85,12 +85,12 @@ void VU1_sendChain(void)
     VifChainFlags = 0;
 }
 
-void VU1_syncChain(int syncFlags)
+void VU1_syncChain(int sync_flag)
 {
     int spins = 0;
 
     for (;;) {
-        if (!(VifChainFlags & syncFlags)) {
+        if (!(VifChainFlags & sync_flag)) {
             return;
         }
 
@@ -119,12 +119,12 @@ void VU1_addDataRef(void *data, int qcnt)
 
 TEXT_PADDING(0xAF82C020, 0x00000000);
 
-void VU1_addDataDirect(int address, void *data, int qcnt)
+void VU1_addDataDirect(int addr, void *data, int qcnt)
 {
     VU1_CHAIN_WORD(0) = qcnt | DMA_TAG_CNT;
     VU1_CHAIN_WORD(4) = 0;
     VU1_CHAIN_WORD(8) = VIF_STCYCL_4_4;
-    VU1_CHAIN_WORD(12) = address | (qcnt << 16) | VIF_UNPACK_V4_32;
+    VU1_CHAIN_WORD(12) = addr | (qcnt << 16) | VIF_UNPACK_V4_32;
 
     vu1_bufPtr.bytes += 16;
 
@@ -165,7 +165,7 @@ void VU1_addGSregister(unsigned int reg, unsigned long value)
 
 TEXT_PADDING(0xAF82C020, 0x00000000);
 
-void VU1_setScissor(int left, int right, int top, int bottom)
+void VU1_setScissor(int left, int right, int top, int bot)
 {
     int maxX = Scrn.paramX - 1;
     int maxY = Scrn.paramY - 1;
@@ -187,8 +187,8 @@ void VU1_setScissor(int left, int right, int top, int bottom)
         top = 0;
     }
 
-    if (bottom > maxY) {
-        bottom = maxY;
+    if (bot > maxY) {
+        bot = maxY;
     }
 
     VU1_CHAIN_WORD(16) = GIF_TAG_AD_LOW;
@@ -197,7 +197,7 @@ void VU1_setScissor(int left, int right, int top, int bottom)
     VU1_CHAIN_WORD(28) = 0;
 
     VU1_CHAIN_DWORD(32) = (unsigned long)left | ((unsigned long)right << 16)
-                                         | ((unsigned long)top << 32) | ((unsigned long)bottom << 48);
+                                         | ((unsigned long)top << 32) | ((unsigned long)bot << 48);
     VU1_CHAIN_WORD(40) = GS_REG_SCISSOR_1;
     VU1_CHAIN_WORD(44) = 0;
 
@@ -319,7 +319,7 @@ void DMAC_VIF1_Disable(void)
     _dmacHandle[1] = 0;
 }
 
-int DMAC_VIF1_Handler(int channel)
+int DMAC_VIF1_Handler(int ch)
 {
     unsigned int chcr = *D1_CHCR;
     unsigned int tag = chcr & D_CHCR_TAG_MASK;
@@ -353,7 +353,7 @@ int DMAC_VIF1_Handler(int channel)
     return 0;
 }
 
-int DMAC_BEIS_Handler(int channel)
+int DMAC_BEIS_Handler(int ch)
 {
     unsigned int chcr = *D1_CHCR;
     unsigned int tadr = *D1_TADR;
@@ -367,7 +367,7 @@ int DMAC_BEIS_Handler(int channel)
 }
 
 // Appends a VIF1 command packet (command word plus three zero words) to the VU1 chain.
-void Vif1ChainCmd(int command)
+void Vif1ChainCmd(int cmd)
 {
     unsigned char *chainHead = vu1_bufPtr.bytes;
     unsigned int *packet = (unsigned int *)chainHead;
@@ -375,7 +375,7 @@ void Vif1ChainCmd(int command)
     chainHead += 16;
     vu1_bufPtr.bytes = chainHead;
 
-    packet[0] = command + VIF_CHAIN_CMD;
+    packet[0] = cmd + VIF_CHAIN_CMD;
     packet[1] = 0;
     packet[2] = 0;
     packet[3] = 0;

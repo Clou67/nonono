@@ -3,6 +3,14 @@
 
 enum { FONT_MEDIUM = 1, FONT_SMALL = 2, FONT_LARGE = 3 };
 
+// Shared RaC1 / DL four-byte letter metric (advance spacing, not glyph width).
+struct fontLetter {
+    unsigned char u;
+    unsigned char v;
+    signed char drop;
+    signed char spacing;
+};
+
 struct FontWindow {
     short win_top;
     short win_bot;
@@ -20,14 +28,14 @@ struct FontWindow {
 
 // Selects font and returns its TEX0 register value (RC1 layout; DL returns void).
 unsigned long FontSet(int fontName);
-int FontLen(char *text, int length);
+int FontLen(char *s, int len);
 void FontPrintMediumLeft(int x, int y, unsigned long rgba, char *text, int length);
 void SetFontWindow(FontWindow *window, int win_top, int win_bot, int win_left, int win_right, int text_x, int text_y, int line_spacing, int flags);
 // The window printers take the font's TEX0 value and its width table.
 void FontPrintWindow(FontWindow *window, unsigned long rgba, char *text, int length, unsigned long tex0, void *metrics);
 void FontPrintWindowMedium(FontWindow *window, unsigned long rgba, char *text, int length);
-int FontPrintCenter(int x, int y, unsigned long rgba, char *text, int length);
-void FontPrintWindowSmall(FontWindow *window, unsigned long rgba, char *text, int length);
+int FontPrintCenter(int xpos, int ypos, unsigned long rgba, char *s, int len);
+void FontPrintWindowSmall(FontWindow *window, unsigned long rgba, char *s, int len);
 
 void FontPrintSmallLeft(int x, int y, unsigned long rgba, char *text, int length);
 
@@ -37,7 +45,7 @@ void FontPrintMediumRight(int x, int y, unsigned long rgba, char *text, int leng
 
 void FontPrintSmallRight(int x, int y, unsigned long rgba, char *text, int length);
 
-int FontPrintCenterSmall(int x, int y, unsigned long rgba, char *text, int length);
+int FontPrintCenterSmall(int xpos, int ypos, unsigned long rgba, char *s, int len);
 
 void FontPrintLargeRight(int x, int y, unsigned long rgba, char *text, int length);
 

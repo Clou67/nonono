@@ -101,7 +101,7 @@ void camPolarRot1(Mtx4 *out, Mtx4 *in, float angle);
 void camPolarRot2(Mtx4 *out, Mtx4 *in, float angle);
 float OrganicDelt(float *value, float *velocity, float target, float accel, float decel,
                   float limit);
-void FUN_00316ef8(Vec4 *position, PolarSm *rotation, int flags, int unk0, int unk1);
+void FUN_00316ef8(Vec4 *position, Vec4 *rotation, int flags, int unk0, int unk1);
 void FUN_00316dd0(Vec4 *position);
 void FUN_00316e28(Vec4 *rotation);
 void MB_PathEvalSpline(MobyPath *path, int unk, Vec4 *position, Vec4 *rotation, int flags,
@@ -196,9 +196,9 @@ void space_PlayCutscene(int cutscene)
         LoadSpaceScene(arrivalScene, fadeFrames);
     }
 
-    musicTransition.queuedSpeech = speechTrack + MUSIC_SCENE_SPEECH_BASE;
+    musicGlobals.queuedSpeech = speechTrack + MUSIC_SCENE_SPEECH_BASE;
     ParseSpaceSceneChunk(0);
-    while (musicTransition.state != MUSIC_STATE_READY) {
+    while (musicGlobals.speech.status != MUSIC_STATE_READY) {
         sound_Update();
         sceGsSyncV(0);
     }
@@ -375,8 +375,8 @@ void UpdateSpace(void)
         }
 
         if (skip) {
-            if (musicTransition.state != 6 && musicTransition.state != 7)
-                musicTransition.state = 5;
+            if (musicGlobals.speech.status != 6 && musicGlobals.speech.status != 7)
+                musicGlobals.speech.status = 5;
 
             if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
                 SceneLoad.sceneFrame =
@@ -399,8 +399,8 @@ void UpdateSpace(void)
         }
 
         if (SceneLoad.sceneFrame >= SceneLoad.numFrames) {
-            if (musicTransition.state != 6 && musicTransition.state != 7)
-                musicTransition.state = 5;
+            if (musicGlobals.speech.status != 6 && musicGlobals.speech.status != 7)
+                musicGlobals.speech.status = 5;
 
             VU1_setBufSizeByLevel();
             VC.xratio = 0.63f;
@@ -617,7 +617,7 @@ void UpdateSpace(void)
                                 colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
 
                         if (FastScaleRoundInt(0x1A4) < SceneLoad.sceneFrame) {
-                            bootSpaceTransitionState.spaceship->setByGroup =
+                            bootSpaceTransitionState.spaceship->command =
                                 (int)(((float)SceneLoad.sceneFrame - FastScaleBySpeed(420.0f)) *
                                       (transStepScale * 1.2f));
                             bootSpaceTransitionState.spaceship->uid = 0;
@@ -665,7 +665,7 @@ void UpdateSpace(void)
                         playbackObject->glowRgba =
                             colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
 
-                    playbackObject->setByGroup = 0x32;
+                    playbackObject->command = 0x32;
                     playbackObject->uid = 10;
                     RegisterMobyDraw(Space_DrawShipEngineGlow, playbackObject);
                 }
@@ -674,7 +674,7 @@ void UpdateSpace(void)
                     int colorIntensity;
 
                     if (SceneLoad.sceneFrame < FastScaleRoundInt(300)) {
-                        bootSpaceTransitionState.spaceship->setByGroup =
+                        bootSpaceTransitionState.spaceship->command =
                             (int)((FastScaleBySpeed(300.0f) - (float)SceneLoad.sceneFrame) *
                                   (transStepScale * 1.5f));
                         bootSpaceTransitionState.spaceship->uid = 0;
@@ -730,10 +730,10 @@ void UpdateSpace(void)
         if (bootSpaceTransitionState.timer == 0) {
             music_Pause(0);
             music_Sync(0);
-            musicTransition.queuedSpeech = bootSpaceTransitionState.shipVariant + 0x9C4F;
+            musicGlobals.queuedSpeech = bootSpaceTransitionState.shipVariant + 0x9C4F;
             FadeToBlack(FastScaleRoundInt(12));
 
-            while ((short)musicTransition.state != 3) {
+            while ((short)musicGlobals.speech.status != 3) {
                 sound_Update();
                 sceGsSyncV(0);
             }
@@ -823,25 +823,25 @@ void UpdateSpace(void)
                         &bootSpaceTransitionState.cameraBlendSpeed, 1.0f, cameraBlendStep,
                         cameraBlendStep, frameTime * 0.5f);
             FastVecLerp(&scratch.v0,
-                        &CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].origin,
-                        &CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid].origin,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].pos,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid].pos,
                         bootSpaceTransitionState.cameraBlend);
             FastVecZero(&scratch.v1);
             scratch.v1.y = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
-                                           .inverseTransform.v3.y,
+                                           .rot.y,
                                        CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
-                                           .inverseTransform.v3.y) *
+                                           .rot.y) *
                            bootSpaceTransitionState.cameraBlend;
             scratch.v1.y = FastAddRots(
-                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.y,
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].rot.y,
                 scratch.v1.y);
             scratch.v1.z = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
-                                           .inverseTransform.v3.z,
+                                           .rot.z,
                                        CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
-                                           .inverseTransform.v3.z) *
+                                           .rot.z) *
                            bootSpaceTransitionState.cameraBlend;
             scratch.v1.z = FastAddRots(
-                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.z,
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].rot.z,
                 scratch.v1.z);
             FUN_00316dd0(&scratch.v0);
             FUN_00316e28(&scratch.v1);
@@ -901,7 +901,7 @@ void UpdateSpace(void)
                     screenFade = 0.0625f;
 
                 if (bootSpaceTransitionState.shipVariant < 2) {
-                    bootSpaceTransitionState.spaceship->setByGroup = 0x32;
+                    bootSpaceTransitionState.spaceship->command = 0x32;
                     bootSpaceTransitionState.spaceship->uid = 10;
                     RegisterMobyDraw(Space_DrawShipEngineGlow, bootSpaceTransitionState.spaceship);
                 }
@@ -1428,7 +1428,7 @@ void DoSpaceTransition(void)
     sound_StopAllSounds();
     music_Stop();
 
-    musicTransition.updatesSuspended = 1;
+    musicGlobals.updatesSuspended = 1;
     if (LevelSounds != 0) {
         snd_UnloadBank(LevelSounds->bank_index);
         snd_ResolveBankXREFS();
@@ -1457,7 +1457,7 @@ void DoSpaceTransition(void)
         Level = g_newlevelnum;
         SetupLevelWadBuffer();
         sceCdSync(0);
-        musicTransition.updatesSuspended = 0;
+        musicGlobals.updatesSuspended = 0;
         DMAC_VIF1_Disable();
         return;
     }
@@ -1577,7 +1577,7 @@ void DoSpaceTransition(void)
     }
 
     sceCdSync(0);
-    musicTransition.updatesSuspended = 0;
+    musicGlobals.updatesSuspended = 0;
     DMAC_VIF1_Disable();
 }
 

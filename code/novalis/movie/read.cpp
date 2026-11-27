@@ -18,7 +18,7 @@ int videoCallback(sceMpeg *mpeg, sceMpegCbData *data, void *argument)
     MoviePutSpans spans;
     unsigned char *source = stream->data;
     int total = stream->length;
-    int firstSize = buffer->data + buffer->capacity - source;
+    int firstSize = buffer->data + buffer->size - source;
     if (total < firstSize)
         firstSize = total;
     int remaining = total - firstSize;
@@ -34,7 +34,7 @@ int videoCallback(sceMpeg *mpeg, sceMpegCbData *data, void *argument)
     return copied > 0;
 }
 
-int pcmCallback(sceMpeg *mpeg, sceMpegCbDataStr *stream, void *argument)
+int pcmCallback(sceMpeg *mp, sceMpegCbDataStr *str, void *argument)
 {
     const int prefixSize = 4;
     ReadBuf *buffer = (ReadBuf *)argument;
@@ -42,11 +42,11 @@ int pcmCallback(sceMpeg *mpeg, sceMpegCbDataStr *stream, void *argument)
     int firstLength;
     unsigned char *second;
     int secondLength;
-    int total = stream->length - prefixSize;
-    unsigned char *source = stream->data + prefixSize;
-    unsigned char *end = buffer->data + buffer->capacity;
+    int total = str->length - prefixSize;
+    unsigned char *source = str->data + prefixSize;
+    unsigned char *end = buffer->data + buffer->size;
     if (source >= end)
-        source -= buffer->capacity;
+        source -= buffer->size;
     int firstSize = end - source;
     if (total < firstSize)
         firstSize = total;

@@ -49,15 +49,16 @@ TEXT_PADDING(0x27BD0060, 0x00000000);
 
 void memcard_RestoreGame(char *addr)
 {
+    mc_save_header *header = (mc_save_header *)addr;
     int gameSize = memcard_GetDataSize(mc_gamedata);
     int levelSize = memcard_GetDataSize(mc_leveldata);
 
-    if (*(int *)addr != gameSize || *(int *)(addr + 4) != levelSize) {
+    if (header->gameSize != gameSize || header->levelSize != levelSize) {
         printf_stub("Out of date save!\n");
         return;
     }
 
-    addr += 8;
+    addr += sizeof(mc_save_header);
     memcard_RestoreData(addr, 0, mc_gamedata);
     addr += gameSize;
 
@@ -1039,10 +1040,12 @@ void memcard_Update(void)
 
 void memcard_MakeWholeSave(char *addr)
 {
-    *(int *)addr = memcard_GetDataSize(mc_gamedata);
-    *(int *)(addr + 4) = memcard_GetDataSize(mc_leveldata);
+    mc_save_header *header = (mc_save_header *)addr;
 
-    addr += 8;
+    header->gameSize = memcard_GetDataSize(mc_gamedata);
+    header->levelSize = memcard_GetDataSize(mc_leveldata);
+
+    addr += sizeof(mc_save_header);
     addr += memcard_PrepData(addr, 0, mc_gamedata);
 
     for (int level = 0; level < MEMCARD_LEVEL_COUNT; level++) {
@@ -1100,12 +1103,13 @@ int memcard_Checksum(char *data, int size)
 
 int memcard_TestChecksum(char *addr)
 {
-    int checksum = *(int *)(addr + 4);
+    mc_block_header *header = (mc_block_header *)addr;
+    int checksum = header->checksum;
     int good = 0;
-    int size = *(int *)addr;
+    int size = header->size;
 
     if (checksum != 0) {
-        good = memcard_Checksum(addr + 8, size) == checksum;
+        good = memcard_Checksum(addr + sizeof(mc_block_header), size) == checksum;
     }
 
     return good;
@@ -1113,6 +1117,7 @@ int memcard_TestChecksum(char *addr)
 
 int memcard_PrepData(char *addr, int index, mc_data *mcd)
 {
+    mc_block_header *header = (mc_block_header *)addr;
     int *cursor = (int *)(addr + 8);
     int size = 0;
 
@@ -1140,8 +1145,8 @@ int memcard_PrepData(char *addr, int index, mc_data *mcd)
     cursor[0] = -1;
 
     size += 8;
-    *(int *)(addr + 4) = memcard_Checksum(addr + 8, size);
-    *(int *)addr = size;
+    header->checksum = memcard_Checksum(addr + sizeof(mc_block_header), size);
+    header->size = size;
 
     return size + 8;
 }

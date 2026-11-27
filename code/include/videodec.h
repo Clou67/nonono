@@ -35,15 +35,7 @@ struct ViBuf {
     int dmaN;
     int readBytes;
     int buffSize;
-    unsigned int d4madr;
-    unsigned int d4tadr;
-    unsigned int d4qwc;
-    unsigned int d4chcr;
-    unsigned int d3madr;
-    unsigned int d3qwc;
-    unsigned int d3chcr;
-    unsigned int ipubp;
-    unsigned int ipuctrl;
+    sceIpuDmaEnv env;
     int sema;
     int isActive;
     long long totalBytes;
@@ -69,71 +61,71 @@ typedef int (*MpegStreamCallback)(sceMpeg *, sceMpegCbData *, void *);
 int videoDecCreate(VideoDec *decoder, unsigned char *work, int work_size, unsigned long long *input,
                    unsigned long long *tags, int sectors, TimeStamp *timestamps, int timestamp_count);
 int videoDecSetStream(VideoDec *decoder, int type, int channel, MpegStreamCallback callback, void *argument);
-void videoDecAbort(VideoDec *decoder);
-unsigned int videoDecGetState(VideoDec *decoder);
-int videoDecFlush(VideoDec *decoder);
-int videoDecIsFlushed(VideoDec *decoder);
-int videoDecDelete(VideoDec *decoder);
+void videoDecAbort(VideoDec *vd);
+unsigned int videoDecGetState(VideoDec *vd);
+int videoDecFlush(VideoDec *vd);
+int videoDecIsFlushed(VideoDec *vd);
+int videoDecDelete(VideoDec *vd);
 // Entry point of the decoder thread.
-void videoDecMain(void *argument);
+void videoDecMain(void *pvd);
 
 int videoDecBeginPut(VideoDec *decoder, unsigned char **first, int *firstSize, unsigned char **second, int *secondSize);
 
 int viBufBeginPut(ViBuf *buffer, unsigned char **first, int *firstSize, unsigned char **second, int *secondSize);
 
-void videoDecEndPut(VideoDec *decoder, int size);
+void videoDecEndPut(VideoDec *vd, int size);
 
-void viBufEndPut(ViBuf *buffer, int size);
+void viBufEndPut(ViBuf *f, int size);
 
-void videoDecReset(VideoDec *decoder);
+void videoDecReset(VideoDec *vd);
 
-int viBufDelete(ViBuf *buffer);
+int viBufDelete(ViBuf *f);
 
 unsigned int videoDecSetState(VideoDec *decoder, unsigned int state);
 
 int videoDecPutTs(VideoDec *decoder, long pts, long dts, unsigned char *position, int size);
 
-int viBufPutTs(ViBuf *buffer, TimeStamp *timestamp);
+int viBufPutTs(ViBuf *f, TimeStamp *timestamp);
 
-int videoDecInputCount(VideoDec *decoder);
+int videoDecInputCount(VideoDec *vd);
 
-int viBufCount(ViBuf *buffer);
+int viBufCount(ViBuf *f);
 
-int mpegNodata(sceMpeg *mpeg, sceMpegCbData *data, void *argument);
+int mpegNodata(sceMpeg *mp, sceMpegCbData *cbdata, void *anyData);
 
-int viBufAddDMA(ViBuf *buffer);
+int viBufAddDMA(ViBuf *f);
 
 int mpegRestartVideoDMA(void);
 
 int viBufRestartDMA(ViBuf *buffer);
 
-int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument);
+int mpegError(sceMpeg *mp, sceMpegCbDataError *cberror, void *anyData);
 
 int mpegStopVideoDMA(void);
 
-int viBufStopDMA(ViBuf *buffer);
+int viBufStopDMA(ViBuf *f);
 
 int mpegTimeStamp(sceMpeg *mpeg, sceMpegCbDataTimeStamp *data, void *argument);
 
-int viBufGetTs(ViBuf *buffer, TimeStamp *timestamp);
+int viBufGetTs(ViBuf *f, TimeStamp *timestamp);
 
 int viBufCreate(ViBuf *buffer, unsigned long long *input, unsigned long long *tags, int sectors, TimeStamp *timestamps, int timestampCount);
 
-int viBufReset(ViBuf *buffer);
+int viBufReset(ViBuf *f);
 
-int decBs0(VideoDec *decoder);
+int decBs0(VideoDec *vd);
 
-int viBufFlush(ViBuf *buffer);
+int viBufFlush(ViBuf *f);
 
 // Copies the source bytes into the free space of a two-part ring buffer, returning the number of bytes written.
 int cpy2area(unsigned char *first, int firstSize, unsigned char *second, int secondSize,
              unsigned char *source, int sourceSize, unsigned char *unused, int unusedSize);
 
-unsigned int getFIFOindex(ViBuf *buffer, void *position);
+unsigned int getFIFOindex(ViBuf *f, void *addr);
 
 void scTag2(unsigned long *tag, unsigned int address, unsigned int id, unsigned int count);
 
-int viBufModifyPts(ViBuf *buffer, TimeStamp *timestamp);
+int viBufModifyPts(ViBuf *f, TimeStamp *new_ts);
 
 void setD3_CHCR(unsigned int value);
 

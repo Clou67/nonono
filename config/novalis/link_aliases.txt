@@ -413,7 +413,6 @@ VendorRender = 0x001CA940;
 
 FastVec3DistLen__FP4Vec4T0 = 0x00221398;
 
-MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988;
 
 
 
@@ -658,7 +657,7 @@ jtbl_00208E30 = 0x00208E30;
 BeginMenu__Fi = 0x0028BF50;
 FUN_00316dd0__FP4Vec4 = 0x00316DD0;
 FUN_00316e28__FP4Vec4 = 0x00316E28;
-FUN_00316ef8__FP4Vec4P7PolarSmiii = 0x00316EF8;
+FUN_00316ef8__FP4Vec4T0iii = 0x00316EF8;
 FastVec3Cross__FP4Vec4N20 = 0x002212D0;
 FastVecLerp__FP4Vec4N20f = 0x002211E8;
 HeroUpdate__Fv = 0x00228870;
@@ -690,13 +689,11 @@ FastVec3NormalizeFrom__FP4Vec4N20 = 0x00221570;
 CollLine__FP4Vec4T0iP12MobyInstanceP11COLL_DAM_IN = 0x00211870;
 SpawnPart_040__FP4Vec4T0iP12MobyInstance = 0x00284D88;
 SpawnPart_042__FP4Vec4T0iP12MobyInstance = 0x002858F0;
-SpawnPart_011__FP4Vec4T0iiiiifif = 0x0027F8F8;
 CollSphere__FfP4Vec4iP12MobyInstance = 0x00212960;
 SpawnPart_016__FP4Vec4T0iifii = 0x00280F30;
 CollSphere__FP4Vec4iP12MobyInstancef = 0x00212960;
 MB_GetNormalizedMtxElem__FP4Vec4P4Mtx4T0i = 0x002710F0;
-SpawnPart_058__FP4Vec4iiiiiiff = 0x00287E70;
-CollDamageMobyDirect_2__FP12MobyInstanceiiP4Vec4T3f = 0x0026EAA8;
+SpawnPart_058__FP4Vec4iiiiiP12MobyInstanceff = 0x00287E70;
 snd_SetReverbEx__Fiiiii = 0x0012EF68;
 snd_ResetStateAndFlushCommands__Fv = 0x0012EB00;
 snd_StreamSafeCdSync__Fi = 0x0012EE08;
@@ -719,3 +716,21 @@ MB_decompressVector__FP4Vec4PUi = 0x002764A8;
 
 SpawnPart_015__FP4Vec4T0iifiiii = 0x00280BD0;
 SpawnPart_045__FP4Vec4iiff = 0x00286780;
+MB_SplineIntersect__FiP4Vec4N21 = 0x00276820;
+SpawnBoltByValue__FP12MobyInstanceP4Vec4T1iii = 0x002BCDB8;
+FastVecDivScalar__FP4Vec4T0f = 0x00221288;
+ScaleJointPosition__FP4Vec4T0f = 0x001251E8;
+MB_MistDeathEffect__FP12MobyInstanceP4Vec4i = 0x00271258;
+M775_SpawnSplash__FP4Vec4f = 0x002FF768;
+OrganicDeltAngSpeed__FP12MobyInstancePfffff = 0x0026D058;
+CollHotspot__Fv = 0x002151D8;
+CollSphere__FP4Vec4fiP12MobyInstance = 0x00212960;
+SpawnPart_011__FP4Vec4T0iifiiiif = 0x0027F8F8;
+SpawnPart_008__FP4Vec4T0iiif = 0x0027F2B0;
+FastVec4ScaleLength__FP4Vec4T0f = 0x002214A8;
+Spawn_Moby122__FP4Vec4T0iii = 0x002C4C20;
+Spawn_Moby112__FP12MobyInstanceP4Vec4T1fiiiii = 0x002C20E0;
+SpawnMoby_639__FP14M639_paramInitP4Vec4P12MobyInstanceT1 = 0x002F3570;
+GetGroundZ__FP4Vec4P12MobyInstanceiff = 0x0026D1D0;
+
+FastVecMtx3Mult__FP4Vec4T0P4Mtx3 = 0x002215E0;

@@ -32,7 +32,7 @@ struct sky_shell {
 };
 
 struct SKY {
-    int unk_00;
+    int pad;
     short clear_screen;
     short shell_cnt;
     short sprite_cnt;
@@ -49,7 +49,7 @@ struct SKY {
 extern SKY *Sky;
 extern Mtx4 outMatrix;
 
-void SkyDrawShell(int shell_index);
+void SkyDrawShell(int ishell);
 void SkyDrawShellTextured(sky_shell *shell);
 void SkyDrawShellGouraud(sky_shell *shell);
 

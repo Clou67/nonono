@@ -790,7 +790,7 @@ void Hero_DoBehavior(void)
                 scratch.look.cameraAxis.x = 1.0f;
                 FastVecMtx3Mult(&Hero.moveDirection, &scratch.look.cameraAxis,
                                 (Mtx4 *)&GameCamera.orientMtx);
-                Hero.idealRotZ = GameCamera.rot.radius;
+                Hero.idealRotZ = GameCamera.rot.z;
                 Hero_Turn(transStepScaleSq, transStepScaleSq * 0.0f, frameTime * 174.53293f, 0);
 
                 if (HelpHintTimer > 0) {
@@ -944,7 +944,7 @@ void Hero_DoBehavior(void)
                 CopyVec4Inline(&itemMoby->pos, &Hero.position);
                 CopyVec4Inline(&itemMoby->rotation, &Hero.rotation);
                 itemMoby->drawDistance = 0x40;
-                Hero.sinkEffectMoby->enabled = 1;
+                Hero.sinkEffectMoby->drawn = 1;
                 Hero.sinkEffectMoby->updateDistance = 0;
                 Hero.sinkEffectMoby->alpha = 0;
                 Hero.sinkEffectMoby->modeBits |= 0x800;
@@ -998,10 +998,10 @@ void Hero_DoBehavior(void)
 
         else {
             if (Hero.loopSounds[5] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[5]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[5] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby) {
-                    if (voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby) {
+                    if (voice->voice.status != 0)
                         sound_KillChannel(Hero.loopSounds[5]);
                 }
             }
@@ -1498,7 +1498,7 @@ void Hero_DoBehavior(void)
         if (anim != -1 && Hero.moby->updateId != HERO_ANIM_SHOOT_C)
             Hero_TransAnim(anim, 0, frames);
 
-        else if ((Hero.moby->unk70 & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C)
+        else if ((Hero.moby->animationFlags & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C)
             Hero_TransAnim(Hero_GetIdleAnim(0), 0, FastScaleRoundInt(5));
     } break;
     case HERO_STATE_ROCKET_STOMP: {
@@ -2341,9 +2341,9 @@ void Hero_DoBehavior(void)
 
         if (Hero_GetGadgetMoby(3) == 2) {
             if (Hero.loopSounds[4] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[4]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[4] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby && voice->voice.status != 0)
                     sound_KillChannel(Hero.loopSounds[4]);
             }
 
@@ -2353,9 +2353,9 @@ void Hero_DoBehavior(void)
 
         else {
             if (Hero.loopSounds[3] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[3]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[3] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby && voice->voice.status != 0)
                     sound_KillChannel(Hero.loopSounds[3]);
             }
 
@@ -2862,7 +2862,7 @@ int Hero_InitBodyState(int state, int animMode)
         hero->itemUseLocked = 0;
 
         if (hero->type == HERO_TYPE_RATCHET) {
-            moby->collisionMesh = 0;
+            moby->collisionDisable = 0;
             hero->tiltDisabled = 0;
             hero->itemSelectBlocked = 0;
             hero->onHoverboard = 0;
@@ -5007,12 +5007,12 @@ void Hero_Transitions(void)
                         if (Hero.items[3].state == 2) {
                             backpackMoby = Hero.items[3].moby;
 
-                            if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
+                            if (backpackMoby != 0 && (backpackMoby->animationFlags & 2) && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(7));
 
                             backpackMoby = Hero.items[3].moby2;
 
-                            if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
+                            if (backpackMoby != 0 && (backpackMoby->animationFlags & 2) && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(7));
                         }
 
@@ -5816,10 +5816,10 @@ void Hero_Transitions(void)
                         break;
 
                     if (Hero.loopSounds[2] != -1) {
-                        SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[2]];
+                        SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[2] * sizeof(SoundVoice));
 
-                        if (voiceRow[1].pMoby == Hero.moby &&
-                            voiceRow[1].inUse != 0)
+                        if (voice->voice.pMoby == Hero.moby &&
+                            voice->voice.status != 0)
                             sound_KillChannel(Hero.loopSounds[2]);
                     }
 

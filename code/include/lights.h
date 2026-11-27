@@ -9,6 +9,56 @@
 #define MAX_POINT_LIGHTS 8
 #define POINT_LIGHT_LIST_LENGTH 512
 
+// DL debug type; the RaC1 light template has the same 0x50-byte layout.
+struct M639_paramInit {
+    Vec4 offset; // 0x00
+    unsigned char backlight; // 0x10
+    unsigned char r_start;
+    unsigned char r_peak;
+    unsigned char r_min;
+    unsigned char r_inc;
+    unsigned char r_dec;
+    unsigned char g_start;
+    unsigned char g_peak;
+    unsigned char g_min;
+    unsigned char g_inc;
+    unsigned char g_dec;
+    unsigned char b_start;
+    unsigned char b_peak;
+    unsigned char b_min;
+    unsigned char b_inc;
+    unsigned char b_dec;
+    float radius_start; // 0x20
+    float radius_peak;
+    float radius_min;
+    float radius_inc;
+    float radius_dec;
+    int lifetime; // 0x34
+    unsigned int flags;
+    unsigned char drawDist; // 0x3C
+    unsigned char r_sustain;
+    unsigned char g_sustain;
+    unsigned char b_sustain;
+    short r_duty_cycle; // 0x40
+    short g_duty_cycle;
+    short b_duty_cycle;
+    short radius_duty_cycle;
+    unsigned char radius_sustain; // 0x48
+    unsigned char delay;
+    unsigned char pad2[2];
+    int pad3;
+};
+
+struct ExplosionColorPalette {
+    int colors[6];
+};
+
+extern ExplosionColorPalette ExplosionStartColors;
+extern ExplosionColorPalette ExplosionEndColors;
+extern M639_paramInit DefaultExplosionFlash;
+extern M639_paramInit AlternateExplosionFlash;
+MobyInstance *SpawnMoby_639(M639_paramInit *params, Vec4 *pos, MobyInstance *parent, Vec4 *offset);
+
 // One point light: its colour (w is the backlight) and position (w is the radius).
 struct PointLight {
     Vec4 color;
@@ -48,12 +98,12 @@ extern float PerfLoad;
 void STUB_RET_2525f0(void);
 // Packed colour 0xBBGGRR, 0x80 = 1.0.
 int CreatePointLightRGB(Vec4 &pos, float radius, float backlight, int rgb);
-int CreatePointLight(Vec4 &pos, float radius, float backlight, float red, float green, float blue);
-void DeletePointLight(int light);
+int CreatePointLight(Vec4 &pos, float radius, float backlight, float r, float g, float b);
+void DeletePointLight(int index);
 void UpdatePointLights(void);
 // Builds the light's lists of the ties, tfrags and shrubs it touches.
 void AttachPointLight(int light);
 void RefreshPointLight(int light);
-void DetachPointLight(int light);
+void DetachPointLight(int index);
 
 #endif

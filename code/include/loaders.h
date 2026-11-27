@@ -2,6 +2,7 @@
 #define LOADERS_H
 
 #include "moby.h"
+#include "env.h"
 #include "mobyutil.h"
 
 struct MobyClass;
@@ -121,7 +122,7 @@ extern EffectTex EffectTexs[];
 
 int FastLog2(int value);
 void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
-void ParseEffectTexs(int *texDefs, int count);
+void ParseEffectTexs(int *tex_defs, int tex_cnt);
 void ParseSky(char *data);
 
 // Shared level texture tables.
@@ -259,7 +260,7 @@ void ParseMobySeq(MobyClass *mobyClass, int animation);
 
 void ParseWeaponSceneChunk(int chunk);
 
-void ParseSpaceSceneChunk(int chunk);
+void ParseSpaceSceneChunk(int chunk_id);
 
 #define SCENE_MAX_CHUNKS 70
 #define SCENE_HEADER_SIZE 0x800
@@ -312,7 +313,7 @@ struct SceneChunkEntry {
 
 extern SceneLoadState SceneLoad;
 
-int PreLoadNpcChunk(int chunk);
+int PreLoadNpcChunk(int chunk_id);
 void LoadWeaponCutscene(int weapon);
 void LoadSpaceScene(int scene, int fadeFrames);
 void ParseNpcChunk(void);
@@ -323,6 +324,26 @@ struct Vec4;
 
 // Offsets from the start of the gameplay file to its sections (PS3 names). A section starts
 // with its count, padded to 16 bytes, unless noted.
+// Fixed 0x48-byte settings record at GameplayHeader::settings.
+// Archive vectors are word-aligned here, unlike runtime Vec4 fields.
+struct GameplaySettings {
+    int backgroundR;
+    int backgroundG;
+    int backgroundB;
+    int fogR;
+    int fogG;
+    int fogB;
+    float fogNearDist;
+    float fogFarDist;
+    float fogNearIntensity;
+    float fogFarIntensity;
+    float deathHeight;
+    float shipSpawn[4]; // 0x2C
+    int shipSplinePath; // 0x3C
+    int shipCameraStartCuboid;
+    int shipCameraEndCuboid;
+};
+
 struct GameplayHeader {
     int settings;               // 0x00 background, fog and ship settings
     int directionalLights;      // 0x04
@@ -472,8 +493,6 @@ extern int SplineCnt;
 extern char *SplineData;
 struct MobyPath;
 extern MobyPath *Splines[];
-extern char *EnvSamples;
-extern int EnvSampleCnt;
 
 extern int ShrubCnt;
 extern ShrubMatrix *ShrubMatrices;

@@ -5,16 +5,16 @@ enum { READ_BUF_CAPACITY = 0x50000 };
 
 struct ReadBuf {
     unsigned char data[READ_BUF_CAPACITY];
-    int put_pos;
+    int put;
     int count;
-    int capacity;
+    int size;
 };
 
-void readBufCreate(ReadBuf *buffer);
-void readBufDelete(ReadBuf *buffer);
+void readBufCreate(ReadBuf *b);
+void readBufDelete(ReadBuf *b);
 int readBufBeginPut(ReadBuf *buffer, unsigned char **destination);
-void readBufEndPut(ReadBuf *buffer, int size);
+void readBufEndPut(ReadBuf *b, int size);
 int readBufBeginGet(ReadBuf *buffer, unsigned char **source);
-int readBufEndGet(ReadBuf *buffer, int size);
+int readBufEndGet(ReadBuf *b, int size);
 
 #endif
