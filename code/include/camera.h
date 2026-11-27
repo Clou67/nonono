@@ -31,12 +31,6 @@ struct UpdateCam {
     char unk_90[0x10];
 };
 
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
-
 struct PolarSm {
     float azimuth;
     float elevation;

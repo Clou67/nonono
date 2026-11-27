@@ -19,19 +19,19 @@ int CollLine(Vec4 *start, Vec4 *end, int flags, MobyInstance *ignore, COLL_DAM_I
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", ResetParticles);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_001);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_000);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_001);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_002);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_001);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_002);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_003);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_002);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027E0D0);
 
-void UpdatePart_004(PartInstance *particle)
+void UpdatePart_003(PartInstance *particle)
 {
     Part003 *motion = (Part003 *)particle->update;
     Vec4 positionScratch;
@@ -139,11 +139,11 @@ updateDistanceFade:
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_004);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_005);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_004);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_005);
 
-void UpdatePart_006(PartInstance *part)
+void UpdatePart_005(PartInstance *part)
 {
     Part005 *scale = (Part005 *)part->update;
 
@@ -160,9 +160,9 @@ void UpdatePart_006(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_006);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_007);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_006);
 
-void UpdatePart_008(PartInstance *part)
+void UpdatePart_007(PartInstance *part)
 {
     Part007 *scale = (Part007 *)part->update;
 
@@ -179,19 +179,19 @@ void UpdatePart_008(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_008);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_009);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_008);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027F4D0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_010);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_009);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_010);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_011);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_010);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_011);
 
-void UpdatePart_012(PartInstance *particle)
+void UpdatePart_011(PartInstance *particle)
 {
     Part011 *motion = (Part011 *)particle->update;
     particle->rot++;
@@ -292,23 +292,23 @@ void UpdatePart_012(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_012);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_013);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_012);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_013);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_014);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_013);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_014);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_015);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_014);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_015);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_016);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_015);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_016);
 
-void UpdatePart_017(PartInstance *particle)
+void UpdatePart_016(PartInstance *particle)
 {
     Vec4 savedPosition;
     float gravity[4] = {frameTimeSq * 4.8f, frameTimeSq * 24.5f, frameTimeSq * 9.8f, -(frameTimeSq * 0.24f)};
@@ -366,13 +366,13 @@ void UpdatePart_017(PartInstance *particle)
     }
 }
 
-void UpdatePart_018(PartInstance *part)
+void UpdatePart_017(PartInstance *part)
 {
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_018);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_019);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_018);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_019);
 
@@ -380,7 +380,7 @@ void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 int FastDecTimer(short &timer);
 void DeletePart(PartInstance *part);
 
-void UpdatePart_020(PartInstance *part)
+void UpdatePart_019(PartInstance *part)
 {
     FastVec3Add(&part->pos, &part->pos, &((PartLineMotion *)part->update)->velocity);
     FastVec3Add(&((PartLineMotion *)part->update)->origin, &((PartLineMotion *)part->update)->origin, &((PartLineMotion *)part->update)->velocity);
@@ -391,7 +391,7 @@ void UpdatePart_020(PartInstance *part)
         DeletePart(part);
 }
 
-void UpdatePart_021(PartInstance *particle)
+void UpdatePart_020(PartInstance *particle)
 {
     Part020 *motion = (Part020 *)particle->update;
     Vec4 targetPosition, offset, rotatedOffset;
@@ -452,19 +452,19 @@ void UpdatePart_021(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_021);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_022);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_021);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_022);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_023);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_024);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_023);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_025);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_024);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_025);
 
-void UpdatePart_026(PartInstance *particle)
+void UpdatePart_025(PartInstance *particle)
 {
     Vec4 nextPosition;
     Part025 *motion;
@@ -557,11 +557,11 @@ void UpdatePart_026(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_026);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_027);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_026);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_027);
 
-void UpdatePart_028(PartInstance *part)
+void UpdatePart_027(PartInstance *part)
 {
     Part027 *fade = (Part027 *)part->update;
 
@@ -575,13 +575,13 @@ void UpdatePart_028(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_028);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_029);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_028);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283400);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_030);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_029);
 
-void UpdatePart_031(PartInstance *particle)
+void UpdatePart_030(PartInstance *particle)
 {
     Vec4 nextPosition, displacement, acceleration, projectedPosition;
     Part030 *motion = (Part030 *)particle->update;
@@ -692,16 +692,16 @@ void UpdatePart_031(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283BE0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_032);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_031);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_032);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_033);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_032);
 
 int FastDecTimer(short &timer);
 void DeletePart(PartInstance *part);
 
-void UpdatePart_034(PartInstance *part)
+void UpdatePart_033(PartInstance *part)
 {
     if (FastDecTimer(part->timer))
         DeletePart(part);
@@ -709,27 +709,27 @@ void UpdatePart_034(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_034);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_035);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_034);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_035);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_036);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_035);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_002848F0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_037);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_036);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00284A58);
+
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_037);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_038);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_039);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_040);
-
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_040);
 
-void UpdatePart_041(PartInstance *particle)
+void UpdatePart_040(PartInstance *particle)
 {
     Vec4 nextPosition;
     Vec4 probeStart;
@@ -904,7 +904,7 @@ void UpdatePart_041(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_041);
 
-void UpdatePart_042(PartInstance *part)
+void UpdatePart_041(PartInstance *part)
 {
     if (part->timer != -1 && FastDecTimer(part->timer))
         DeletePart(part);
@@ -912,7 +912,7 @@ void UpdatePart_042(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_042);
 
-void UpdatePart_043(PartInstance *particle)
+void UpdatePart_042(PartInstance *particle)
 {
     Vec4 nextPosition, probeStart;
     COLL_DAM_IN damage;
@@ -1041,19 +1041,19 @@ void UpdatePart_043(PartInstance *particle)
     particle->rot = (int)(motion->rot * 256.0f);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_044);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_043);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_044);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_045);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_044);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_045);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_046);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_045);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_046);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_047);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_046);
 
 PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
 {
@@ -1077,7 +1077,7 @@ PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
     return part;
 }
 
-void UpdatePart_048(PartInstance *part)
+void UpdatePart_047(PartInstance *part)
 {
     PartSpinMotion *motion = (PartSpinMotion *)part->update;
     int rgba;
@@ -1096,7 +1096,7 @@ void UpdatePart_048(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286E18);
 
-void UpdatePart_049(PartInstance *part)
+void UpdatePart_048(PartInstance *part)
 {
     Part048 *spin = (Part048 *)part->update;
 
@@ -1109,17 +1109,17 @@ void UpdatePart_049(PartInstance *part)
         DeletePart(part);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_050);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_049);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286F88);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_051);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_050);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_052);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_051);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_052);
 
-void UpdatePart_053(PartInstance *part)
+void UpdatePart_052(PartInstance *part)
 {
     if (FastDecTimer(part->timer))
         DeletePart(part);
@@ -1135,15 +1135,15 @@ void UpdatePart_053(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_053);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_054);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_053);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_002876F8);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_055);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_054);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_055);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_056);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_055);
 
 PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
 {
@@ -1171,7 +1171,7 @@ PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
     return part;
 }
 
-void UpdatePart_057(PartInstance *part)
+void UpdatePart_056(PartInstance *part)
 {
     Part000 *motion = (Part000 *)part->update;
     FastVec3Scale(&motion->vel, &motion->vel, 0.975f);
@@ -1188,11 +1188,11 @@ void UpdatePart_057(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_057);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_058);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_057);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_058);
 
-void UpdatePart_059(PartInstance *particle)
+void UpdatePart_058(PartInstance *particle)
 {
     Vec4 scratch;
     Part058 *motion;
@@ -1276,7 +1276,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_059);
 
 enum { PART_RELATIVE_TO_HERO = 1 };
 
-void UpdatePart_060(PartInstance *part)
+void UpdatePart_059(PartInstance *part)
 {
     Part059 *motion = (Part059 *)part->update;
     if (motion->type == PART_RELATIVE_TO_HERO)
@@ -1288,13 +1288,13 @@ void UpdatePart_060(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_060);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_061);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_060);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_062);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_061);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_062);
 
-void UpdatePart_063(PartInstance *part)
+void UpdatePart_062(PartInstance *part)
 {
     PartFollowFade *fade = (PartFollowFade *)part->update;
     int rgba;
@@ -1323,7 +1323,7 @@ void UpdatePart_063(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00288D50);
 
-void UpdatePart_064(PartInstance *part)
+void UpdatePart_063(PartInstance *part)
 {
     if (FastDecTimer(part->timer))
         DeletePart(part);
@@ -1333,7 +1333,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_064);
 
 unsigned int PartFloorBurstRandomLimit = 15;
 
-void UpdatePart_065(PartInstance *particle)
+void UpdatePart_064(PartInstance *particle)
 {
     Part064 *motion = (Part064 *)particle->update;
     Vec4 emittedPosition;
@@ -1400,11 +1400,11 @@ void UpdatePart_065(PartInstance *particle)
     DeletePart(particle);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_066);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_065);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_066);
 
-void UpdatePart_067(PartInstance *part)
+void UpdatePart_066(PartInstance *part)
 {
     Part066 *motion = (Part066 *)part->update;
     int timer;
@@ -1428,15 +1428,15 @@ void UpdatePart_067(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_067);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_068);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_067);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00289CB8);
 
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_068);
+
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_069);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_070);
-
-void UpdatePart_071(PartInstance *part)
+void UpdatePart_070(PartInstance *part)
 {
     if (--part->timer == 0) {
         part->rgba -= 1 << 24;
@@ -1449,7 +1449,7 @@ void UpdatePart_071(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028A0D8);
 
-void UpdatePart_072(PartInstance *particle)
+void UpdatePart_071(PartInstance *particle)
 {
     Part071 *motion = (Part071 *)particle->update;
     Vec4 appliedDelta, motionScratch, finalMotion;
@@ -1517,7 +1517,7 @@ void UpdatePart_072(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_072);
 
-void UpdatePart_073(PartInstance *part)
+void UpdatePart_072(PartInstance *part)
 {
     part->rot += ((PartRotationMotion *)part->update)->rotationStep;
     if (part->scale <= 0.0f) {
@@ -1526,15 +1526,15 @@ void UpdatePart_073(PartInstance *part)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_074);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_073);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_074);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_075);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_074);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AAE0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_076);
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_075);
 
 // Unreferenced retail literal-pool entries between the two live small-data scalars.
 extern const unsigned int PartLiteralSignedMask __attribute__((section(".sdata"))) = 0x7FFFFFFF;
@@ -1545,7 +1545,7 @@ extern const unsigned int PartLiteralNine __attribute__((section(".sdata"))) = 9
 
 int PartFadeAlphaStep = 19;
 
-void UpdatePart_077(PartInstance *part)
+void UpdatePart_076(PartInstance *part)
 {
     DecAlpha(&part->rgba, PartFadeAlphaStep);
 
@@ -1557,7 +1557,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AC50);
 
 typedef int Vec4Quad __attribute__((mode(TI)));
 
-void UpdatePart_078(PartInstance *part)
+void UpdatePart_077(PartInstance *part)
 {
     Vec4 origin;
     float duration;
@@ -1580,10 +1580,10 @@ void UpdatePart_078(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_078);
 
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_078);
+
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_079);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_080);
-
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_081);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028B408);
