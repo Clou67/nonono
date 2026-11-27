@@ -121,7 +121,7 @@ extern EffectTex EffectTexs[];
 
 int FastLog2(int value);
 void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
-void ParseEffectTexs(int *texDefs, int count);
+void ParseEffectTexs(int *tex_defs, int tex_cnt);
 void ParseSky(char *data);
 
 // Shared level texture tables.
@@ -259,7 +259,7 @@ void ParseMobySeq(MobyClass *mobyClass, int animation);
 
 void ParseWeaponSceneChunk(int chunk);
 
-void ParseSpaceSceneChunk(int chunk);
+void ParseSpaceSceneChunk(int chunk_id);
 
 #define SCENE_MAX_CHUNKS 70
 #define SCENE_HEADER_SIZE 0x800
@@ -312,7 +312,7 @@ struct SceneChunkEntry {
 
 extern SceneLoadState SceneLoad;
 
-int PreLoadNpcChunk(int chunk);
+int PreLoadNpcChunk(int chunk_id);
 void LoadWeaponCutscene(int weapon);
 void LoadSpaceScene(int scene, int fadeFrames);
 void ParseNpcChunk(void);

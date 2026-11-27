@@ -231,13 +231,13 @@ void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
 }
 
 // Each texture definition is {clut address, texture address, width, height}.
-void ParseEffectTexs(int *texDefs, int count)
+void ParseEffectTexs(int *tex_defs, int tex_cnt)
 {
-    for (EffectTexCnt = 0; EffectTexCnt < count; EffectTexCnt++) {
-        int clutAddr = *texDefs++;
-        int texAddr = *texDefs++;
-        int width = *texDefs++;
-        int height = *texDefs++;
+    for (EffectTexCnt = 0; EffectTexCnt < tex_cnt; EffectTexCnt++) {
+        int clutAddr = *tex_defs++;
+        int texAddr = *tex_defs++;
+        int width = *tex_defs++;
+        int height = *tex_defs++;
 
         EffectTexs[EffectTexCnt].palOfs = clutAddr >> 4;
         EffectTexs[EffectTexCnt].texOfs = texAddr >> 4;
@@ -3122,20 +3122,20 @@ float byteGridMax = 0;
 unsigned char *byteGridData = 0;
 
 // Starts streaming a chunk of the current npc scene from the disc into the scene buffer.
-int PreLoadNpcChunk(int chunk)
+int PreLoadNpcChunk(int chunk_id)
 {
     unsigned char *buffer = SceneLoad.buffer;
     int sector;
     int length;
 
     if (videoModePal) {
-        length = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
-        sector = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk];
+        length = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id + 1] - bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id];
+        sector = bootAssets.scenes[SceneLoad.sceneId].palChunkSectors[chunk_id];
     }
 
     else {
-        length = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk + 1] - bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
-        sector = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk];
+        length = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id + 1] - bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id];
+        sector = bootAssets.scenes[SceneLoad.sceneId].chunkSectors[chunk_id];
     }
 
     if (length > 0) {
@@ -3275,9 +3275,9 @@ void LoadSpaceScene(int scene, int fadeFrames)
     SetSceneChunks();
 }
 
-void ParseSpaceSceneChunk(int chunk)
+void ParseSpaceSceneChunk(int chunk_id)
 {
-    SceneLoad.buffer = SceneLoad.chunks[chunk];
+    SceneLoad.buffer = SceneLoad.chunks[chunk_id];
     ParseNpcChunk();
     SceneLoad.buffer = MemSlots.vu1_chain[1] + vu1_bufSize;
 }
@@ -3351,41 +3351,39 @@ struct PifLoad {
 extern int GifLoadCnt;
 extern PifLoad GifLoads[];
 
-unsigned long QueuePifLoad(PifHeader *pif)
+unsigned long QueuePifLoad(PifHeader *pPif)
 {
-    PifParser parsed;
+    PifParser pp;
 
-    parsed.pClut = pif + 1;
-    parsed.cSize = 0x400;
-    parsed.uLog = FastLog2(pif->uSize);
-    parsed.vLog = FastLog2(pif->vSize);
+    pp.pClut = pPif + 1;
+    pp.cSize = 0x400;
+    pp.uLog = FastLog2(pPif->uSize);
+    pp.vLog = FastLog2(pPif->vSize);
 
-    parsed.pTex[0] = (char *)(pif + 1) + parsed.cSize;
+    pp.pTex[0] = (char *)(pPif + 1) + pp.cSize;
     int address = GSloc;
     int clutBlock = address >> 8;
     address += 0x400;
     int textureBlock = address >> 8;
-    GSloc = address + (1 << (parsed.uLog + parsed.vLog));
+    GSloc = address + (1 << (pp.uLog + pp.vLog));
 
-    int tbw = parsed.uLog - 6;
+    int tbw = pp.uLog - 6;
     if (tbw < 0)
         tbw = 0;
     tbw = 1 << tbw;
 
     GsTex0 textureRegister;
-    textureRegister.bits = (unsigned long)textureBlock | ((unsigned long)tbw << 14) |
-        ((unsigned long)GS_PSMT8 << 20) | ((unsigned long)parsed.uLog << 26);
-    textureRegister.bits = textureRegister.bits | ((unsigned long)parsed.vLog << 30) |
-        ((unsigned long)1 << 34) | ((unsigned long)clutBlock << 37);
+    textureRegister.bits = (unsigned long)textureBlock | ((unsigned long)tbw << 14) | ((unsigned long)GS_PSMT8 << 20) | ((unsigned long)pp.uLog << 26);
+    textureRegister.bits = textureRegister.bits | ((unsigned long)pp.vLog << 30) | ((unsigned long)1 << 34) | ((unsigned long)clutBlock << 37);
     unsigned long tex0 = textureRegister.bits | ((unsigned long)4 << 61);
 
     if (GifLoadCnt < PIF_LOAD_QUEUE_SIZE) {
-        GifLoads[GifLoadCnt].clut = (char *)parsed.pClut;
+        GifLoads[GifLoadCnt].clut = (char *)pp.pClut;
         GifLoads[GifLoadCnt].clutBlock = clutBlock;
         GifLoads[GifLoadCnt].clutFormat = 0;
-        GifLoads[GifLoadCnt].tex = (char *)parsed.pTex[0];
-        GifLoads[GifLoadCnt].uLog = parsed.uLog;
-        GifLoads[GifLoadCnt].vLog = parsed.vLog;
+        GifLoads[GifLoadCnt].tex = (char *)pp.pTex[0];
+        GifLoads[GifLoadCnt].uLog = pp.uLog;
+        GifLoads[GifLoadCnt].vLog = pp.vLog;
         GifLoads[GifLoadCnt].texBlock = textureBlock;
         GifLoadCnt++;
     }
