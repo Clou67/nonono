@@ -44,8 +44,7 @@ extern ExplosionColorPalette ExplosionStartColors;
 extern ExplosionColorPalette ExplosionEndColors;
 extern ExplosionLightSettings DefaultExplosionFlash;
 extern ExplosionLightSettings AlternateExplosionFlash;
-MobyInstance *M639_SpawnExplosionLight(ExplosionLightSettings *settings, Vec4 *position,
-                                       MobyInstance *attachMoby, Vec4 *offset);
+MobyInstance *M639_SpawnExplosionLight(ExplosionLightSettings *settings, Vec4 *position, MobyInstance *attachMoby, Vec4 *offset);
 
 // One point light: its colour (w is the backlight) and position (w is the radius).
 struct PointLight {

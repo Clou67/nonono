@@ -174,8 +174,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PushOutOfWa
 
 int MB_PushOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float radius, float stepHeight, int flags);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed,
-                          float stepHeight, int flags)
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags)
 {
     float radius = FastIntToFloat(radiusFixed) * (1.0f / 1024.0f);
     return MB_PushOutOfWalls(moby, move, height, radius, stepHeight, flags);
@@ -197,8 +196,7 @@ void MB_InitMoveVars(MoveVars *vars)
     vars->distThresh = 0.1f;
 }
 
-int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement,
-                      float speedScale)
+int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement, float speedScale)
 {
     Vec4 startPosition;
     Vec4 displacement;
@@ -256,8 +254,7 @@ int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *mo
     probeHeight = moby->pos.z + 0.04f;
     FastVec3Add(&direction, &moby->pos, &displacement);
     direction.z = moby->pos.z - vars->zDepth;
-    if (GetGroundZ(&direction, moby, vars->flags & MOVE_GROUND_QUERY, vars->maxStepDown,
-                   vars->maxStepUp)) {
+    if (GetGroundZ(&direction, moby, vars->flags & MOVE_GROUND_QUERY, vars->maxStepDown, vars->maxStepUp)) {
         groundHit = &CollOutput;
         slopeAngle = FastArcTan(groundHit->normal.z, FastVec3Length(&groundHit->normal.x));
         stepGroundHeight = groundHit->ip.z;
@@ -266,14 +263,11 @@ int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *mo
                 FastVec3Normalize(&lookaheadPosition, &displacement, 0.57f);
                 FastVec3Add(&lookaheadPosition, &lookaheadPosition, &moby->pos);
                 lookaheadPosition.z = moby->pos.z - vars->zDepth;
-                if (GetGroundZ(&lookaheadPosition, moby, vars->flags & MOVE_GROUND_QUERY,
-                               vars->maxStepDown, vars->maxStepUp)) {
+                if (GetGroundZ(&lookaheadPosition, moby, vars->flags & MOVE_GROUND_QUERY, vars->maxStepDown, vars->maxStepUp)) {
                     lookaheadGroundHeight = groundHit->ip.z;
-                    if (0.5f <=
-                        FastArcTan(groundHit->normal.z, FastVec3Length(&groundHit->normal.x))) {
+                    if (0.5f <= FastArcTan(groundHit->normal.z, FastVec3Length(&groundHit->normal.x))) {
                         resultFlags = MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
-                        if ((vars->flags & MOVE_ALLOW_FALLING) &&
-                            lookaheadGroundHeight < probeHeight && stepGroundHeight < probeHeight)
+                        if ((vars->flags & MOVE_ALLOW_FALLING) && lookaheadGroundHeight < probeHeight && stepGroundHeight < probeHeight)
                             resultFlags = MOVE_FALLING;
                     }
                 }
@@ -288,15 +282,13 @@ int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *mo
     }
 
     else {
-        resultFlags =
-            (vars->flags & MOVE_ALLOW_FALLING) ? MOVE_FALLING : MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
+        resultFlags = (vars->flags & MOVE_ALLOW_FALLING) ? MOVE_FALLING : MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
     }
 
     if (!(resultFlags & MOVE_BLOCKED)) {
         stepDistance = FastVec3Length(&displacement.x);
         FastVec3Scale(&direction, &displacement, 1.0f / stepDistance);
-        collisionFlags = MB_PushMobyOutOfWalls(moby, &displacement, vars->kneeHeight,
-                                               vars->collRadius, vars->zDepth, vars->flags);
+        collisionFlags = MB_PushMobyOutOfWalls(moby, &displacement, vars->kneeHeight, vars->collRadius, vars->zDepth, vars->flags);
         if (collisionFlags & 2)
             vars->vertVel = transStepScale * -0.01f;
         if (collisionFlags & 1) {
@@ -304,8 +296,7 @@ int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *mo
             if (displacement.x * direction.x + displacement.y * direction.y < stepDistance * 0.2f)
                 resultFlags |= MOVE_BLOCKED;
             groundHeight = MB_CollLineDown(&moby->pos, 0.5f, 0);
-            if (vars->maxStepDown < startPosition.z - groundHeight ||
-                vars->maxStepUp < groundHeight - startPosition.z) {
+            if (vars->maxStepDown < startPosition.z - groundHeight || vars->maxStepUp < groundHeight - startPosition.z) {
                 resultFlags |= MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
                 CopyVec4(&moby->pos, &startPosition);
             }
@@ -601,11 +592,7 @@ float MB_computeLobVelocity(Vec4 *from, Vec4 *to, float speed, float gravity, fl
 int MB_randPrimPoints(float density, MobyInstance *moby, int maximum, Vec4 *points, int mask)
 {
     enum HitShape {
-        SHAPE_INLINE_CENTER_SPHERE = 0x0,
-        SHAPE_INLINE_CENTER_SPHERE_ALT = 1,
-        SHAPE_INDEXED_CENTER_SPHERE = 0x2,
-        SHAPE_XY_DISK_WITH_Z_EXTENT = 0x3,
-        SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET = 0x4
+        SHAPE_INLINE_CENTER_SPHERE = 0x0, SHAPE_INLINE_CENTER_SPHERE_ALT = 1, SHAPE_INDEXED_CENTER_SPHERE = 0x2, SHAPE_XY_DISK_WITH_Z_EXTENT = 0x3, SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET = 0x4
     };
 
     float weights[20];
@@ -675,15 +662,12 @@ int MB_randPrimPoints(float density, MobyInstance *moby, int maximum, Vec4 *poin
                         radius = shapeCenter.w * moby->scale;
                         radius *= 0.0009765625f;
                         sampleExtent = shape->length * (moby->scale * 0.0009765625f);
-                        weights[eligibleCount] = radius * 4.187743f * radius * radius +
-                                                 radius * 1.5707964f * radius * sampleExtent;
+                        weights[eligibleCount] = radius * 4.187743f * radius * radius + radius * 1.5707964f * radius * sampleExtent;
                         break;
                     }
                     case SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET: {
-                        ScaleJointPosition(&shapeCenter, &SPAD_JOINTS[shape->ends.a],
-                                           moby->scale * 0.0009765625f);
-                        ScaleJointPosition(&sampleOffset, &SPAD_JOINTS[shape->ends.b],
-                                           moby->scale * 0.0009765625f);
+                        ScaleJointPosition(&shapeCenter, &SPAD_JOINTS[shape->ends.a], moby->scale * 0.0009765625f);
+                        ScaleJointPosition(&sampleOffset, &SPAD_JOINTS[shape->ends.b], moby->scale * 0.0009765625f);
                         FastSubVec3(&segmentDelta, &shapeCenter, &sampleOffset);
                         radius = FastVec3Length2(&segmentDelta);
                         sampleExtent = primitive->radius * moby->scale * 0.0009765625f;
@@ -1010,7 +994,8 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_StartKick);
 
 int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
 {
-    enum { MOTION_RISING = 0, MOTION_FALLING = 1, MOTION_GROUNDED = 2 };
+    enum { MOTION_RISING = 0,
+           MOTION_FALLING = 1, MOTION_GROUNDED = 2 };
     Vec4 sweepStart;
     Vec4 heightProbe;
     Vec4 collisionProbe;
@@ -1043,8 +1028,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
     heightProbe.z = heightProbe.z + motion->collisionZOffset;
     groundHeight = MB_CollLineDown(&heightProbe, 0.5f, 0);
     if (CollHotspot() == 0) {
-        if (motion->groundBounces == 0.0f && groundHeight <= heightProbe.z &&
-            heightProbe.z + motion->velocity.z < groundHeight) {
+        if (motion->groundBounces == 0.0f && groundHeight <= heightProbe.z && heightProbe.z + motion->velocity.z < groundHeight) {
             motion->groundBounces = 1.0f;
             heightProbe.z = groundHeight;
             M775_SpawnSplash(&heightProbe, 3.0f);
@@ -1067,10 +1051,8 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
         }
     }
 
-    if (moby->pos.x < 2.0f || 1021.0f < moby->pos.x || moby->pos.y < 2.0f ||
-        1021.0f < moby->pos.y || moby->pos.z < 2.0f || 1021.0f < moby->pos.z) {
+    if (moby->pos.x < 2.0f || 1021.0f < moby->pos.x || moby->pos.y < 2.0f || 1021.0f < moby->pos.y || moby->pos.z < 2.0f || 1021.0f < moby->pos.z)
         resultFlags = KICK_OUT_OF_BOUNDS;
-    }
 
     if (motion->landingAnimationFrame != -1.0f && motion->apexAnimationFrame != -1.0f) {
         switch (motion->phase) {
@@ -1095,9 +1077,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
             else {
                 float negativeHalfGravity = motion->gravity * -0.5f;
                 landingTicks = 60.0f;
-                hitCount =
-                    MB_SolveQuad(negativeHalfGravity, motion->velocity.z - negativeHalfGravity,
-                                 moby->pos.z - groundHeight, &largerRoot, &smallerRoot);
+                hitCount = MB_SolveQuad(negativeHalfGravity, motion->velocity.z - negativeHalfGravity, moby->pos.z - groundHeight, &largerRoot, &smallerRoot);
                 if (hitCount > 0 && 0.0f < largerRoot && largerRoot < landingTicks)
                     landingTicks = largerRoot;
                 if (landingTicks < 0.0001f)
@@ -1120,10 +1100,8 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
 
     if (moby->animationFlags & MOBY_ANIMATION_ENDED)
         resultFlags |= KICK_ANIMATION_ENDED;
-    if (!(motion->flags & KICK_NO_TURN)) {
-        OrganicDeltAngSpeed(moby, &motion->turnVelocity, motion->turnTarget, 0.02f, 0.3f,
-                            motion->maxTurnStep);
-    }
+    if (!(motion->flags & KICK_NO_TURN))
+        OrganicDeltAngSpeed(moby, &motion->turnVelocity, motion->turnTarget, 0.02f, 0.3f, motion->maxTurnStep);
 
     hitIndex = 0;
     CopyVec4Inline(&sweepStart, &moby->pos);
@@ -1132,8 +1110,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
     CopyVec4Inline(&collisionProbe, &moby->pos);
     collisionProbe.z = collisionProbe.z + motion->collisionZOffset;
     FastVec3Add(&predictedPosition, &collisionProbe, &motion->velocity);
-    hitCount = CollMobySphere(FastIntToFloat(motion->collisionRadius) * 0.0010742187732830644f,
-                              &predictedPosition, 16, moby, 0);
+    hitCount = CollMobySphere(FastIntToFloat(motion->collisionRadius) * 0.0010742187732830644f, &predictedPosition, 16, moby, 0);
     if (hitIndex < hitCount) {
         MobyInstance **hitMoby = HeroSphereQueryResults;
         int remainingHits = hitCount;
@@ -1146,8 +1123,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
             }
 
             else {
-                CollDamageMobyDirect_2(*hitMoby, moby, 0x10000, &moby->pos, &motion->velocity,
-                                       1.0f);
+                CollDamageMobyDirect_2(*hitMoby, moby, 0x10000, &moby->pos, &motion->velocity, 1.0f);
             }
             hitMoby++;
         } while (--remainingHits != 0);
@@ -1159,8 +1135,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
         CollLine(&sweepStart, &collisionProbe, 36, moby, 0);
         CopyVec4Inline(&collisionProbe, &CollOutput.ip);
     }
-    if (CollSphere(&collisionProbe, FastIntToFloat(motion->collisionRadius) * coordinateScale, 36,
-                   moby) != 0) {
+    if (CollSphere(&collisionProbe, FastIntToFloat(motion->collisionRadius) * coordinateScale, 36, moby) != 0) {
         resultFlags |= KICK_COLLISION;
         collisionPosition = &CollOutput.push;
         CopyVec4Inline(&moby->pos, collisionPosition);
@@ -1170,8 +1145,7 @@ int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
         if (0.7070000171661377f <= surfaceNormal.z) {
             float normalSpeed = FastVec3Dot(&motion->velocity, &surfaceNormal);
             if (normalSpeed < 0.0f) {
-                collisionResult =
-                    (COLLOUTPUT *)((char *)collisionPosition - offsetof(COLLOUTPUT, push));
+                collisionResult = (COLLOUTPUT *)((char *)collisionPosition - offsetof(COLLOUTPUT, push));
                 if (collisionResult->pMoby == 0 || collisionResult->poly > 0) {
                     resultFlags |= KICK_GROUNDED;
                     motion->phase = MOTION_GROUNDED;
@@ -1437,12 +1411,7 @@ bool MB_isAmmo(MobyInstance *moby)
     return false;
 }
 
-void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius,
-                         float damageHp, int burstCount, int particlePairCount, int smokeCount,
-                         float glowScale, float whiteGlowScale, float minGlowDistance,
-                         float effectScale, int soundId, float flashRadius, int shakeCamera,
-                         int debrisCount, int reductionLevel,
-                         unsigned char colorSwap)
+void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float effectScale, int soundId, float flashRadius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap)
 {
     Vec4 baseVelocity;
     Vec4 cameraDelta;
@@ -1485,16 +1454,10 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
             float azimuth;
             elevation = MB_randRangeFloat(0.2617994f, 1.3962634f);
             azimuth = MB_randRot();
-            MB_SphericalToVector(&burstVelocity,
-                                 effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime),
-                                 azimuth, elevation);
+            MB_SphericalToVector(&burstVelocity, effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime), azimuth, elevation);
             burstVelocity.z += frameTime * 3.0f;
             cameraDistance = effectScale * 40000.0f;
-            SpawnPart_015(position, &burstVelocity, ReorderRGB(0x4F007FFF, colorSwap),
-                          ReorderRGB(0x1F00007F, colorSwap), cameraDistance,
-                          MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x78)) -
-                              reductionLevel * 10,
-                          1, -1, -1);
+            SpawnPart_015(position, &burstVelocity, ReorderRGB(0x4F007FFF, colorSwap), ReorderRGB(0x1F00007F, colorSwap), cameraDistance, MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x78)) - reductionLevel * 10, 1, -1, -1);
         }
     }
 
@@ -1512,15 +1475,11 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
             CopyVec4(&nearbyVelocity, &randomVelocity);
             if (cameraDistance < 14.0f) {
                 cameraDelta.z += cameraDistance * 0.5f;
-                FastVec3Normalize(&nearbyVelocity, &nearbyVelocity,
-                                  cameraDistance / 5.0f * frameTime);
-                FastVec3Normalize(&cameraDelta, &cameraDelta,
-                                  (cameraDistance + cameraDistance) * frameTime);
+                FastVec3Normalize(&nearbyVelocity, &nearbyVelocity, cameraDistance / 5.0f * frameTime);
+                FastVec3Normalize(&cameraDelta, &cameraDelta, (cameraDistance + cameraDistance) * frameTime);
                 FastVec3Add(&nearbyVelocity, &nearbyVelocity, &cameraDelta);
                 FastVec4ScaleLength(&nearbyVelocity, &nearbyVelocity, frameTime * 10.0f);
-                M122_SpawnDebris(position, &nearbyVelocity,
-                                 MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)), 0,
-                                 0);
+                M122_SpawnDebris(position, &nearbyVelocity, MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)), 0, 0);
             }
             debrisCount = debrisCount - 1;
             for (particleIndex = 0; particleIndex < debrisCount; particleIndex++) {
@@ -1529,16 +1488,12 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
                 int variant;
                 elevation = MB_randRangeFloat(0.2617994f, 1.3089969f);
                 azimuth = MB_randRot();
-                MB_SphericalToVector(&randomVelocity,
-                                     effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime),
-                                     azimuth, elevation);
+                MB_SphericalToVector(&randomVelocity, effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime), azimuth, elevation);
                 randomVelocity.z += frameTime + frameTime;
                 variant = 0;
                 if (particleIndex % 3 == 0)
                     variant = 1;
-                M122_SpawnDebris(position, &randomVelocity,
-                                 MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)),
-                                 variant, 0);
+                M122_SpawnDebris(position, &randomVelocity, MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)), variant, 0);
             }
         }
     }
@@ -1563,17 +1518,8 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
             endColors = ExplosionEndColors;
             speed = speed - speedReduction * frameTime;
             speed = speed * effectScale;
-            SpawnPart_011(
-                position, &baseVelocity, ReorderRGB(startColors.colors[MB_randInt(6)], colorSwap),
-                ReorderRGB(endColors.colors[MB_randInt(6)], colorSwap), effectScale * 400000.0f,
-                MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3,
-                MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) - reductionLevel * 5,
-                0, 0, speed);
-            SpawnPart_011(
-                position, &baseVelocity, 0x7FFFFFFF, 0xFFFFFF, effectScale * 400000.0f,
-                MB_randRange(FastScaleRoundInt(5), FastScaleRoundInt(0xA)) - reductionLevel * 2,
-                MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3,
-                0, 0, speed * 0.5f);
+            SpawnPart_011(position, &baseVelocity, ReorderRGB(startColors.colors[MB_randInt(6)], colorSwap), ReorderRGB(endColors.colors[MB_randInt(6)], colorSwap), effectScale * 400000.0f, MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3, MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) - reductionLevel * 5, 0, 0, speed);
+            SpawnPart_011(position, &baseVelocity, 0x7FFFFFFF, 0xFFFFFF, effectScale * 400000.0f, MB_randRange(FastScaleRoundInt(5), FastScaleRoundInt(0xA)) - reductionLevel * 2, MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3, 0, 0, speed * 0.5f);
         }
     }
     {
@@ -1590,14 +1536,10 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
             randomVelocity.y = MB_randRangeFloat(-1.0f, 1.0f);
             randomVelocity.z = MB_randRangeFloat(-1.0f, 1.0f);
             CopyVec4(&smokeVelocity, &randomVelocity);
-            FastVec3Normalize(&smokeVelocity, &smokeVelocity,
-                              effectScale * (MB_randRangeFloat(0.0f, 3.0f) * frameTime));
+            FastVec3Normalize(&smokeVelocity, &smokeVelocity, effectScale * (MB_randRangeFloat(0.0f, 3.0f) * frameTime));
             startColor = ReorderRGB(startColors.colors[MB_randInt(6)], colorSwap);
             endColor = ReorderRGB(endColors.colors[MB_randInt(6)], colorSwap);
-            SpawnPart_008(position, &smokeVelocity, startColor, endColor,
-                          MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) -
-                              reductionLevel * 5,
-                          200000.0f);
+            SpawnPart_008(position, &smokeVelocity, startColor, endColor, MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) - reductionLevel * 5, 200000.0f);
         }
     }
 
@@ -1613,27 +1555,21 @@ void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, floa
         }
         laterGlowByte = laterGlowRed & 0xFF;
         if (FrameLoad < 0.95f && minGlowDistance < cameraDistance) {
-            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x10),
-                           firstGlowRed, 0x96, firstGlowBlue, 0x20);
-            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x16),
-                           laterGlowByte, 0x7F, 0x50, 0x20);
+            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x10), firstGlowRed, 0x96, firstGlowBlue, 0x20);
+            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x16), laterGlowByte, 0x7F, 0x50, 0x20);
         }
-        M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x1E),
-                       laterGlowByte, 0x7F, 0, 0x30);
+        M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x1E), laterGlowByte, 0x7F, 0, 0x30);
     }
 
-    if (owner != 0 && whiteGlowScale > 0.0f) {
-        M112_SpawnGlow(owner, position, &baseVelocity, whiteGlowScale, FastScaleRoundInt(0x1B),
-                       0xFF, 0xFF, 0xFF, 0x20);
-    }
+    if (owner != 0 && whiteGlowScale > 0.0f)
+        M112_SpawnGlow(owner, position, &baseVelocity, whiteGlowScale, FastScaleRoundInt(0x1B), 0xFF, 0xFF, 0xFF, 0x20);
     {
         if (shakeCamera) {
             Vec4 sphere;
             CopyVec4(&sphere, position);
             sphere.w = 2.0f;
             if (FastBsphereCheck(&sphere, 10.0f) != -1) {
-                GameCamera.shake.strength =
-                    (cameraDistance < 20.0f) ? 0.4f - cameraDistance * 0.0175f : 0.050000012f;
+                GameCamera.shake.strength = (cameraDistance < 20.0f) ? 0.4f - cameraDistance * 0.0175f : 0.050000012f;
                 GameCamera.shake.time = FastScaleRoundInt(0x19);
             }
         }
@@ -1859,15 +1795,13 @@ void MB_UnlockLevel(int level)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockItem);
 
-void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int dropFlags,
-                        int splineIndex)
+void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int dropFlags, int splineIndex)
 {
     Vec4 baseVelocity, position, velocity, spread, landing, pathPoint, quarter;
     float firstRoot, secondRoot;
     int counted;
     int total, remaining, sum, rate, roots, ones;
-    int upperTotal, upperFives, lowerTotal, upperTwenties, lowerTwenties, lowerFives, upperOnes,
-        lowerFifties;
+    int upperTotal, upperFives, lowerTotal, upperTwenties, lowerTwenties, lowerFives, upperOnes, lowerFifties;
     int lowerOnes, upperFifties, twenties, fives, fifties;
     BoltSourceVars *sourceVars;
     float time;
@@ -1905,8 +1839,7 @@ void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned i
         total <<= 1;
     if (total < 0x1F4) {
         if (counted && AdaptiveBoltFrames) {
-            rate = (int)((float)FastScaleRoundInt(0x3C) * 60.0f) * AdaptiveBoltCount /
-                   AdaptiveBoltFrames;
+            rate = (int)((float)FastScaleRoundInt(0x3C) * 60.0f) * AdaptiveBoltCount / AdaptiveBoltFrames;
             if (GoodiesMenuUnlocked || ChallengeMode)
                 rate /= 2;
             if (rate < 0x96) {
@@ -2001,8 +1934,7 @@ void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned i
                         lowerFives--;
                         lowerOnes++;
                     }
-                    lowerTotal =
-                        lowerFifties * 50 + lowerTwenties * 20 + lowerFives * 5 + lowerOnes;
+                    lowerTotal = lowerFifties * 50 + lowerTwenties * 20 + lowerFives * 5 + lowerOnes;
                 } while (total < lowerTotal && lowerTotal >= 4);
             }
             upperTotal = 3;
@@ -2022,8 +1954,7 @@ void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned i
                         upperTwenties--;
                         upperFifties++;
                     }
-                    upperTotal =
-                        upperFifties * 50 + upperTwenties * 20 + upperFives * 5 + upperOnes;
+                    upperTotal = upperFifties * 50 + upperTwenties * 20 + upperFives * 5 + upperOnes;
                 } while (upperTotal < total && upperTotal < 0x96);
             }
         }
