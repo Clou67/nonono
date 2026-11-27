@@ -61,23 +61,23 @@ typedef int (*MpegStreamCallback)(sceMpeg *, sceMpegCbData *, void *);
 int videoDecCreate(VideoDec *decoder, unsigned char *work, int work_size, unsigned long long *input,
                    unsigned long long *tags, int sectors, TimeStamp *timestamps, int timestamp_count);
 int videoDecSetStream(VideoDec *decoder, int type, int channel, MpegStreamCallback callback, void *argument);
-void videoDecAbort(VideoDec *decoder);
-unsigned int videoDecGetState(VideoDec *decoder);
-int videoDecFlush(VideoDec *decoder);
-int videoDecIsFlushed(VideoDec *decoder);
-int videoDecDelete(VideoDec *decoder);
+void videoDecAbort(VideoDec *vd);
+unsigned int videoDecGetState(VideoDec *vd);
+int videoDecFlush(VideoDec *vd);
+int videoDecIsFlushed(VideoDec *vd);
+int videoDecDelete(VideoDec *vd);
 // Entry point of the decoder thread.
-void videoDecMain(void *argument);
+void videoDecMain(void *pvd);
 
 int videoDecBeginPut(VideoDec *decoder, unsigned char **first, int *firstSize, unsigned char **second, int *secondSize);
 
 int viBufBeginPut(ViBuf *buffer, unsigned char **first, int *firstSize, unsigned char **second, int *secondSize);
 
-void videoDecEndPut(VideoDec *decoder, int size);
+void videoDecEndPut(VideoDec *vd, int size);
 
 void viBufEndPut(ViBuf *f, int size);
 
-void videoDecReset(VideoDec *decoder);
+void videoDecReset(VideoDec *vd);
 
 int viBufDelete(ViBuf *f);
 
@@ -87,11 +87,11 @@ int videoDecPutTs(VideoDec *decoder, long pts, long dts, unsigned char *position
 
 int viBufPutTs(ViBuf *f, TimeStamp *timestamp);
 
-int videoDecInputCount(VideoDec *decoder);
+int videoDecInputCount(VideoDec *vd);
 
 int viBufCount(ViBuf *f);
 
-int mpegNodata(sceMpeg *mpeg, sceMpegCbData *data, void *argument);
+int mpegNodata(sceMpeg *mp, sceMpegCbData *cbdata, void *anyData);
 
 int viBufAddDMA(ViBuf *f);
 
@@ -99,7 +99,7 @@ int mpegRestartVideoDMA(void);
 
 int viBufRestartDMA(ViBuf *buffer);
 
-int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument);
+int mpegError(sceMpeg *mp, sceMpegCbDataError *cberror, void *anyData);
 
 int mpegStopVideoDMA(void);
 
@@ -113,7 +113,7 @@ int viBufCreate(ViBuf *buffer, unsigned long long *input, unsigned long long *ta
 
 int viBufReset(ViBuf *f);
 
-int decBs0(VideoDec *decoder);
+int decBs0(VideoDec *vd);
 
 int viBufFlush(ViBuf *f);
 
