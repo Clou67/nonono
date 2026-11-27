@@ -17,6 +17,7 @@ float FastIntToFloat(int value);
 float FastAngleCosF(float angle);
 float FastAngleSinF(float angle);
 float FastAddRots(float angle, float delta);
+float FastSubRots(float first, float second);
 float FastArcTan(float x, float y);
 float FastDiffRots(float first, float second);
 float FastVec3DistLen(Vec4 *from, Vec4 *to);
@@ -29,8 +30,11 @@ int FastDecTimer(int &timer);
 int FastDecTimer(short &timer);
 int FastDecTimer(unsigned char &timer);
 float FastAbsF(float value);
+float FastFSqrt(float value);
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastVecLerp(Vec4 *out, Vec4 *first, Vec4 *second, float amount);
 float FastVec3Length(float *vec);
+float FastVec3Dot(Vec4 *first, Vec4 *second);
 void FastMemCopy32(void *destination, void *source, int size);
 // Writes the scaled xyz of in to out.
 void FastVec3Scale(Vec4 *out, Vec4 *in, float scale);
@@ -43,5 +47,12 @@ float FastMaxF(float first, float second);
 void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 // DMAs quadwords from the scratchpad at spr_address into main memory.
 void FastFromSpr(void *destination, int spr_address, int quadwords);
+
+void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastVecZero(Vec4 *vector);
+void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
+void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
+
+void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 
 #endif

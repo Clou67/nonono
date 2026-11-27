@@ -10,6 +10,7 @@ char *strcpy(char *destination, const char *source);
 char *strstr(const char *string, const char *search);
 int sprintf(char *buffer, const char *format, ...);
 void srand(unsigned int seed);
+int rand(void);
 }
 
 #endif

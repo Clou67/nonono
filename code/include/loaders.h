@@ -31,6 +31,20 @@ struct PifParser {
     int vLog;
 };
 
+enum { SPACE_PLATE_SHARED_IMAGE_INDEX = -1, SPACE_PLATE_IMAGE_BASE = 2 };
+
+struct SpacePlateArchive {
+    // Variable-length PIF offset table; the shared image uses image index -1.
+    int recordOffsets[1];
+};
+
+// Each plate is a PSMT8 PIF with a 256-entry, 32-bit palette.
+struct SpacePlatePif {
+    PifHeader header;
+    unsigned int palette[256];
+    unsigned char texels[0];
+};
+
 enum PifFormat {
     PIF_PSMCT32 = 0x00,
     PIF_PSMCT16 = 0x02,
@@ -109,6 +123,13 @@ int FastLog2(int value);
 void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
 void ParseEffectTexs(int *texDefs, int count);
 void ParseSky(char *data);
+
+// Shared level texture tables.
+struct TextureDef;
+extern int MobyTextureCount;
+extern int MobyTexLocs[];
+extern TextureDef MobyTexDefs[];
+extern int EffectTextureData;
 
 // Per-template GS register words used when building class GIF packets (3 words per row).
 extern unsigned long VisGifTemplates[];
@@ -469,7 +490,7 @@ extern unsigned char CheckpointObjState[];
 // Maps a moby record of the gameplay file to its instance, -1 when it did not spawn.
 extern short MobyIndexRemap[];
 extern short *MobyGroupEntries[];
-extern int MobySdata15FFF0;
+extern int MobyDrawDist;
 // One more than the last moby group in use.
 extern int MobySdata15FFF4;
 extern char *mobyVars;
@@ -488,7 +509,8 @@ extern short MobyIdListB[];
 extern short MobyIdListC[];
 extern int LevelSdata15F63C;
 
-extern char *PartInstances;
+struct PartInstance;
+extern PartInstance *PartInstances;
 extern int PartIndexTop;
 extern int PartIndexNext;
 extern int PartActiveCnt;
@@ -558,5 +580,7 @@ struct GoldWeaponGif {
     unsigned long miptbp1;      // 0x30
     unsigned long miptbp1Register;
 };
+
+int ReadFileEntryWithRetry(int entry);
 
 #endif

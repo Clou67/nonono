@@ -777,6 +777,8 @@ extern HeroVelocityKey HeroTrailJumpKeys[];
 extern HeroVelocityKey HeroWaterJumpKeys[];
 
 extern HeroState Hero;
+int Hero_InitBodyState(int state, int animMode);
+void Hero_MakeInvisible(void);
 
 // Item ids (weapons, gadgets and upgrades).
 enum item_id {

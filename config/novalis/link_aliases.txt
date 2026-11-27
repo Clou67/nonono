@@ -685,3 +685,37 @@ camPolarRot0__FP4Mtx4T0f = 0x00125360;
 camPolarRot1__FP4Mtx4T0f = 0x00125408;
 camPolarRot2__FP4Mtx4T0f = 0x001252B8;
 sound_UpdateAmbient__Fv = 0x002A1A18;
+
+FastVec3NormalizeFrom__FP4Vec4N20 = 0x00221570;
+CollLine__FP4Vec4T0iP12MobyInstanceP11COLL_DAM_IN = 0x00211870;
+SpawnPart_040__FP4Vec4T0iP12MobyInstance = 0x00284D88;
+SpawnPart_042__FP4Vec4T0iP12MobyInstance = 0x002858F0;
+SpawnPart_011__FP4Vec4T0iiiiifif = 0x0027F8F8;
+CollSphere__FfP4Vec4iP12MobyInstance = 0x00212960;
+SpawnPart_016__FP4Vec4T0iifii = 0x00280F30;
+CollSphere__FP4Vec4iP12MobyInstancef = 0x00212960;
+MB_GetNormalizedMtxElem__FP4Vec4P4Mtx4T0i = 0x002710F0;
+SpawnPart_058__FP4Vec4iiiiiiff = 0x00287E70;
+CollDamageMobyDirect_2__FP12MobyInstanceiiP4Vec4T3f = 0x0026EAA8;
+snd_SetReverbEx__Fiiiii = 0x0012EF68;
+snd_ResetStateAndFlushCommands__Fv = 0x0012EB00;
+snd_StreamSafeCdSync__Fi = 0x0012EE08;
+ReadFileEntryWithRetry__Fi = 0x0012F368;
+SpaceTransition_LoadWad__Fv = 0x002A5868;
+DisplayLoadingScreen__Fi = 0x002A5F10;
+
+SpacePlate_DrawQuad__FiiiiUxUxffff = 0x002A5FF0;
+
+FastDrawQuadReal__FP12GeometryQuadii = 0x0021EE28;
+
+SkySpace__Fv = 0x0029F260;
+Space_DrawQuadStrip__Fv = 0x002A31D0;
+Space_DrawHelper__Fi = 0x002A3310;
+
+Hero_MakeInvisible__Fv = 0x002486C0;
+
+MB_compressVector__FP4Vec4PUi = 0x00276380;
+MB_decompressVector__FP4Vec4PUi = 0x002764A8;
+
+SpawnPart_015__FP4Vec4T0iifiiii = 0x00280BD0;
+SpawnPart_045__FP4Vec4iiff = 0x00286780;

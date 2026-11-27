@@ -1012,7 +1012,7 @@ void SetLevelFlag(int flag)
 int numSpawnableMobys = 0;
 int MobyClassIndex = 0;
 int MobySdata15FFC4 = 0;
-int MobySdata15FFC8 = 0;
+int MobyTextureCount = 0;
 DmaTag *MobyVu1Marker = 0;
 int MobySdata15FFD0 = 0;
 int MobyBuff = 0;
@@ -1022,7 +1022,7 @@ MobyInstance *MobyInstanceEnd = 0;
 int MobyUpdateChainStart = 0;
 unsigned char *mobyVars = 0;
 int MobySdata15FFEC = 0;
-int MobySdata15FFF0 = 0;
+int MobyDrawDist = 0;
 int MobySdata15FFF4 = 0;
 int MobyTexMarker = 0;
 int MobyShadowCnt = 0;

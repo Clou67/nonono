@@ -97,6 +97,9 @@ struct COLL_DAM_OUT {
     MobyInstance *pMoby;
 };
 
+// Invalidates cached collision counters when changing levels.
+#define COLLISION_COUNTER_INVALIDATE 0x80000000
+
 // The result of the last collision query.
 struct COLLOUTPUT {
     char *grid;               // 0x00: the env collision grid
@@ -298,5 +301,14 @@ extern MobyVolume *CuboidVolumes;
 extern MobyVolume *SphereVolumes;
 extern MobyVolume *CylinderVolumes;
 extern AnimLayer AnimLayerPool[];
+
+float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int axis);
+
+void CollDamageMobyDirect_2(MobyInstance *moby, int damage, int flags, Vec4 *position,
+                            Vec4 *direction, float scale);
+
+// Four signed bytes: xyz normalized to the largest component, plus a shared scale.
+void MB_compressVector(Vec4 *vector, unsigned int *packed);
+void MB_decompressVector(Vec4 *vector, unsigned int *packed);
 
 #endif

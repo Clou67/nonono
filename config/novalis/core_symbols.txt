@@ -701,3 +701,5 @@ frameTimeSq = 0x0015ED70;
 optMirrorAnim = 0x0015EDB5;
 transStepScaleSq = 0x0015ED64;
 QuickSwapDefaultItem = 0x0015ED8C;
+
+rand = 0x001160D8;

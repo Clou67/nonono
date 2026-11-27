@@ -1,6 +1,24 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#include "moby.h"
+
+struct GeometryQuad {
+    Vec4 positions[4];
+    unsigned int colors[4];
+    float textureCoordinates[4][2];
+    unsigned long long state[4];
+};
+void FastDrawQuadReal(GeometryQuad *quad, int flags, int mode);
+
+extern int mobyVu1State;
+void ComposeCameraMatrix(void);
+void CleanAnimationCache(void);
+void DrawMobys(void);
+void SkySpace(void);
+void PatchMobyGifs(void);
+void SetScreenClearColorPacket(int red, int green, int blue, int alpha);
+
 struct MobyInstance;
 typedef void (*DrawMobyCallback)(MobyInstance *moby);
 
@@ -130,5 +148,8 @@ extern float DrawSdata15F450;
 extern float DrawSdata15F454;
 // The occlusion grid of the level, if it has one.
 extern char *OcclGrid;
+
+void SetupFogColorGsReg(void);
+void ResetGsRegistersPr(void);
 
 #endif

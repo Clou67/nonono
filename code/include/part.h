@@ -3,6 +3,8 @@
 
 #include "moby.h"
 
+struct PartInstance;
+
 struct PartLineMotion {
     Vec4 origin;
     Vec4 velocity;
@@ -62,6 +64,157 @@ struct PartTimedScale {
     float scaleStep;
 };
 
+enum PartSplittingFlags {
+    PART_SPLIT_REVERSE_ROTATION = 1,
+    PART_SPLIT_FADING = 8,
+    PART_SPLIT_NO_MOMENTUM = 0x40,
+    PART_SPLIT_CHILD = 0x80
+};
+
+enum {
+    PART_TEXTURE_SPLITTING = 12,
+    PART_SPLIT_COLLISION_NO_DAMAGE = 4,
+    PART_SPLIT_DAMAGE_FLAGS = 0x10001
+};
+
+struct PartSplittingMotion {
+    Vec4 velocity;              // 0x00
+    float rotation;             // 0x10, fraction of a turn
+    short age;                  // 0x14
+    short fadeFrames;           // 0x16
+    unsigned char flags;        // 0x18
+    unsigned char unk_19[3];
+    MobyInstance *owner;         // 0x1C
+};
+
+enum PartBranchingFlags {
+    PART_BRANCH_FADING = 1,
+    PART_BRANCH_BOOST = 2,
+    PART_BRANCH_GRAVITY = 4,
+    PART_BRANCH_LONG_FADE = 8
+};
+
+struct PartBranchingMotion {
+    Vec4 velocity;              // w holds the child velocity scale
+    int startColor;             // 0x10
+    int endColor;               // 0x14
+    unsigned char timer;        // 0x18
+    unsigned char flags;        // 0x19
+    unsigned char generation;   // 0x1A
+    unsigned char lifetime;     // 0x1B
+    float sizeCurve;            // 0x1C
+};
+
+enum { PART_DRIFT_COLLISION_FLAGS = 0x12 };
+
+struct PartDriftingMotion {
+    Vec4 velocity;
+    unsigned char *active;
+    int fading;
+    int offscreenFrames;
+    int collisionCounter;
+};
+
+enum { PART_COLOR_DECAY_COLLISION_FLAGS = 2 };
+
+struct PartColorDecayMotion {
+    Vec4 velocity;              // w holds the vertical acceleration override
+    float red;
+    float green;
+    float blue;
+    float alpha;
+};
+
+enum PartDebrisKind {
+    PART_DEBRIS_SPAWN_ON_LANDING = 1,
+    PART_DEBRIS_UPWARD_ACCELERATING = 3
+};
+
+struct PartDebrisMotion {
+    Vec4 velocity;              // w holds the landing height
+    int startColor;
+    int endColor;
+    short lifetime;
+    short kind;
+    float startScale;
+};
+
+enum PartLinkedFlags {
+    PART_LINK_FIXED = 1,
+    PART_LINK_FADING = 2
+};
+
+// Collision and fixed flags share a packed status word used when walking a particle chain.
+#define PART_LINK_BLOCKED_MASK 0x1FFFF00000000LL
+
+struct PartLinkedMotion {
+    Vec4 velocity;
+    PartInstance *target;
+    PartInstance *link;
+    union {
+        long long status;
+        struct {
+            int unk_18;
+            short collided;
+            unsigned short flags;
+        };
+    };
+};
+
+struct PartSpiralMotion {
+    Mtx4 *basis;
+    float alpha;
+    float rotation;
+    float alphaStep;
+    float radius;
+    float angle;
+    MobyInstance *target;
+    float approachSpeed;
+};
+
+enum PartTweenEmitterPhase {
+    PART_TWEEN_INITIAL = 0,
+    PART_TWEEN_EMITTING = 1,
+    PART_TWEEN_EMITTED = 2
+};
+
+enum { PART_TEXTURE_TWEEN_EMITTER = 58 };
+
+struct PartTweenEmitterMotion {
+    Vec4 velocity;
+    unsigned char singlePhase;
+    unsigned char tweenFrames;
+    unsigned char emitFrames;
+    unsigned char emitCount;
+    unsigned char phase;
+    unsigned char lifetime;
+    unsigned char alpha;
+    unsigned char unk_17;
+    int damage;
+    float damageScale;
+};
+
+// A falling ember emits smoke and debris when it crosses floorZ.
+struct PartFloorBurstMotion {
+    Vec4 velocity;  // 0x00
+    float floorZ;   // 0x10
+    float gravity;  // 0x14
+    int endColor;   // 0x18
+};
+
+// Two packed velocities and the durations of the blend between them.
+struct PartThreePhaseMotion {
+    unsigned int initialVelocity; // 0x00
+    unsigned int finalVelocity;   // 0x04
+    int farColor;                // 0x08
+    int nearColor;               // 0x0C
+    short initialFrames;         // 0x10
+    short blendFrames;           // 0x12
+    short finalFrames;           // 0x14
+    short unk_16;
+    Vec4 *target;                // 0x18
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -87,6 +240,16 @@ struct PartInstance {
         PartTweenSpin tweenSpin;
         PartFollowFade followFade;
         PartTimedScale timedScale;
+        PartSplittingMotion splittingMotion;
+        PartBranchingMotion branchingMotion;
+        PartDriftingMotion driftingMotion;
+        PartColorDecayMotion colorDecayMotion;
+        PartDebrisMotion debrisMotion;
+        PartLinkedMotion linkedMotion;
+        PartSpiralMotion spiralMotion;
+        PartTweenEmitterMotion tweenEmitterMotion;
+        PartThreePhaseMotion threePhaseMotion;
+        PartFloorBurstMotion floorBurstMotion;
     };
 };
 
@@ -113,6 +276,19 @@ void UpdatePart_034(PartInstance *part);
 void UpdatePart_042(PartInstance *part);
 
 void UpdatePart_064(PartInstance *part);
+void UpdatePart_065(PartInstance *particle);
+
+extern unsigned int PartFloorBurstRandomLimit;
+// Original unreferenced small-data constants retained for the overlay layout.
+extern const unsigned int PartLiteralSignedMask;
+extern const unsigned int PartLiteralByteMask;
+extern const float PartLiteralHalf;
+extern const float PartLiteralZero;
+extern const unsigned int PartLiteralNine;
+
+PartInstance *SpawnPart_015(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
+                             float scale, int lifetime, int flags, int texture, int blend);
+PartInstance *SpawnPart_045(Vec4 *position, int flags, int color, float scale, float scaleStep);
 
 void UpdatePart_020(PartInstance *part);
 
@@ -121,7 +297,35 @@ void UpdatePart_057(PartInstance *part);
 void UpdatePart_060(PartInstance *part);
 
 void UpdatePart_071(PartInstance *part);
+void UpdatePart_072(PartInstance *particle);
 
 void UpdatePart_073(PartInstance *part);
+
+PartInstance *SpawnPart_040(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
+void UpdatePart_041(PartInstance *particle);
+PartInstance *SpawnPart_042(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
+void UpdatePart_043(PartInstance *particle);
+
+void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime,
+                   int timer, int generation, float sizeCurve, int flags, float velocityScale);
+void UpdatePart_012(PartInstance *particle);
+
+void UpdatePart_004(PartInstance *particle);
+
+void UpdatePart_026(PartInstance *particle);
+
+PartInstance *SpawnPart_016(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
+                             float scale, int lifetime, int kind);
+void UpdatePart_017(PartInstance *particle);
+
+void UpdatePart_031(PartInstance *particle);
+
+void UpdatePart_021(PartInstance *particle);
+
+extern PartInstance *PartInstances;
+PartInstance *SpawnPart_058(Vec4 *position, int phase, int tweenFrames, int emitFrames,
+                             int emitCount, int lifetime, int damage, float damageScale,
+                             float speedScale);
+void UpdatePart_059(PartInstance *particle);
 
 #endif

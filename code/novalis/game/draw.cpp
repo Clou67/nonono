@@ -518,7 +518,7 @@ void DefaultDraw(void)
     // Light and patch next frame's packets while VU1 draws this one.
     VU0_loadMicroProgram(LightVU0Program);
     FlushCache(0);
-    PerfLoad = FastIntToFloat(*T0_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
+    PerfLoad = FastIntToFloat(*T1_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
 
     VU1_syncChain(2);
     printf_stub2("", 17);
@@ -892,7 +892,7 @@ int DrawSdata15F410 = 0;
 int DrawSdata15F414 = 0;
 int GifLoadCnt = 0;
 int EffectTexCnt = 0;
-int DrawSdata15F420 = 0;
+int EffectTextureData = 0;
 int MobyFnListCnt = 0;
 int PreDrawCnt = 0;
 int PostDrawCnt = 0;
