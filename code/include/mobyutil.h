@@ -110,9 +110,9 @@ struct MoveVars {
 
 int MB_RequestHelpMessage(int selector, int messageId);
 
-void DeleteMoby(MobyInstance *moby);
-void AttachManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator);
-void DetachManipulator(MobyInstance *moby, Manipulator *manipulator);
+void DeleteMoby(MobyInstance *pMoby);
+void AttachManipulator(MobyInstance *pMoby, int animJoint, Manipulator *pManip);
+void DetachManipulator(MobyInstance *pMoby, Manipulator *pManip);
 void MB_ToastMessageByIndex(int level);
 extern MobyInstance *MobyInstances;
 
