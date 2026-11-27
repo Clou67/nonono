@@ -174,7 +174,8 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PushOutOfWa
 
 int MB_PushOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float radius, float stepHeight, int flags);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags)
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed,
+                          float stepHeight, int flags)
 {
     float radius = FastIntToFloat(radiusFixed) * (1.0f / 1024.0f);
     return MB_PushOutOfWalls(moby, move, height, radius, stepHeight, flags);
