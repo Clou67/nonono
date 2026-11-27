@@ -2,6 +2,7 @@
 #define LOADERS_H
 
 #include "moby.h"
+#include "env.h"
 #include "mobyutil.h"
 
 struct MobyClass;
@@ -472,8 +473,6 @@ extern int SplineCnt;
 extern char *SplineData;
 struct MobyPath;
 extern MobyPath *Splines[];
-extern char *EnvSamples;
-extern int EnvSampleCnt;
 
 extern int ShrubCnt;
 extern ShrubMatrix *ShrubMatrices;

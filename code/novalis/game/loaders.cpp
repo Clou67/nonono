@@ -2341,13 +2341,13 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->envSamples;
         int count = *(int *)section;
 
-        EnvSamples = mem;
+        EnvSamples = (EnvSample *)mem;
         EnvSampleCnt = count;
         section += 0x10;
-        mem += count * 0x30;
+        mem += count * sizeof(EnvSample);
         mem = (char *)(((unsigned int)mem + 0x3F) & 0xFFFFFFC0);
         if (count != 0)
-            FastMemCopy32(EnvSamples, section, count * 0x30);
+            FastMemCopy32(EnvSamples, section, count * sizeof(EnvSample));
     }
 
     PartInstances = (PartInstance *)mem;

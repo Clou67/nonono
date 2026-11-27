@@ -1,4 +1,5 @@
 #include "common.h"
+#include "env.h"
 #include "vuchain.h"
 #include "fastfunc.h"
 #include "moby.h"
@@ -933,23 +934,6 @@ void DrawMobys(void)
 
 
 
-typedef struct EnvSample {
-    Vec4 pos;
-    int  colorR;
-    int  colorG;
-    int  colorB;
-    int  lights;
-    int  reverbDepth;
-    unsigned char   reverbType;
-    unsigned char   reverbDelay;
-    unsigned char   reverbFeedback;
-    unsigned char   hasReverb;
-    int  musicTrack;
-    int  unk2C;
-} EnvSample;
-
-extern int EnvSampleCnt;        // 0x160014
-extern EnvSample* EnvSamples;   // 0x160040
 extern SoundAudioState audioState;
 extern MusicTransition musicTransition;
 
