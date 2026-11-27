@@ -76,24 +76,24 @@ float MB_randRot(void);
 float MB_randRangeFloat(float low, float high);
 void MB_SphericalToVector(Vec4 *out, float radius, float azimuth, float elevation);
 
-void MB_randVector(Vec4 *vector, float low, float high)
+void MB_randVector(Vec4 *v, float min, float max)
 {
     float azimuth = MB_randRot();
     float elevation = MB_randRot();
-    float radius = MB_randRangeFloat(low, high);
+    float radius = MB_randRangeFloat(min, max);
 
-    MB_SphericalToVector(vector, radius, azimuth, elevation);
+    MB_SphericalToVector(v, radius, azimuth, elevation);
 }
 
-void MB_randSphere(Vec4 *out, float minimum, float maximum)
+void MB_randSphere(Vec4 *v, float minRad, float maxRad)
 {
-    float radius = MB_randRangeFloat(minimum, maximum);
+    float radius = MB_randRangeFloat(minRad, maxRad);
     float azimuth = MB_randRot();
     float elevation = MB_randRot();
 
-    out->x = FastAngleSinF(azimuth) * FastAngleCosF(elevation) * radius;
-    out->y = FastAngleCosF(azimuth) * FastAngleCosF(elevation) * radius;
-    out->z = FastAngleSinF(elevation) * radius;
+    v->x = FastAngleSinF(azimuth) * FastAngleCosF(elevation) * radius;
+    v->y = FastAngleCosF(azimuth) * FastAngleCosF(elevation) * radius;
+    v->z = FastAngleSinF(elevation) * radius;
 }
 
 float MB_catmullRom(float first, float second, float third, float fourth, float fraction)
@@ -108,15 +108,15 @@ float MB_catmullRom(float first, float second, float third, float fourth, float 
     return cubic * fractionCubed + quadratic * fractionSquared + linear * fraction + second;
 }
 
-float MB_CosineInterpolate(float start, float end, float weight)
+float MB_CosineInterpolate(float a, float b, float x)
 {
-    if (weight == 0.0f)
-        return start;
-    if (weight == 1.0f)
-        return end;
+    if (x == 0.0f)
+        return a;
+    if (x == 1.0f)
+        return b;
 
-    float blend = (1.0f - FastAngleSinF(weight * 3.14159265358979323846f)) * 0.5f;
-    return start + (end - start) * blend;
+    float blend = (1.0f - FastAngleSinF(x * 3.14159265358979323846f)) * 0.5f;
+    return a + (b - a) * blend;
 }
 
 float FastSubRots(float first, float second);
@@ -545,9 +545,9 @@ void MB_SetZBoundsFromGround(MobyInstance *moby)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SetZBoundsFromFloorCeil);
 
-int TweenColor(int from, int to, float fraction)
+int TweenColor(int col0, int col1, float step)
 {
-    return FastTweenColor(from, to, fraction);
+    return FastTweenColor(col0, col1, step);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_FindSlotByMask);
@@ -783,9 +783,9 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_updateJump)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_002705A0);
 
-float Lerp(float from, float to, float weight)
+float Lerp(float val0, float val1, float alpha)
 {
-    return from + (to - from) * weight;
+    return val0 + (val1 - val0) * alpha;
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", Lerp_vec4);
@@ -810,28 +810,28 @@ void GainDampLimit(float delta, float &speed, float gain, float damping, float l
 
 float FastAbsF(float value);
 
-float Delt(float &value, float target, float step)
+float Delt(float &val, float target, float speed)
 {
-    float delta = target - value;
+    float delta = target - val;
 
-    if (delta > step)
-        delta = step;
-    else if (delta < -step)
-        delta = -step;
+    if (delta > speed)
+        delta = speed;
+    else if (delta < -speed)
+        delta = -speed;
 
-    value += delta;
-    return FastAbsF(target - value);
+    val += delta;
+    return FastAbsF(target - val);
 }
 
 void GainDampLimit(float delta, float &speed, float gain, float damping, float limit);
 
-float AccelDelt(float &value, float target, float &speed, float gain, float damping, float limit)
+float AccelDelt(float &val, float target, float &speed, float gain, float damp, float limit)
 {
-    GainDampLimit(target - value, speed, gain, damping, limit);
-    value += speed;
-    float remaining = target - value;
+    GainDampLimit(target - val, speed, gain, damp, limit);
+    val += speed;
+    float remaining = target - val;
     if (FastAbsF(remaining) < limit * 0.01f) {
-        value = target;
+        val = target;
         speed = 0.0f;
         return speed;
     }
@@ -843,10 +843,10 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", OrganicDelt);
 static const float SAME_ANGLE = 0.001745329238474369f;
 static const float FULL_ROTATION = 6.283185307179586f;
 
-float SubRots(float target, float angle, int direction)
+float SubRots(float rot1, float rot2, int turnDir)
 {
-    float delta = FastSubRots(target, angle);
-    if (!direction || delta * direction > 0.0f)
+    float delta = FastSubRots(rot1, rot2);
+    if (!turnDir || delta * turnDir > 0.0f)
         return delta;
     if (FastAbsF(delta) <= SAME_ANGLE)
         return 0.0f;
@@ -857,33 +857,33 @@ float SubRots(float target, float angle, int direction)
 
 float SubRots(float target, float angle, int direction);
 
-float DeltAng(float &angle, float target, float speed, int direction)
+float DeltAng(float &val, float target, float speed, int turnDir)
 {
-    float delta = SubRots(target, angle, direction);
+    float delta = SubRots(target, val, turnDir);
     if (delta > speed)
         delta = speed;
     else if (delta < -speed)
         delta = -speed;
-    angle = FastAddRots(angle, delta);
-    return SubRots(target, angle, direction);
+    val = FastAddRots(val, delta);
+    return SubRots(target, val, turnDir);
 }
 
 enum { TURN_DIRECTION_AUTO = 2 };
 
-float AccelDeltAng(float &angle, float target, float &speed, float gain, float damping, float limit, int direction)
+float AccelDeltAng(float &val, float target, float &speed, float gain, float damp, float limit, int turnDir)
 {
-    if (direction == TURN_DIRECTION_AUTO) {
-        if ((target > 0.0f && angle < 0.0f) || (target < 0.0f && angle > 0.0f))
-            direction = target < 0.0f ? -1 : 1;
+    if (turnDir == TURN_DIRECTION_AUTO) {
+        if ((target > 0.0f && val < 0.0f) || (target < 0.0f && val > 0.0f))
+            turnDir = target < 0.0f ? -1 : 1;
         else
-            direction = 0;
+            turnDir = 0;
     }
 
-    GainDampLimit(SubRots(target, angle, direction), speed, gain, damping, limit);
-    angle = FastAddRots(angle, speed);
-    float remaining = SubRots(target, angle, direction);
+    GainDampLimit(SubRots(target, val, turnDir), speed, gain, damp, limit);
+    val = FastAddRots(val, speed);
+    float remaining = SubRots(target, val, turnDir);
     if (FastAbsF(remaining) < limit * 0.01f) {
-        angle = target;
+        val = target;
         speed = 0.0f;
         return speed;
     }
@@ -892,11 +892,11 @@ float AccelDeltAng(float &angle, float target, float &speed, float gain, float d
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", OrganicDeltAng);
 
-unsigned int Float_To_RGBA(float red, float green, float blue, float alpha)
+unsigned int Float_To_RGBA(float r, float g, float b, float alpha)
 {
-    int redByte = FastFloatToInt(red * 255.0f) & 0xFF;
-    int greenByte = FastFloatToInt(green * 255.0f) & 0xFF;
-    int blueByte = FastFloatToInt(blue * 255.0f) & 0xFF;
+    int redByte = FastFloatToInt(r * 255.0f) & 0xFF;
+    int greenByte = FastFloatToInt(g * 255.0f) & 0xFF;
+    int blueByte = FastFloatToInt(b * 255.0f) & 0xFF;
     unsigned int alphaByte = FastFloatToInt(alpha * 255.0f);
 
     return redByte | (greenByte << 8) | (blueByte << 16) | (alphaByte << 24);
@@ -1344,10 +1344,10 @@ int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment,
 // Retail leaves two words after the compiled tail of MB_PathFollowToPos.
 TEXT_PADDING(0x27BD0080, 0);
 
-float MB_WrapRot(float angle)
+float MB_WrapRot(float ang)
 {
     float whole;
-    float wrapped = angle + 3.14159274f;
+    float wrapped = ang + 3.14159274f;
 
     wrapped /= 6.2831855f;
     wrapped = FastFrac(&whole, wrapped);
@@ -1375,15 +1375,15 @@ extern MobyInstance *MobyInstanceEnd;
 
 enum { OCLASS_CRATE_FIRST = 500, OCLASS_CRATE_LAST = 540 };
 
-int MB_isCrate(MobyInstance *moby)
+int MB_isCrate(MobyInstance *pMoby)
 {
-    if (!moby)
+    if (!pMoby)
         return 0;
 
-    if (moby < MobyInstances || moby > MobyInstanceEnd)
+    if (pMoby < MobyInstances || pMoby > MobyInstanceEnd)
         return 0;
 
-    return (unsigned int)(moby->oClass - OCLASS_CRATE_FIRST)
+    return (unsigned int)(pMoby->oClass - OCLASS_CRATE_FIRST)
         <= OCLASS_CRATE_LAST - OCLASS_CRATE_FIRST;
 }
 
@@ -2061,13 +2061,13 @@ float MB_RoundToDecimals(float value, int digits)
 float MB_BlendAnimFrame(MobyInstance *moby);
 float MB_RoundToDecimals(float value, int digits);
 
-int MB_MayaFrameTrigger(MobyInstance *moby, float frame)
+int MB_MayaFrameTrigger(MobyInstance *pMoby, float frameTrig)
 {
-    float current = MB_BlendAnimFrame(moby);
-    float offset = MB_RoundToDecimals(current - frame, 4);
-    float step = MB_RoundToDecimals(moby->animIScale * moby->animSpeed, 4);
+    float current = MB_BlendAnimFrame(pMoby);
+    float offset = MB_RoundToDecimals(current - frameTrig, 4);
+    float step = MB_RoundToDecimals(pMoby->animIScale * pMoby->animSpeed, 4);
 
-    if (frame <= current) {
+    if (frameTrig <= current) {
         if (offset < step)
             return 1;
     }

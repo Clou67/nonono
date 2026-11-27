@@ -120,7 +120,7 @@ void CreateMotionBlur(MobyInstance *pMoby, MotionBlur *blur);
 void DeleteMotionBlur(MotionBlur *blur);
 void MB_ToastMessage(int message, int time);
 void MB_ToggleManipulator(MobyInstance *moby, int animJoint, Manipulator *manipulator, float scale);
-float MB_WrapRot(float angle);
+float MB_WrapRot(float ang);
 int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment, float *fraction, int wrap, float limit, float step, float tolerance);
 void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group);
 void MB_InitMoveVars(MoveVars *vars);
@@ -146,7 +146,7 @@ int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *mo
 void MB_UnlockLevel(int level);
 void MB_UnlockItem(int item, char equip);
 
-float Lerp(float from, float to, float weight);
+float Lerp(float val0, float val1, float alpha);
 
 struct COLL_DAM_IN {
     Vec4 momentum;
@@ -213,7 +213,7 @@ struct Mtx4;
 
 void MB_SetZBoundsFromPos(MobyInstance *moby, float z);
 
-int TweenColor(int from, int to, float fraction);
+int TweenColor(int col0, int col1, float step);
 
 int DecAlpha(int *rgba, int decrement);
 
@@ -236,7 +236,7 @@ float MB_randRangeSigned(float low, float high);
 
 float MB_randRot(void);
 
-void MB_randVector(Vec4 *vector, float low, float high);
+void MB_randVector(Vec4 *v, float min, float max);
 
 void SetCollDamIn(COLL_DAM_IN &damage, MobyInstance *damager, int damageFlags, float damageHp);
 
@@ -248,7 +248,7 @@ int MB_GetPVarsField10(MobyInstance *moby);
 
 void MB_TransformToQuat(Vec4 *quaternion, Mtx4 *transform);
 
-float Delt(float &value, float target, float step);
+float Delt(float &val, float target, float speed);
 
 void MB_AxisAngleToQuat(Vec4 *quaternion, Vec4 *axis, float angle);
 
@@ -279,7 +279,7 @@ int MB_GetUnspentGoldBolts(void);
 
 void MB_SetGroupField(int group, int value);
 
-float MB_CosineInterpolate(float start, float end, float weight);
+float MB_CosineInterpolate(float a, float b, float x);
 
 float MB_lerpRotCosine(float start, float end, float weight);
 
@@ -293,7 +293,7 @@ void MB_BobMotion(MobyInstance *moby, float *phase, float *offset, float height,
 
 void MB_SphericalToVector(Vec4 *out, float radius, float azimuth, float elevation);
 
-void MB_randSphere(Vec4 *out, float minimum, float maximum);
+void MB_randSphere(Vec4 *v, float minRad, float maxRad);
 
 void MB_randOffset(Vec4 *vector, float range);
 
@@ -303,7 +303,7 @@ void MB_QuatToEuler(Vec4 *out, Vec4 *angles);
 
 void MB_RotateQuatAxisAngle(Vec4 *out, Vec4 *vector, Vec4 *axis, float angle);
 
-unsigned int Float_To_RGBA(float red, float green, float blue, float alpha);
+unsigned int Float_To_RGBA(float r, float g, float b, float alpha);
 
 unsigned int ReorderRGB(unsigned int rgba, int mask);
 
@@ -321,13 +321,13 @@ int MB_HasCollPrims(MobyInstance *moby);
 
 float MB_CollLineDown(Vec4 *position, float height, int flags);
 
-float DeltAng(float &angle, float target, float speed, int direction);
+float DeltAng(float &val, float target, float speed, int turnDir);
 
-float AccelDelt(float &value, float target, float &speed, float gain, float damping, float limit);
+float AccelDelt(float &val, float target, float &speed, float gain, float damp, float limit);
 
 float MB_RoundToDecimals(float value, int digits);
 
-float SubRots(float target, float angle, int direction);
+float SubRots(float rot1, float rot2, int turnDir);
 
 int MB_SolveQuad(float first, float second, float third, float *largerRoot, float *smallerRoot);
 
@@ -339,17 +339,17 @@ void GainDampLimit(float delta, float &speed, float gain, float damping, float l
 
 void MB_CosineInterpolateAngVec(float fraction, Vec4 *out, Vec4 *from, Vec4 *to);
 
-int MB_isCrate(MobyInstance *moby);
+int MB_isCrate(MobyInstance *pMoby);
 
 void MB_DistributeBoltsNearHero(MobyInstance *moby);
 
-float AccelDeltAng(float &angle, float target, float &speed, float gain, float damping, float limit, int direction);
+float AccelDeltAng(float &val, float target, float &speed, float gain, float damp, float limit, int turnDir);
 
 bool MB_isAmmo(MobyInstance *moby);
 
 int MB_HeroStandingOnMoby(MobyInstance *moby);
 
-int MB_MayaFrameTrigger(MobyInstance *moby, float frame);
+int MB_MayaFrameTrigger(MobyInstance *pMoby, float frameTrig);
 
 void MB_SetZBoundsFromGround(MobyInstance *moby);
 
