@@ -193,16 +193,16 @@ void UpdateMobyFrameData(MobyInstance *moby)
 
 void MB_PlayMobyDesiredSound(MobyInstance* pMoby) {
     int channel;
-    SoundAudioState* state;
+    SoundVoiceWindow* voice;
 
     if (pMoby->soundChannel != 0xFF) {
         channel = pMoby->soundChannel;
-        state = (SoundAudioState*)((SoundVoice*)&audioState + channel);
+        voice = (SoundVoiceWindow *)((SoundVoice *)&audioState + channel);
 
-        if (state->voices[0].pMoby != pMoby)
+        if (voice->voice.pMoby != pMoby)
             pMoby->soundChannel = 0xFF;
             
-        else if (state->voices[0].soundId != pMoby->soundDesired) {
+        else if (voice->voice.soundId != pMoby->soundDesired) {
             sound_KillChannel(channel);
             pMoby->soundChannel = 0xFF;
         }

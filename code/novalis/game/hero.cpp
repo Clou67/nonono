@@ -998,10 +998,10 @@ void Hero_DoBehavior(void)
 
         else {
             if (Hero.loopSounds[5] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[5]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[5] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby) {
-                    if (voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby) {
+                    if (voice->voice.status != 0)
                         sound_KillChannel(Hero.loopSounds[5]);
                 }
             }
@@ -2341,9 +2341,9 @@ void Hero_DoBehavior(void)
 
         if (Hero_GetGadgetMoby(3) == 2) {
             if (Hero.loopSounds[4] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[4]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[4] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby && voice->voice.status != 0)
                     sound_KillChannel(Hero.loopSounds[4]);
             }
 
@@ -2353,9 +2353,9 @@ void Hero_DoBehavior(void)
 
         else {
             if (Hero.loopSounds[3] != -1) {
-                SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[3]];
+                SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[3] * sizeof(SoundVoice));
 
-                if (voiceRow[1].pMoby == Hero.moby && voiceRow[1].inUse != 0)
+                if (voice->voice.pMoby == Hero.moby && voice->voice.status != 0)
                     sound_KillChannel(Hero.loopSounds[3]);
             }
 
@@ -5816,10 +5816,10 @@ void Hero_Transitions(void)
                         break;
 
                     if (Hero.loopSounds[2] != -1) {
-                        SoundVoice *voiceRow = &audioState.rows[Hero.loopSounds[2]];
+                        SoundVoiceWindow *voice = (SoundVoiceWindow *)((char *)&audioState + Hero.loopSounds[2] * sizeof(SoundVoice));
 
-                        if (voiceRow[1].pMoby == Hero.moby &&
-                            voiceRow[1].inUse != 0)
+                        if (voice->voice.pMoby == Hero.moby &&
+                            voice->voice.status != 0)
                             sound_KillChannel(Hero.loopSounds[2]);
                     }
 

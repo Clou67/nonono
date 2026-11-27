@@ -1,5 +1,3 @@
-#include <stddef.h>
-
 #include "common.h"
 #include "camera.h"
 #include "fastfunc.h"
@@ -13,7 +11,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/sound", sound_GetFade);
 
 int sound_GetFade(SoundDef *definition, float distance, float nearDistance, float farDistance);
 
-int sound_GetFadeChannel(SoundData *channel, Vec4 *position)
+int sound_GetFadeChannel(SoundVoice *channel, Vec4 *position)
 {
     float distance = FastVec3Dist(position, &GameCamera.position);
     SoundDef *definition = channel->pSoundDef;
@@ -51,16 +49,16 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/sound", func_002A1960);
 int sound_SetVol(int handle, int volume)
 {
     unsigned int offset = handle * sizeof(SoundVoice);
-    unsigned char *voice = (unsigned char *)(offset + (unsigned int)&audioState);
-    *(int *)(voice + offsetof(SoundAudioState, voices[0].volume)) = volume;
+    SoundVoiceWindow *window = (SoundVoiceWindow *)(offset + (unsigned int)&audioState);
+    window->voice.volume = volume;
     return 1;
 }
 
 int sound_SetPitch(int handle, int pitch)
 {
     unsigned int offset = handle * sizeof(SoundVoice);
-    unsigned char *voice = (unsigned char *)(offset + (unsigned int)&audioState);
-    *(int *)(voice + offsetof(SoundAudioState, voices[0].pitch_bend)) = pitch;
+    SoundVoiceWindow *window = (SoundVoiceWindow *)(offset + (unsigned int)&audioState);
+    window->voice.pitch_bend = pitch;
     return 1;
 }
 
