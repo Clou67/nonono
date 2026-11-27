@@ -716,3 +716,6 @@ Hero_MakeInvisible__Fv = 0x002486C0;
 
 MB_compressVector__FP4Vec4PUi = 0x00276380;
 MB_decompressVector__FP4Vec4PUi = 0x002764A8;
+
+SpawnPart_015__FP4Vec4T0iifiiii = 0x00280BD0;
+SpawnPart_045__FP4Vec4iiff = 0x00286780;

@@ -194,6 +194,14 @@ struct PartTweenEmitterMotion {
     float damageScale;
 };
 
+// A falling ember emits smoke and debris when it crosses floorZ.
+struct PartFloorBurstMotion {
+    Vec4 velocity;  // 0x00
+    float floorZ;   // 0x10
+    float gravity;  // 0x14
+    int endColor;   // 0x18
+};
+
 // Two packed velocities and the durations of the blend between them.
 struct PartThreePhaseMotion {
     unsigned int initialVelocity; // 0x00
@@ -241,6 +249,7 @@ struct PartInstance {
         PartSpiralMotion spiralMotion;
         PartTweenEmitterMotion tweenEmitterMotion;
         PartThreePhaseMotion threePhaseMotion;
+        PartFloorBurstMotion floorBurstMotion;
     };
 };
 
@@ -267,6 +276,19 @@ void UpdatePart_034(PartInstance *part);
 void UpdatePart_042(PartInstance *part);
 
 void UpdatePart_064(PartInstance *part);
+void UpdatePart_065(PartInstance *particle);
+
+extern unsigned int PartFloorBurstRandomLimit;
+// Original unreferenced small-data constants retained for the overlay layout.
+extern const unsigned int PartLiteralSignedMask;
+extern const unsigned int PartLiteralByteMask;
+extern const float PartLiteralHalf;
+extern const float PartLiteralZero;
+extern const unsigned int PartLiteralNine;
+
+PartInstance *SpawnPart_015(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
+                             float scale, int lifetime, int flags, int texture, int blend);
+PartInstance *SpawnPart_045(Vec4 *position, int flags, int color, float scale, float scaleStep);
 
 void UpdatePart_020(PartInstance *part);
 

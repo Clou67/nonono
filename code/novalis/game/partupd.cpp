@@ -1389,7 +1389,84 @@ void UpdatePart_064(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_064);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_065);
+unsigned int PartFloorBurstRandomLimit = 15;
+
+void UpdatePart_065(PartInstance *particle)
+{
+    PartFloorBurstMotion *motion = &particle->floorBurstMotion;
+    Vec4 emittedPosition;
+    int red, green, blue;
+    int emittedLifetime, debrisStartColor, debrisEndColor;
+    float spawnScale;
+
+    if (FastDecTimer(particle->timer))
+        motion->velocity.z -= motion->gravity;
+
+    FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+    particle->rot += 2;
+    if (!(particle->pos.z < motion->floorZ))
+        return;
+
+    red = particle->rgba & 0xFF;
+    green = (particle->rgba & 0xFF00) >> 8;
+    blue = ((unsigned int)particle->rgba >> 16) & 0xFF;
+
+    if (!MB_randInt(PartFloorBurstRandomLimit - 1)) {
+        particle->pos.z = motion->floorZ;
+        motion->velocity.x *= MB_randRangeFloat(1.0f, 3.5f);
+        motion->velocity.y *= MB_randRangeFloat(1.0f, 3.5f);
+        motion->velocity.z *= MB_randRangeFloat(-1.0f, -1.5f);
+        spawnScale = particle->scale;
+        spawnScale *= 0.5f;
+        emittedLifetime = MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x78));
+        SpawnPart_015(&particle->pos, &motion->velocity, particle->rgba, motion->endColor,
+                      spawnScale, emittedLifetime, 0, (unsigned char)particle->tex,
+                      (unsigned char)particle->gs_alpha);
+    }
+
+    else {
+        particle->pos.z = motion->floorZ;
+        motion->velocity.x += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
+        motion->velocity.y += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
+        motion->velocity.z *= MB_randRangeFloat(-0.5f, -1.0f);
+        spawnScale = particle->scale;
+        spawnScale *= 0.25f;
+        emittedLifetime = MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x3C));
+        SpawnPart_015(&particle->pos, &motion->velocity, particle->rgba, motion->endColor,
+                      spawnScale, emittedLifetime, 0, (unsigned char)particle->tex,
+                      (unsigned char)particle->gs_alpha);
+    }
+
+    if (Level == LEVEL_ORXON) {
+        if (!MB_randInt(0x13)) {
+            CopyVec4(&emittedPosition, &particle->pos);
+            emittedPosition.z += 0.1f;
+            SpawnPart_045(&emittedPosition, 0,
+                          ((MB_randInt(6) + 0x34) << 24) | (blue << 16) | (green << 8) | red, 0.05f,
+                          10500.0f);
+        }
+        if (!MB_randInt(9)) {
+            debrisStartColor =
+                TweenColor(0x7F000000, 0x7F000000 | (blue << 16) | (green << 8) | red,
+                           MB_randRangeFloat(0.25f, 1.0f));
+            debrisEndColor = TweenColor(0, 0x5F00, MB_randRangeFloat(0.5f, 1.0f));
+            motion->velocity.x = MB_randRangeFloat(-1.0f, 1.0f);
+            motion->velocity.y = MB_randRangeFloat(-1.0f, 1.0f);
+            motion->velocity.z = 0.0f;
+            FastVec3Normalize(&motion->velocity, &motion->velocity,
+                              MB_randRangeFloat(1.5f, 3.0f) * frameTime);
+            motion->velocity.z = frameTime * 3.0f;
+            CopyVec4(&emittedPosition, &particle->pos);
+            emittedPosition.z -= 1.5f;
+            spawnScale = MB_randRangeFloat(420000.0f, 630000.0f);
+            emittedLifetime = MB_randRange(FastScaleRoundInt(0x5A), FastScaleRoundInt(0x96));
+            SpawnPart_016(&emittedPosition, &motion->velocity, debrisStartColor, debrisEndColor,
+                          spawnScale, emittedLifetime, 3);
+        }
+    }
+
+    DeletePart(particle);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_066);
 
@@ -1530,6 +1607,13 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_075)
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AAE0);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_076);
+
+// Unreferenced retail literal-pool entries between the two live small-data scalars.
+extern const unsigned int PartLiteralSignedMask __attribute__((section(".sdata"))) = 0x7FFFFFFF;
+extern const unsigned int PartLiteralByteMask __attribute__((section(".sdata"))) = 0xFF;
+extern const float PartLiteralHalf __attribute__((section(".sdata"))) = 0.5f;
+extern const float PartLiteralZero __attribute__((section(".sdata"))) = 0.0f;
+extern const unsigned int PartLiteralNine __attribute__((section(".sdata"))) = 9;
 
 int PartFadeAlphaStep = 19;
 
