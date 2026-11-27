@@ -31,6 +31,20 @@ struct PifParser {
     int vLog;
 };
 
+enum { SPACE_PLATE_SHARED_IMAGE_INDEX = -1, SPACE_PLATE_IMAGE_BASE = 2 };
+
+struct SpacePlateArchive {
+    // Variable-length PIF offset table; the shared image uses image index -1.
+    int recordOffsets[1];
+};
+
+// Each plate is a PSMT8 PIF with a 256-entry, 32-bit palette.
+struct SpacePlatePif {
+    PifHeader header;
+    unsigned int palette[256];
+    unsigned char texels[0];
+};
+
 enum PifFormat {
     PIF_PSMCT32 = 0x00,
     PIF_PSMCT16 = 0x02,

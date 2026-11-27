@@ -16,6 +16,8 @@
 #include "pause.h"
 #include "sound.h"
 #include "space.h"
+#include "initlevel.h"
+#include "wad.h"
 #include "mcstate.h"
 #include "galaxymap.h"
 #include "framebuf.h"
@@ -824,7 +826,121 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", DisplayLoadingScr
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", SpacePlate_DrawQuad);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", LoadSpacePlate);
+static inline SpacePlatePif *getSpacePlatePif(SpacePlateArchive *archive, int imageIndex)
+{
+    int offset = *(archive->recordOffsets + imageIndex + SPACE_PLATE_IMAGE_BASE);
+    return (SpacePlatePif *)((unsigned char *)archive + offset);
+}
+
+void LoadSpacePlate(int language, int firstImage, int lastImage, unsigned long long *sharedTexture,
+                    unsigned long long *firstTexture,
+
+                    unsigned long long *lastTexture)
+{
+    int textureBases[SPACE_PLATE_UPLOAD_COUNT];
+    sceGsLoadImage loadImage;
+    unsigned long long *firstOutput;
+    unsigned long long *lastOutput;
+    int uploadIndex;
+    int *textureBaseOutput;
+    int uploadBytes;
+    u_long128 *imageAddress;
+    SpacePlateArchive *archiveBase;
+    struct MEMSLOTS *archiveMemory;
+
+
+    firstOutput = firstTexture;
+    lastOutput = lastTexture;
+    archiveMemory = &MemSlots;
+    uploadIndex = 0;
+
+    music_LoadBankFromEE(archiveMemory->levelBase + 0x100000,
+                         bootAssets.spacePlates[language].offset,
+                         bootAssets.spacePlates[language].length);
+    sceCdSync(0);
+    FlushCache(0);
+    WadDecompress(archiveMemory->levelBase + 0x100000, archiveMemory->levelBase);
+    FlushCache(0);
+
+    archiveBase = (SpacePlateArchive *)archiveMemory->levelBase;
+    GSloc = GSmemBase;
+    GSbase = GSmemBase;
+    textureBaseOutput = textureBases;
+
+    for (uploadIndex = 0; uploadIndex < SPACE_PLATE_UPLOAD_COUNT; uploadIndex++) {
+        if (uploadIndex == SPACE_PLATE_SHARED_CLUT) {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 1, PIF_PSMCT32, 0, 0, 0x10, 0x10);
+            uploadBytes = 0x400;
+            imageAddress =
+                (u_long128 *)getSpacePlatePif(archiveBase, SPACE_PLATE_SHARED_IMAGE_INDEX)->palette;
+        }
+
+        else if (uploadIndex == SPACE_PLATE_SHARED_TEXTURE) {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 1, PIF_PSMT8, 0, 0, 0x40, 0x40);
+            uploadBytes = 0x1000;
+            imageAddress =
+                (u_long128 *)getSpacePlatePif(archiveBase, SPACE_PLATE_SHARED_IMAGE_INDEX)->texels;
+        }
+
+        else if (uploadIndex == SPACE_PLATE_FIRST_CLUT) {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 1, PIF_PSMCT32, 0, 0, 0x10, 0x10);
+            uploadBytes = 0x400;
+            imageAddress = (u_long128 *)getSpacePlatePif(archiveBase, firstImage)->palette;
+        }
+
+        else if (uploadIndex == SPACE_PLATE_FIRST_TEXTURE) {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 8, PIF_PSMT8, 0, 0, 0x200, 0x40);
+            uploadBytes = 0x8000;
+            imageAddress = (u_long128 *)getSpacePlatePif(archiveBase, firstImage)->texels;
+        }
+
+        else if (uploadIndex == SPACE_PLATE_LAST_CLUT) {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 1, PIF_PSMCT32, 0, 0, 0x10, 0x10);
+            uploadBytes = 0x400;
+            imageAddress = (u_long128 *)getSpacePlatePif(archiveBase, lastImage)->palette;
+        }
+
+        else {
+            sceGsSetDefLoadImage(&loadImage, (GSloc << 8) >> 16, 8, PIF_PSMT8, 0, 0, 0x200, 0x40);
+            uploadBytes = 0x8000;
+            imageAddress = (u_long128 *)getSpacePlatePif(archiveBase, lastImage)->texels;
+        }
+
+        FlushCache(0);
+        sceGsExecLoadImage(&loadImage, imageAddress);
+        sceGsSyncPath(0, 0);
+        *textureBaseOutput = GSloc >> 8;
+        GSloc += uploadBytes;
+        textureBaseOutput++;
+    }
+
+    /* Each TEX0 combines an image base with its paired palette base. */
+    {
+        unsigned long long paletteBits =
+            ((unsigned long long)textureBases[SPACE_PLATE_SHARED_CLUT] << 37) |
+            SPACE_PLATE_TEX0_HIGH;
+        unsigned long long imageBits =
+            (unsigned long long)(textureBases[SPACE_PLATE_SHARED_TEXTURE] |
+                                 SPACE_PLATE_SHARED_TEX0_LOW);
+        *sharedTexture = (imageBits | paletteBits) | SPACE_PLATE_TEX0_CLD;
+    }
+    {
+        unsigned long long imageBits =
+            (unsigned long long)(textureBases[SPACE_PLATE_FIRST_TEXTURE] |
+                                 SPACE_PLATE_IMAGE_TEX0_LOW);
+        unsigned long long paletteBits =
+            ((unsigned long long)textureBases[SPACE_PLATE_FIRST_CLUT] << 37) |
+            SPACE_PLATE_TEX0_HIGH;
+        *firstOutput = (imageBits | paletteBits) | SPACE_PLATE_TEX0_CLD;
+    }
+    {
+        unsigned long long imageBits = (unsigned long long)(textureBases[SPACE_PLATE_LAST_TEXTURE] |
+                                                            SPACE_PLATE_IMAGE_TEX0_LOW);
+        unsigned long long paletteBits =
+            ((unsigned long long)textureBases[SPACE_PLATE_LAST_CLUT] << 37) | SPACE_PLATE_TEX0_HIGH;
+        *lastOutput = (imageBits | paletteBits) | SPACE_PLATE_TEX0_CLD;
+    }
+}
 
 void PlaySpacePlate(
 
