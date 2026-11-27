@@ -196,9 +196,9 @@ void space_PlayCutscene(int cutscene)
         LoadSpaceScene(arrivalScene, fadeFrames);
     }
 
-    musicTransition.queuedSpeech = speechTrack + MUSIC_SCENE_SPEECH_BASE;
+    musicGlobals.queuedSpeech = speechTrack + MUSIC_SCENE_SPEECH_BASE;
     ParseSpaceSceneChunk(0);
-    while (musicTransition.state != MUSIC_STATE_READY) {
+    while (musicGlobals.speech.status != MUSIC_STATE_READY) {
         sound_Update();
         sceGsSyncV(0);
     }
@@ -375,8 +375,8 @@ void UpdateSpace(void)
         }
 
         if (skip) {
-            if (musicTransition.state != 6 && musicTransition.state != 7)
-                musicTransition.state = 5;
+            if (musicGlobals.speech.status != 6 && musicGlobals.speech.status != 7)
+                musicGlobals.speech.status = 5;
 
             if (bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_TAKEOFF) {
                 SceneLoad.sceneFrame =
@@ -399,8 +399,8 @@ void UpdateSpace(void)
         }
 
         if (SceneLoad.sceneFrame >= SceneLoad.numFrames) {
-            if (musicTransition.state != 6 && musicTransition.state != 7)
-                musicTransition.state = 5;
+            if (musicGlobals.speech.status != 6 && musicGlobals.speech.status != 7)
+                musicGlobals.speech.status = 5;
 
             VU1_setBufSizeByLevel();
             VC.xratio = 0.63f;
@@ -730,10 +730,10 @@ void UpdateSpace(void)
         if (bootSpaceTransitionState.timer == 0) {
             music_Pause(0);
             music_Sync(0);
-            musicTransition.queuedSpeech = bootSpaceTransitionState.shipVariant + 0x9C4F;
+            musicGlobals.queuedSpeech = bootSpaceTransitionState.shipVariant + 0x9C4F;
             FadeToBlack(FastScaleRoundInt(12));
 
-            while ((short)musicTransition.state != 3) {
+            while ((short)musicGlobals.speech.status != 3) {
                 sound_Update();
                 sceGsSyncV(0);
             }
@@ -1428,7 +1428,7 @@ void DoSpaceTransition(void)
     sound_StopAllSounds();
     music_Stop();
 
-    musicTransition.updatesSuspended = 1;
+    musicGlobals.updatesSuspended = 1;
     if (LevelSounds != 0) {
         snd_UnloadBank(LevelSounds->bank_index);
         snd_ResolveBankXREFS();
@@ -1457,7 +1457,7 @@ void DoSpaceTransition(void)
         Level = g_newlevelnum;
         SetupLevelWadBuffer();
         sceCdSync(0);
-        musicTransition.updatesSuspended = 0;
+        musicGlobals.updatesSuspended = 0;
         DMAC_VIF1_Disable();
         return;
     }
@@ -1577,7 +1577,7 @@ void DoSpaceTransition(void)
     }
 
     sceCdSync(0);
-    musicTransition.updatesSuspended = 0;
+    musicGlobals.updatesSuspended = 0;
     DMAC_VIF1_Disable();
 }
 

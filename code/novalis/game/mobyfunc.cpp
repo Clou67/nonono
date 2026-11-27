@@ -935,7 +935,7 @@ void DrawMobys(void)
 
 
 extern SoundAudioState audioState;
-extern MusicTransition musicTransition;
+extern MusicGlobals musicGlobals;
 
 void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     Vec4 diff;
@@ -974,9 +974,9 @@ void MB_SetVarsFromEnvSample(MobyInstance *moby) {
     }
 
     if (EnvSamples[bestIdx].musicTrack >= 0) {
-        if (musicTransition.primary_bank == 0) {
-            if ((*(int *)&musicTransition.unk20[0] & 0xFFFFFF) == 0xFF0000) {
-                musicTransition.primary_track = (unsigned short)EnvSamples[bestIdx].musicTrack;
+        if (musicGlobals.play.status == 0) {
+            if ((musicGlobals.transitionRequest & 0xFFFFFF) == 0xFF0000) {
+                musicGlobals.play.track = (unsigned short)EnvSamples[bestIdx].musicTrack;
             }
         }
     }

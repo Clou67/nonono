@@ -1,55 +1,64 @@
 #ifndef MUSIC_H
 #define MUSIC_H
 
+#include "sce.h"
+
 enum { MUSIC_PRESEEK_PENDING = 1, MUSIC_PRESEEK_COMPLETE = 2 };
 
+// RaC1 playback channel; DL's music_Playing later gained more fields.
 struct MusicPlaying {
-    unsigned int handle;
-    char unk_04[6];
-    short status;
+    unsigned int handle; // 0x00
+    short track;
+    short volume;
+    short flags;
+    short status; // 0x0A: playback state, not a bank number
+    short pause;
+    short unpause;
+    short transition; // 0x10: remaining-time callback may start a crossfade
+    short unk_12;
+    int queuelen; // 0x14: remaining-time polling interval
+    int remain;
 };
 
-struct MusicTransition {
-    char unk0[8];
-    short read_state;
+// Resident music state at 0x1516D0, with three 0x1C-byte channel records.
+struct MusicGlobals {
+    int unk_00;
+    int unk_04;
+    short read_state; // 0x08
     unsigned char cancel_read;
     unsigned char updatesSuspended;
-    char unk0C[0x10];
+    int readSector;
+    int readSectorCount;
+    void *readDestination;
+    int unk_18;
     int queuedSpeech;
-    char unk20[2];
-    signed char requested_track;
-    signed char requested_transition;
-    char unk24[0x14];
-    short primary_track;
-    short primaryVolume;
-    short primaryFlags;
-    short primary_bank;
-    short primary_command;
-    short primary_unpause;
-    char unk44[0xC];
-    unsigned int speechHandle;
-    short speechId;
-    short speechVolume;
-    short speechFlags;
-    short state;
-    short secondary_command;
-    short secondary_unpause;
-    char unk60[0x16];
-    short transition_bank;
-    short transition_command;
-    short transition_unpause;
+    union {
+        unsigned int transitionRequest; // Retail also tests these four state/request bytes together.
+        struct {
+            short crossfadeState;
+            signed char requested_track;
+            signed char requested_transition;
+        };
+    };
+    int crossfadeRemainingTime; // 0x24
+    int crossfadeInterval;
+    int retryTimer;
+    sceCdRMode cdReadMode; // 0x30
+    MusicPlaying play; // 0x34
+    MusicPlaying speech; // 0x50
+    MusicPlaying trans; // 0x6C
 };
 
 // Speech ids are offset by this much from the ids stored in the help messages.
 #define MUSIC_SPEECH_ID_BASE 30000
 #define MUSIC_SCENE_SPEECH_BASE 40000
 
-// Values of MusicTransition::state seen so far; 6 and 7 are the finishing states.
+// Values of MusicGlobals::speech.status seen so far; 6 and 7 are the finishing states.
 #define MUSIC_STATE_READY 3
 #define MUSIC_STATE_STOPPING 5
 #define MUSIC_STATE_FINISHING 6
 
-extern MusicTransition musicTransition;
+extern MusicGlobals musicGlobals;
 
 int music_LoadBankFromEE(void *buffer, int sector, int sectorCount);
 

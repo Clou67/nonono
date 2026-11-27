@@ -98,10 +98,10 @@ void SetSpawnPoint(Vec4 *position, Vec4 *rotation)
     CheckpointSet.reverbDelay = audioState.reverb_delay;
     CheckpointSet.reverbFeedback = audioState.reverb_feedback;
 
-    if (musicTransition.requested_track != -1)
-        CheckpointSet.musicTrack = musicTransition.requested_track;
+    if (musicGlobals.requested_track != -1)
+        CheckpointSet.musicTrack = musicGlobals.requested_track;
     else
-        CheckpointSet.musicTrack = musicTransition.primary_track;
+        CheckpointSet.musicTrack = musicGlobals.play.track;
 }
 
 extern MobyInstance *MobyInstances;
@@ -132,7 +132,7 @@ void RestoreCheckpoint(void)
     audioState.reverb_delay = CheckpointSet.reverbDelay;
     audioState.reverb_feedback = CheckpointSet.reverbFeedback;
     audioState.reverb_commands |= 7;
-    musicTransition.primary_track = CheckpointSet.musicTrack;
+    musicGlobals.play.track = CheckpointSet.musicTrack;
     int type = CheckpointSet.heroType;
 
     if (type != 0 && type != 3) {

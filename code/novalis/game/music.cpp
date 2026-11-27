@@ -35,9 +35,9 @@ void snd_ContinueVAGStream(unsigned int handle);
 
 int music_PlayPreseekedSpeech(void)
 {
-    if (musicTransition.speechHandle && musicTransition.state == MUSIC_STATE_READY) {
-        snd_ContinueVAGStream(musicTransition.speechHandle);
-        musicTransition.state = MUSIC_STATE_PLAYING;
+    if (musicGlobals.speech.handle && musicGlobals.speech.status == MUSIC_STATE_READY) {
+        snd_ContinueVAGStream(musicGlobals.speech.handle);
+        musicGlobals.speech.status = MUSIC_STATE_PLAYING;
         return 1;
     }
 
@@ -54,15 +54,15 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", music_Transition)
 
 void music_SetTransition(int track, int transition)
 {
-    if (musicTransition.primary_track == track && musicTransition.requested_track == -1)
+    if (musicGlobals.play.track == track && musicGlobals.requested_track == -1)
         return;
 
-    if (!musicTransition.primary_bank && !musicTransition.transition_bank)
-        musicTransition.primary_track = track;
+    if (!musicGlobals.play.status && !musicGlobals.trans.status)
+        musicGlobals.play.track = track;
 
     else {
-        musicTransition.requested_track = track;
-        musicTransition.requested_transition = transition;
+        musicGlobals.requested_track = track;
+        musicGlobals.requested_transition = transition;
     }
 }
 
@@ -73,35 +73,35 @@ enum { MUSIC_COMMAND_PAUSE = -0x8000 };
 void music_Pause(int speech)
 {
     if (speech) {
-        musicTransition.secondary_command = MUSIC_COMMAND_PAUSE;
-        musicTransition.secondary_unpause = 0;
+        musicGlobals.speech.pause = MUSIC_COMMAND_PAUSE;
+        musicGlobals.speech.unpause = 0;
     }
 
-    musicTransition.primary_command = MUSIC_COMMAND_PAUSE;
-    musicTransition.primary_unpause = 0;
-    musicTransition.transition_command = MUSIC_COMMAND_PAUSE;
-    musicTransition.transition_unpause = 0;
+    musicGlobals.play.pause = MUSIC_COMMAND_PAUSE;
+    musicGlobals.play.unpause = 0;
+    musicGlobals.trans.pause = MUSIC_COMMAND_PAUSE;
+    musicGlobals.trans.unpause = 0;
 }
 
 enum { MUSIC_COMMAND_RESUME = 4 };
 
 void music_Unpause(void)
 {
-    musicTransition.primary_command = MUSIC_COMMAND_RESUME;
-    musicTransition.transition_command = MUSIC_COMMAND_RESUME;
-    musicTransition.secondary_command = MUSIC_COMMAND_RESUME;
+    musicGlobals.play.pause = MUSIC_COMMAND_RESUME;
+    musicGlobals.trans.pause = MUSIC_COMMAND_RESUME;
+    musicGlobals.speech.pause = MUSIC_COMMAND_RESUME;
 }
 
 enum { MUSIC_PAUSED_FLAG = 0x8000 };
 
 void music_UnpauseDelay(int time)
 {
-    if (musicTransition.primary_command & MUSIC_PAUSED_FLAG)
-        musicTransition.primary_unpause = time;
-    if (musicTransition.transition_command & MUSIC_PAUSED_FLAG)
-        musicTransition.transition_unpause = time;
-    if (musicTransition.secondary_command & MUSIC_PAUSED_FLAG)
-        musicTransition.secondary_unpause = time;
+    if (musicGlobals.play.pause & MUSIC_PAUSED_FLAG)
+        musicGlobals.play.unpause = time;
+    if (musicGlobals.trans.pause & MUSIC_PAUSED_FLAG)
+        musicGlobals.trans.unpause = time;
+    if (musicGlobals.speech.pause & MUSIC_PAUSED_FLAG)
+        musicGlobals.speech.unpause = time;
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", music_UpdateStream);
@@ -112,9 +112,9 @@ int snd_StreamSafeCdBreak(void);
 
 void music_StopLoad(void)
 {
-    if (musicTransition.read_state != 0) {
+    if (musicGlobals.read_state != 0) {
         snd_StreamSafeCdBreak();
-        musicTransition.cancel_read = 1;
+        musicGlobals.cancel_read = 1;
     }
 }
 
@@ -132,9 +132,9 @@ enum { MUSIC_READ_COMPLETE = 1, MUSIC_READ_IDLE = 0, MUSIC_READ_FAILED = 2 };
 void music_LoadBankCB(int reason)
 {
     if (reason == MUSIC_READ_COMPLETE) {
-        musicTransition.read_state = MUSIC_READ_IDLE;
+        musicGlobals.read_state = MUSIC_READ_IDLE;
         if (snd_StreamSafeCdGetError() != 0)
-            musicTransition.read_state = MUSIC_READ_FAILED;
+            musicGlobals.read_state = MUSIC_READ_FAILED;
     }
 }
 
@@ -153,7 +153,7 @@ void music_SpeechPreseekCB(unsigned int result, unsigned long long data)
         }
 
         else
-            music_StartSpeech(musicTransition.speechId, musicTransition.speechFlags, musicTransition.speechVolume);
+            music_StartSpeech(musicGlobals.speech.track, musicGlobals.speech.flags, musicGlobals.speech.volume);
     }
 }
 
@@ -170,7 +170,7 @@ void music_PreseekTrackCB(unsigned int result, unsigned long long data)
         }
 
         else
-            music_PreseekTrack(musicTransition.primary_track, musicTransition.primaryFlags, musicTransition.primaryVolume);
+            music_PreseekTrack(musicGlobals.play.track, musicGlobals.play.flags, musicGlobals.play.volume);
     }
 }
 
