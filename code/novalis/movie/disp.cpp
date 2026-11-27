@@ -11,9 +11,9 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/movie/disp", vblankHandler);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/movie/disp", handler_endimage);
 
-void startDisplay(int field)
+void startDisplay(int waitEven)
 {
-    while (sceGsSyncV(0) == field) {
+    while (sceGsSyncV(0) == waitEven) {
     }
 
     movieDisplayActive = 1;
