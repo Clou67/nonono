@@ -174,9 +174,7 @@ struct GAMECAMERA {
             float posW;
         };
     };
-    // radius holds the yaw.
-    PolarSm rot;
-    float rotW;
+    Vec4 rot; // Euler rotation; z is yaw.
     // Up and down, and back and forth.
     CamOffsetRec shake;
     CamOffsetRec shakeFwd;

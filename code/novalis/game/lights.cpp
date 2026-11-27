@@ -119,7 +119,7 @@ void UpdatePointLights(void)
     DirectionalLights[CAMERA_LIGHT].color1.z = 0.8f;
     DirectionalLights[CAMERA_LIGHT].color1.w = -0.3f;
 
-    yaw = FastAddRots(GameCamera.rot.radius, -0.8f);
+    yaw = FastAddRots(GameCamera.rot.z, -0.8f);
     DirectionalLights[CAMERA_LIGHT].direction1.x = FastAngleSinF(yaw) * 0.866f;
     DirectionalLights[CAMERA_LIGHT].direction1.y = FastAngleCosF(yaw) * 0.866f;
     DirectionalLights[CAMERA_LIGHT].direction1.z = -0.5f;

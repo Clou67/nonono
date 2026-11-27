@@ -76,7 +76,7 @@ updateDistanceFade:
     camera = &GameCamera;
 
     cameraDistance = FastVec3Dist(particlePosition, cameraPosition);
-    cameraAngleDelta = FastSubRots(FastArcTan(particle->pos.x - camera->position.x, particle->pos.y - camera->position.y), camera->rot.radius);
+    cameraAngleDelta = FastSubRots(FastArcTan(particle->pos.x - camera->position.x, particle->pos.y - camera->position.y), camera->rot.z);
 
     if (FastAbsF(cameraAngleDelta) > 1.0471976f) {
         if ((motion->numFlipColls)++ >= 6) {
@@ -84,8 +84,8 @@ updateDistanceFade:
             DeletePart(particle);
             return;
         }
-        positionScratch.x = FastAngleSinF(FastAddRots(camera->rot.radius, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
-        positionScratch.y = FastAngleCosF(FastAddRots(camera->rot.radius, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
+        positionScratch.x = FastAngleSinF(FastAddRots(camera->rot.z, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
+        positionScratch.y = FastAngleCosF(FastAddRots(camera->rot.z, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
         positionScratch.z = particle->pos.z - camera->position.z;
         FastVec3Add(particlePosition, &positionScratch, cameraPosition);
         CopyVec4Inline(&positionScratch, particlePosition);

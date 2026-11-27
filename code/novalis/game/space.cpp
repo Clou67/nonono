@@ -101,7 +101,7 @@ void camPolarRot1(Mtx4 *out, Mtx4 *in, float angle);
 void camPolarRot2(Mtx4 *out, Mtx4 *in, float angle);
 float OrganicDelt(float *value, float *velocity, float target, float accel, float decel,
                   float limit);
-void FUN_00316ef8(Vec4 *position, PolarSm *rotation, int flags, int unk0, int unk1);
+void FUN_00316ef8(Vec4 *position, Vec4 *rotation, int flags, int unk0, int unk1);
 void FUN_00316dd0(Vec4 *position);
 void FUN_00316e28(Vec4 *rotation);
 void MB_PathEvalSpline(MobyPath *path, int unk, Vec4 *position, Vec4 *rotation, int flags,

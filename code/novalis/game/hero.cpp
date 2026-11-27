@@ -790,7 +790,7 @@ void Hero_DoBehavior(void)
                 scratch.look.cameraAxis.x = 1.0f;
                 FastVecMtx3Mult(&Hero.moveDirection, &scratch.look.cameraAxis,
                                 (Mtx4 *)&GameCamera.orientMtx);
-                Hero.idealRotZ = GameCamera.rot.radius;
+                Hero.idealRotZ = GameCamera.rot.z;
                 Hero_Turn(transStepScaleSq, transStepScaleSq * 0.0f, frameTime * 174.53293f, 0);
 
                 if (HelpHintTimer > 0) {
