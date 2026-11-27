@@ -55,6 +55,8 @@ void FastVecDivScalar(Vec4 *out, Vec4 *vector, float divisor);
 void ScaleJointPosition(Vec4 *out, Vec4 *joint, float scale);
 void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
 void FastVec3RSqrtScale(Vec4 *out, Vec4 *vector, float length);
+void FastVec4ScaleLength(Vec4 *out, Vec4 *vector, float maximum);
+int FastBsphereCheck(Vec4 *sphere, float radius);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 
 void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);

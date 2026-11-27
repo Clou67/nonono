@@ -9,6 +9,44 @@
 #define MAX_POINT_LIGHTS 8
 #define POINT_LIGHT_LIST_LENGTH 512
 
+struct ExplosionLightChannel {
+    unsigned char initial;
+    unsigned char maximum;
+    unsigned char minimum;
+    unsigned char riseRate;
+    unsigned char fallRate;
+};
+
+// Template copied into the animated point light (moby class 639).
+struct ExplosionLightSettings {
+    Vec4 offset;             // 0x00
+    unsigned char intensity; // 0x10
+    ExplosionLightChannel channels[3];
+    float radiusInitial; // 0x20
+    float radiusMax;
+    float radiusMin;
+    float radiusRiseRate;
+    float radiusFallRate;
+    int lifetime; // 0x34
+    int flags;
+    unsigned char drawDistance; // 0x3C
+    unsigned char holdFrames[3];
+    unsigned short periods[4];      // 0x40
+    unsigned char radiusHoldFrames; // 0x48
+    unsigned char startDelay;
+};
+
+struct ExplosionColorPalette {
+    int colors[6];
+};
+
+extern ExplosionColorPalette ExplosionStartColors;
+extern ExplosionColorPalette ExplosionEndColors;
+extern ExplosionLightSettings DefaultExplosionFlash;
+extern ExplosionLightSettings AlternateExplosionFlash;
+MobyInstance *M639_SpawnExplosionLight(ExplosionLightSettings *settings, Vec4 *position,
+                                       MobyInstance *attachMoby, Vec4 *offset);
+
 // One point light: its colour (w is the backlight) and position (w is the radius).
 struct PointLight {
     Vec4 color;

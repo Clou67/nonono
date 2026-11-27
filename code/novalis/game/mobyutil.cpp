@@ -16,6 +16,10 @@
 #include "memcard.h"
 #include "movie.h"
 #include "loaders.h"
+#include "camera.h"
+#include "part.h"
+#include "sound.h"
+#include "lights.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DropAmmo);
 
@@ -1308,7 +1312,238 @@ bool MB_isAmmo(MobyInstance *moby)
     return false;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_genericExplosion);
+void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius,
+                         float damageHp, int burstCount, int particlePairCount, int smokeCount,
+                         float glowScale, float whiteGlowScale, float minGlowDistance,
+                         float effectScale, int soundId, float flashRadius, int shakeCamera,
+                         int debrisCount, int reductionLevel,
+
+                         unsigned char colorSwap)
+{
+    Vec4 baseVelocity;
+    Vec4 cameraDelta;
+    float cameraDistance;
+    float frameLoad;
+    float speedReduction;
+    int nearbyPairCount;
+    int particleIndex;
+
+    ClearVec4(&cameraDelta);
+    cameraDelta.z = frameTime * 8.0f * effectScale;
+    frameLoad = PerfLoad + FrameLoad;
+    CopyVec4(&baseVelocity, &cameraDelta);
+    if (reductionLevel == -1) {
+        reductionLevel = 0;
+        if (1.7f < frameLoad)
+            reductionLevel = 1;
+    }
+
+    if (position == 0) {
+        if (owner == 0)
+            return;
+        position = &owner->pos;
+    }
+    {
+        if (damageRadius > 0.0f) {
+            COLL_DAM_IN damage;
+            SetCollDamIn(damage, owner, EXPLOSION_DAMAGE_FLAGS, damageHp);
+            damage.damageClass = EXPLOSION_DAMAGE_CLASS;
+            damage.damageStrength = EXPLOSION_DAMAGE_STRENGTH;
+            damage.damageIndex = ((unsigned short)owner->oClass);
+            CollMobySphere(damageRadius, position, 0x10, owner, &damage);
+        }
+    }
+
+    for (particleIndex = 0; particleIndex < burstCount; particleIndex++) {
+        {
+            Vec4 burstVelocity;
+            float elevation;
+            float azimuth;
+            elevation = MB_randRangeFloat(0.2617994f, 1.3962634f);
+            azimuth = MB_randRot();
+            MB_SphericalToVector(&burstVelocity,
+                                 effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime),
+                                 azimuth, elevation);
+            burstVelocity.z += frameTime * 3.0f;
+            cameraDistance = effectScale * 40000.0f;
+            SpawnPart_015(position, &burstVelocity, ReorderRGB(0x4F007FFF, colorSwap),
+                          ReorderRGB(0x1F00007F, colorSwap), cameraDistance,
+                          MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x78)) -
+                              reductionLevel * 10,
+                          1, -1, -1);
+        }
+    }
+
+    FastSubVec3(&cameraDelta, &GameCamera.position, position);
+    cameraDistance = FastVec3Length2(&cameraDelta);
+    {
+        if (debrisCount != 0) {
+            Vec4 nearbyVelocity;
+            Vec4 randomVelocity;
+            int particleIndex;
+            ClearVec4(&randomVelocity);
+            randomVelocity.x = MB_randRangeFloat(-1.0f, 1.0f);
+            randomVelocity.y = MB_randRangeFloat(-1.0f, 1.0f);
+            randomVelocity.z = MB_randRangeFloat(-1.0f, 1.0f);
+            CopyVec4(&nearbyVelocity, &randomVelocity);
+            if (cameraDistance < 14.0f) {
+                cameraDelta.z += cameraDistance * 0.5f;
+                FastVec3Normalize(&nearbyVelocity, &nearbyVelocity,
+                                  cameraDistance / 5.0f * frameTime);
+                FastVec3Normalize(&cameraDelta, &cameraDelta,
+                                  (cameraDistance + cameraDistance) * frameTime);
+                FastVec3Add(&nearbyVelocity, &nearbyVelocity, &cameraDelta);
+                FastVec4ScaleLength(&nearbyVelocity, &nearbyVelocity, frameTime * 10.0f);
+                M122_SpawnDebris(position, &nearbyVelocity,
+                                 MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)), 0,
+                                 0);
+            }
+            debrisCount = debrisCount - 1;
+            for (particleIndex = 0; particleIndex < debrisCount; particleIndex++) {
+                float elevation;
+                float azimuth;
+                int variant;
+                elevation = MB_randRangeFloat(0.2617994f, 1.3089969f);
+                azimuth = MB_randRot();
+                MB_SphericalToVector(&randomVelocity,
+                                     effectScale * (MB_randRangeFloat(7.0f, 10.5f) * frameTime),
+                                     azimuth, elevation);
+                randomVelocity.z += frameTime + frameTime;
+                variant = 0;
+                if (particleIndex % 3 == 0)
+                    variant = 1;
+                M122_SpawnDebris(position, &randomVelocity,
+                                 MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x5A)),
+                                 variant, 0);
+            }
+        }
+    }
+
+    if (cameraDistance < FastIntToFloat(particlePairCount) * 2.0f)
+        nearbyPairCount = FastFloatToInt(cameraDistance) / 2;
+
+    else
+        nearbyPairCount = particlePairCount;
+
+    speedReduction = 0.0f;
+    if (cameraDistance < 7.0f)
+        speedReduction = 7.0f - cameraDistance;
+    {
+        int particleIndex;
+        for (particleIndex = 0; particleIndex < nearbyPairCount; particleIndex++) {
+            ExplosionColorPalette startColors;
+            ExplosionColorPalette endColors;
+            float speed;
+            speed = MB_randRangeFloat(8.0f, 10.0f) * frameTime;
+            startColors = ExplosionStartColors;
+            endColors = ExplosionEndColors;
+            speed = speed - speedReduction * frameTime;
+            speed = speed * effectScale;
+            SpawnPart_011(
+                position, &baseVelocity, ReorderRGB(startColors.colors[MB_randInt(6)], colorSwap),
+                ReorderRGB(endColors.colors[MB_randInt(6)], colorSwap), effectScale * 400000.0f,
+                MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3,
+                MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) - reductionLevel * 5,
+                0, 0, speed);
+            SpawnPart_011(
+                position, &baseVelocity, 0x7FFFFFFF, 0xFFFFFF, effectScale * 400000.0f,
+                MB_randRange(FastScaleRoundInt(5), FastScaleRoundInt(0xA)) - reductionLevel * 2,
+                MB_randRange(FastScaleRoundInt(0xF), FastScaleRoundInt(0x14)) - reductionLevel * 3,
+                0, 0, speed * 0.5f);
+        }
+    }
+    {
+        int particleIndex;
+        for (particleIndex = 0; particleIndex < smokeCount; particleIndex++) {
+            ExplosionColorPalette startColors = ExplosionStartColors;
+            ExplosionColorPalette endColors = ExplosionEndColors;
+            Vec4 smokeVelocity;
+            Vec4 randomVelocity;
+            int startColor;
+            int endColor;
+            ClearVec4(&randomVelocity);
+            randomVelocity.x = MB_randRangeFloat(-1.0f, 1.0f);
+            randomVelocity.y = MB_randRangeFloat(-1.0f, 1.0f);
+            randomVelocity.z = MB_randRangeFloat(-1.0f, 1.0f);
+            CopyVec4(&smokeVelocity, &randomVelocity);
+            FastVec3Normalize(&smokeVelocity, &smokeVelocity,
+                              effectScale * (MB_randRangeFloat(0.0f, 3.0f) * frameTime));
+            startColor = ReorderRGB(startColors.colors[MB_randInt(6)], colorSwap);
+            endColor = ReorderRGB(endColors.colors[MB_randInt(6)], colorSwap);
+            SpawnPart_008(position, &smokeVelocity, startColor, endColor,
+                          MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x2D)) -
+                              reductionLevel * 5,
+                          200000.0f);
+        }
+    }
+
+    if (owner != 0 && glowScale > 0.0f) {
+        int firstGlowRed = 150;
+        int firstGlowBlue = 150;
+        int laterGlowRed = 127;
+        int laterGlowByte;
+        if (colorSwap) {
+            firstGlowRed = 70;
+            firstGlowBlue = 70;
+            laterGlowRed = 60;
+        }
+        laterGlowByte = laterGlowRed & 0xFF;
+        if (FrameLoad < 0.95f && minGlowDistance < cameraDistance) {
+            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x10),
+                           firstGlowRed, 0x96, firstGlowBlue, 0x20);
+            M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x16),
+                           laterGlowByte, 0x7F, 0x50, 0x20);
+        }
+        M112_SpawnGlow(owner, position, &baseVelocity, glowScale, FastScaleRoundInt(0x1E),
+                       laterGlowByte, 0x7F, 0, 0x30);
+    }
+
+    if (owner != 0 && whiteGlowScale > 0.0f) {
+        M112_SpawnGlow(owner, position, &baseVelocity, whiteGlowScale, FastScaleRoundInt(0x1B),
+                       0xFF, 0xFF, 0xFF, 0x20);
+    }
+    {
+        if (shakeCamera) {
+            Vec4 sphere;
+            CopyVec4(&sphere, position);
+            sphere.w = 2.0f;
+            if (FastBsphereCheck(&sphere, 10.0f) != -1) {
+                GameCamera.shake.strength =
+                    (cameraDistance < 20.0f) ? 0.4f - cameraDistance * 0.0175f : 0.050000012f;
+                GameCamera.shake.time = FastScaleRoundInt(0x19);
+            }
+        }
+    }
+
+    if (owner != 0 && soundId != -1)
+        sound_PlayMobySound(soundId, 0, owner);
+
+    if (flashRadius != 0.0f) {
+        if (reductionLevel == 0) {
+            Vec4 sphere;
+            CopyVec4Inline(&sphere, position);
+            sphere.w = flashRadius;
+            if (FastBsphereCheck(&sphere, 100.0f) != -1) {
+                if (0.0f < flashRadius) {
+                    DefaultExplosionFlash.radiusMax = flashRadius;
+                    DefaultExplosionFlash.radiusMin = flashRadius;
+                    DefaultExplosionFlash.radiusInitial = flashRadius;
+                }
+
+                else {
+                    DefaultExplosionFlash.radiusMax = 15.0f;
+                    DefaultExplosionFlash.radiusMin = 15.0f;
+                    DefaultExplosionFlash.radiusInitial = 15.0f;
+                }
+                if (colorSwap)
+                    M639_SpawnExplosionLight(&AlternateExplosionFlash, position, 0, 0);
+
+                else
+                    M639_SpawnExplosionLight(&DefaultExplosionFlash, position, 0, 0);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_SpawnExplosionSparks);
 

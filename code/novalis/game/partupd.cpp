@@ -226,8 +226,8 @@ void UpdatePart_012(PartInstance *particle)
                 int childTimer = motion->timer;
                 float childVelocityScale = MB_randRangeFloat(0.85f, 1.0f);
                 SpawnPart_011(&particle->pos, &motion->velocity, motion->startColor,
-                              motion->endColor, childLifetime, childTimer, motion->generation + 1,
-                              motion->sizeCurve, motion->flags,
+                              motion->endColor, motion->sizeCurve, childLifetime, childTimer,
+                              motion->generation + 1, motion->flags,
                               motion->velocity.w * childVelocityScale);
             }
         }

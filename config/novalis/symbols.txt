@@ -1022,7 +1022,7 @@ MB_WrapRot__Ff = 0x002731D0; // type:func size:0x54
 MB_IsInvalidOrClass502__FP12MobyInstance = 0x00273228; // type:func size:0x4C
 MB_isCrate__FP12MobyInstance = 0x00273278; // type:func size:0x40
 MB_isAmmo__FP12MobyInstance = 0x002732B8; // type:func size:0x58
-MB_genericExplosion = 0x00273310; // type:func size:0xC40
+MB_genericExplosion__FP12MobyInstancePvP4Vec4ffiiiffffifiiiUc = 0x00273310; // type:func size:0xC40
 MB_SpawnExplosionSparks = 0x00273F50; // type:func size:0x354
 MB_SpawnExplosionSparks2 = 0x002742A8; // type:func size:0x344
 ClampVec3Magnitude__FP4Vec4f = 0x002745F0; // type:func size:0x4C
@@ -2519,3 +2519,8 @@ CountAdaptiveBolts = 0x0015F598; // size:0x4
 BoltScaleFiveMessage = 0x001600A0; // size:0x10
 BoltIntegerScaleFormat = 0x001600B0; // size:0x10
 BoltFloatScaleFormat = 0x001600C0; // size:0xC
+
+ExplosionStartColors = 0x0020A090; // size:0x18
+ExplosionEndColors = 0x0020A0A8; // size:0x18
+DefaultExplosionFlash = 0x001B06D0; // size:0x50
+AlternateExplosionFlash = 0x001B0720; // size:0x50

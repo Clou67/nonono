@@ -354,6 +354,16 @@ void MB_SetAnimationNoBlend(MobyInstance *moby, int animation, int frame);
 void MB_SetAnimation(MobyInstance *moby, int animation, int frame, int blend);
 
 // The frame the moby is currently showing, including the blend fraction.
+enum {
+    EXPLOSION_DAMAGE_FLAGS = 0x810001,
+    EXPLOSION_DAMAGE_CLASS = 2,
+    EXPLOSION_DAMAGE_STRENGTH = 1
+};
+
+MobyInstance *M122_SpawnDebris(Vec4 *position, Vec4 *velocity, int lifetime, int variant, int flags);
+int M112_SpawnGlow(MobyInstance *owner, Vec4 *position, Vec4 *velocity, float scale, int lifetime, int red, int green, int blue, int alpha);
+void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float effectScale, int soundId, float flashRadius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap);
+
 float MB_BlendAnimFrame(MobyInstance *moby);
 int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion);
 void MB_MistDeathEffect(MobyInstance *moby, Vec4 *velocity, int primitiveMask);

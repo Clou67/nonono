@@ -290,6 +290,8 @@ PartInstance *SpawnPart_015(Vec4 *position, Vec4 *velocity, int startColor, int 
                              float scale, int lifetime, int flags, int texture, int blend);
 PartInstance *SpawnPart_045(Vec4 *position, int flags, int color, float scale, float scaleStep);
 
+void SpawnPart_008(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime, float scale);
+
 void UpdatePart_020(PartInstance *part);
 
 void UpdatePart_057(PartInstance *part);
@@ -306,8 +308,8 @@ void UpdatePart_041(PartInstance *particle);
 PartInstance *SpawnPart_042(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
 void UpdatePart_043(PartInstance *particle);
 
-void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime,
-                   int timer, int generation, float sizeCurve, int flags, float velocityScale);
+void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, float sizeCurve,
+                   int lifetime, int timer, int generation, int flags, float velocityScale);
 void UpdatePart_012(PartInstance *particle);
 
 void UpdatePart_004(PartInstance *particle);
