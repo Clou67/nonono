@@ -8,6 +8,43 @@ enum { MOBY_GROUP_INDEX_MASK = 0x7FFF };
 struct MobyPath;
 struct Manipulator;
 
+enum KickFlags { KICK_NO_TURN = 4, KICK_STOP_AT_LEDGE = 0x10, KICK_STOP_AFTER_COLLISION = 0x20 };
+
+enum KickResult {
+    KICK_GROUNDED = 1,
+    KICK_COLLISION = 2,
+    KICK_ANIMATION_ENDED = 0x40,
+    KICK_OUT_OF_BOUNDS = 0x100
+};
+
+struct KnockbackMotion {
+    Vec4 velocity; // 0x00
+    float gravity; // 0x10
+    float speedApproachStep;
+    float speed;
+    float verticalSpeed;
+    int collisionRadius; // 0x20: in 1/1024 world units
+    int flags;
+    float collisionZOffset;
+    short timer; // 0x2C
+    unsigned char particleMode;
+    unsigned char particleMask;
+    float restitution;
+    float unk34;
+    float unk38;
+    unsigned char active;
+    unsigned char unk3D;
+    short phase;      // 0x3E
+    float turnTarget; // 0x40
+    float turnVelocity;
+    float maxTurnStep;
+    float targetSpeed;
+    float apexAnimationFrame; // 0x50
+    float landingAnimationFrame;
+    unsigned char pad58[4];
+    float groundBounces; // 0x5C
+};
+
 enum BoltDropFlags {
     BOLT_DROP_INHERIT_VELOCITY = 4,
     BOLT_DROP_THREE_COINS = 8,
@@ -318,6 +355,15 @@ void MB_SetAnimation(MobyInstance *moby, int animation, int frame, int blend);
 
 // The frame the moby is currently showing, including the blend fraction.
 float MB_BlendAnimFrame(MobyInstance *moby);
+int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion);
+void MB_MistDeathEffect(MobyInstance *moby, Vec4 *velocity, int primitiveMask);
+void M775_SpawnSplash(Vec4 *position, float scale);
+void OrganicDeltAngSpeed(MobyInstance *moby, float *speed, float target, float gain, float damping, float limit);
+int CollHotspot(void);
+int CollMobySphere(float radius, Vec4 *center, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
+int CollSphere(Vec4 *center, float radius, int flags, MobyInstance *ignore);
+void CollDamageMobyDirect_2(MobyInstance *target, MobyInstance *damager, int flags, Vec4 *position, Vec4 *momentum, float damage);
+extern MobyInstance *HeroSphereQueryResults[];
 void Map_RegisterLevelObject(MobyInstance *moby, int object);
 void SetupSpaceShipVars(MobyInstance *moby);
 void UpdateMoby_Spaceship(MobyInstance *moby);

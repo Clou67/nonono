@@ -54,6 +54,7 @@ void FastVecDivScalar(Vec4 *out, Vec4 *vector, float divisor);
 // Scales a joint position from the scratchpad into a working vector.
 void ScaleJointPosition(Vec4 *out, Vec4 *joint, float scale);
 void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
+void FastVec3RSqrtScale(Vec4 *out, Vec4 *vector, float length);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 
 void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);

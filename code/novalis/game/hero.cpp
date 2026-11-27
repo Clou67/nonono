@@ -1498,7 +1498,7 @@ void Hero_DoBehavior(void)
         if (anim != -1 && Hero.moby->updateId != HERO_ANIM_SHOOT_C)
             Hero_TransAnim(anim, 0, frames);
 
-        else if ((Hero.moby->unk70 & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C)
+        else if ((Hero.moby->animationFlags & 2) && Hero.moby->updateId == HERO_ANIM_SHOOT_C)
             Hero_TransAnim(Hero_GetIdleAnim(0), 0, FastScaleRoundInt(5));
     } break;
     case HERO_STATE_ROCKET_STOMP: {
@@ -5007,12 +5007,12 @@ void Hero_Transitions(void)
                         if (Hero.items[3].state == 2) {
                             backpackMoby = Hero.items[3].moby;
 
-                            if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
+                            if (backpackMoby != 0 && (backpackMoby->animationFlags & 2) && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(7));
 
                             backpackMoby = Hero.items[3].moby2;
 
-                            if (backpackMoby != 0 && (backpackMoby->unk70 & 2) && backpackMoby->animationId != 1)
+                            if (backpackMoby != 0 && (backpackMoby->animationFlags & 2) && backpackMoby->animationId != 1)
                                 MB_SetAnimation(backpackMoby, 1, 0, FastScaleRoundInt(7));
                         }
 

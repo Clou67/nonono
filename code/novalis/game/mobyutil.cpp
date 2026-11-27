@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "common.h"
 #include "path.h"
 #include "vuchain.h"
@@ -877,7 +879,200 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_MistDeathEf
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_StartKick);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UpdateKick);
+int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion)
+{
+    enum { MOTION_RISING = 0, MOTION_FALLING = 1, MOTION_GROUNDED = 2 };
+    Vec4 sweepStart;
+    Vec4 heightProbe;
+    Vec4 collisionProbe;
+    Vec4 predictedPosition;
+    Vec4 surfaceNormal;
+    Vec4 normalResponse;
+    float horizontalSpeed, largerRoot, smallerRoot, remainingSpeed;
+
+    Vec4 *collisionPosition;
+    COLLOUTPUT *collisionResult;
+    int resultFlags = 0;
+
+    float coordinateScale, groundHeight, landingTicks, targetValue, animationStep, unitLength;
+    int hitCount, hitIndex;
+
+    motion->velocity.z = motion->velocity.z - motion->gravity;
+    if (motion->particleMode == 1) {
+        if (motion->particleMask != 0)
+            MB_MistDeathEffect(moby, &motion->velocity, motion->particleMask);
+    }
+
+    horizontalSpeed = FastVec3Length(&motion->velocity.x);
+    targetValue = (motion->phase == MOTION_GROUNDED) ? 0.0f : motion->targetSpeed;
+    Delt(horizontalSpeed, targetValue, motion->speedApproachStep);
+    FastVec3RSqrtScale(&motion->velocity, &motion->velocity, horizontalSpeed);
+    if (motion->verticalSpeed < motion->velocity.z)
+        motion->velocity.z = motion->verticalSpeed;
+
+    CopyVec4Inline(&heightProbe, &moby->pos);
+    heightProbe.z = heightProbe.z + motion->collisionZOffset;
+    groundHeight = MB_CollLineDown(&heightProbe, 0.5f, 0);
+    if (CollHotspot() == 0) {
+        if (motion->groundBounces == 0.0f && groundHeight <= heightProbe.z &&
+            heightProbe.z + motion->velocity.z < groundHeight) {
+            motion->groundBounces = 1.0f;
+            heightProbe.z = groundHeight;
+            M775_SpawnSplash(&heightProbe, 3.0f);
+        }
+        groundHeight = MB_CollLineWrapper(&moby->pos);
+    }
+
+    else if ((motion->flags & KICK_STOP_AT_LEDGE) || motion->phase == MOTION_GROUNDED) {
+        FastVec3Add(&collisionProbe, &moby->pos, &motion->velocity);
+        if (MB_CollLineWrapper(&collisionProbe) < groundHeight - 0.25f)
+            FastVec3RSqrtScale(&motion->velocity, &motion->velocity, 0.0f);
+    }
+
+    if (motion->groundBounces != 0.0f) {
+        if (motion->groundBounces < 4.0f)
+            FastVec3Scale(&motion->velocity, &motion->velocity, 0.7f);
+        if (motion->groundBounces < 7.0f) {
+            motion->groundBounces = motion->groundBounces + 1.0f;
+            motion->gravity = motion->gravity * 0.75f;
+        }
+    }
+
+    if (moby->pos.x < 2.0f || 1021.0f < moby->pos.x || moby->pos.y < 2.0f ||
+        1021.0f < moby->pos.y || moby->pos.z < 2.0f || 1021.0f < moby->pos.z) {
+        resultFlags = KICK_OUT_OF_BOUNDS;
+    }
+
+    if (motion->landingAnimationFrame != -1.0f && motion->apexAnimationFrame != -1.0f) {
+        switch (motion->phase) {
+        case MOTION_RISING: {
+            float ratio;
+            ratio = FastAbsF(motion->velocity.z / motion->gravity);
+            if (2.0f < ratio) {
+                targetValue = MB_BlendAnimFrame(moby);
+                animationStep = (motion->apexAnimationFrame - targetValue) / ratio;
+                if (0.0f < animationStep)
+                    Delt(moby->animIScale, animationStep, transStepScale * 0.1f);
+            }
+            break;
+        }
+        case MOTION_FALLING:
+            targetValue = MB_BlendAnimFrame(moby);
+
+            if (motion->landingAnimationFrame <= targetValue) {
+                moby->animIScale = 0.0f;
+            }
+
+            else {
+                float negativeHalfGravity = motion->gravity * -0.5f;
+                landingTicks = 60.0f;
+                hitCount =
+                    MB_SolveQuad(negativeHalfGravity, motion->velocity.z - negativeHalfGravity,
+                                 moby->pos.z - groundHeight, &largerRoot, &smallerRoot);
+                if (hitCount > 0 && 0.0f < largerRoot && largerRoot < landingTicks)
+                    landingTicks = largerRoot;
+                if (landingTicks < 0.0001f)
+                    landingTicks = 0.0001f;
+                targetValue = MB_BlendAnimFrame(moby);
+                animationStep = (motion->landingAnimationFrame - targetValue) / landingTicks;
+                if (2.0f < animationStep)
+                    animationStep = 2.0f;
+
+                else if (animationStep < 0.0f)
+                    animationStep = 0.0f;
+                Delt(moby->animIScale, animationStep, transStepScale * 0.1f);
+            }
+            break;
+        case MOTION_GROUNDED:
+            moby->animIScale = 1.0f;
+            break;
+        }
+    }
+
+    if (moby->animationFlags & MOBY_ANIMATION_ENDED)
+        resultFlags |= KICK_ANIMATION_ENDED;
+    if (!(motion->flags & KICK_NO_TURN)) {
+        OrganicDeltAngSpeed(moby, &motion->turnVelocity, motion->turnTarget, 0.02f, 0.3f,
+                            motion->maxTurnStep);
+    }
+
+    hitIndex = 0;
+    CopyVec4Inline(&sweepStart, &moby->pos);
+    sweepStart.z = sweepStart.z + motion->collisionZOffset;
+    FastVec3Add(&moby->pos, &moby->pos, &motion->velocity);
+    CopyVec4Inline(&collisionProbe, &moby->pos);
+    collisionProbe.z = collisionProbe.z + motion->collisionZOffset;
+    FastVec3Add(&predictedPosition, &collisionProbe, &motion->velocity);
+    hitCount = CollMobySphere(FastIntToFloat(motion->collisionRadius) * 0.0010742187732830644f,
+                              &predictedPosition, 16, moby, 0);
+    if (hitIndex < hitCount) {
+        MobyInstance **hitMoby = HeroSphereQueryResults;
+        int remainingHits = hitCount;
+        do {
+            if (MB_isCrate(*hitMoby) == 0) {
+                if (motion->flags & KICK_STOP_AFTER_COLLISION) {
+                    if (motion->phase == MOTION_GROUNDED)
+                        resultFlags |= KICK_OUT_OF_BOUNDS;
+                }
+            }
+
+            else {
+                CollDamageMobyDirect_2(*hitMoby, moby, 0x10000, &moby->pos, &motion->velocity,
+                                       1.0f);
+            }
+            hitMoby++;
+        } while (--remainingHits != 0);
+    }
+
+    coordinateScale = 0.0009765625f;
+    targetValue = FastVec3Length2(&motion->velocity);
+    if ((float)motion->collisionRadius * coordinateScale < targetValue) {
+        CollLine(&sweepStart, &collisionProbe, 36, moby, 0);
+        CopyVec4Inline(&collisionProbe, &CollOutput.ip);
+    }
+    if (CollSphere(&collisionProbe, FastIntToFloat(motion->collisionRadius) * coordinateScale, 36,
+                   moby) != 0) {
+        resultFlags |= KICK_COLLISION;
+        collisionPosition = &CollOutput.push;
+        CopyVec4Inline(&moby->pos, collisionPosition);
+        unitLength = 1.0f;
+        moby->pos.z = moby->pos.z - motion->collisionZOffset;
+        FastVec3Normalize(&surfaceNormal, collisionPosition + 1, unitLength);
+        if (0.7070000171661377f <= surfaceNormal.z) {
+            float normalSpeed = FastVec3Dot(&motion->velocity, &surfaceNormal);
+            if (normalSpeed < 0.0f) {
+                collisionResult =
+                    (COLLOUTPUT *)((char *)collisionPosition - offsetof(COLLOUTPUT, push));
+                if (collisionResult->pMoby == 0 || collisionResult->poly > 0) {
+                    resultFlags |= KICK_GROUNDED;
+                    motion->phase = MOTION_GROUNDED;
+                }
+                FastVec3Normalize(&normalResponse, &surfaceNormal, normalSpeed);
+                FastSubVec3(&motion->velocity, &motion->velocity, &normalResponse);
+                if (motion->phase == MOTION_GROUNDED) {
+                    remainingSpeed = FastVec3Length2(&motion->velocity);
+                    Delt(remainingSpeed, 0.0f, motion->gravity);
+                    FastVec3Normalize(&motion->velocity, &motion->velocity, remainingSpeed);
+                }
+            }
+        }
+
+        else {
+            float responseScale = FastVec3Dot(&motion->velocity, &surfaceNormal);
+            if (responseScale < 0.0f) {
+                responseScale = responseScale * -(motion->restitution + unitLength);
+                FastVec3Normalize(&normalResponse, &surfaceNormal, responseScale);
+                FastVec3Add(&motion->velocity, &motion->velocity, &normalResponse);
+            }
+        }
+    }
+
+    if (motion->phase == MOTION_RISING) {
+        if (motion->velocity.z < 0.0f)
+            motion->phase = MOTION_FALLING;
+    }
+    return resultFlags;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_MtxToQuat);
 

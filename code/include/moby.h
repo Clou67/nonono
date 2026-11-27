@@ -211,6 +211,8 @@ enum MobyModeBit {
 // A moby (game object) instance, 0x100 bytes.
 struct AnimLayer;
 
+enum { MOBY_ANIMATION_ENDED = 2 };
+
 struct MobyInstance {
     BSphere bSphere;
     Vec4 pos;
@@ -245,7 +247,7 @@ struct MobyInstance {
     Manipulator *pManipulators;
     void *pPreviousAnimationData;
     void *pCurrentAnimationData;
-    unsigned char unk70;
+    unsigned char animationFlags;
     unsigned char unk71;
     unsigned char lodTransition;
     unsigned char metal;
