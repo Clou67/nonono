@@ -54,7 +54,7 @@ extern MusicTransition musicTransition;
 int music_LoadBankFromEE(void *buffer, int sector, int sectorCount);
 
 void music_Sync(int wait);
-void music_Pause(int includeSpeech);
+void music_Pause(int speech);
 void music_Unpause(void);
 void music_RegisterBankCB(void);
 int music_PlayPreseekedSpeech(void);
@@ -64,7 +64,7 @@ extern short CdReadActive[];
 void music_LoadFile(void *destination, int sector, int length);
 int music_LoadFileSync(void *destination, int sector, int length);
 
-void music_UnpauseDelay(int frames);
+void music_UnpauseDelay(int time);
 
 void music_LoadBankCB(int reason);
 

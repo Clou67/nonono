@@ -70,9 +70,9 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", music_Stop);
 
 enum { MUSIC_COMMAND_PAUSE = -0x8000 };
 
-void music_Pause(int includeSpeech)
+void music_Pause(int speech)
 {
-    if (includeSpeech) {
+    if (speech) {
         musicTransition.secondary_command = MUSIC_COMMAND_PAUSE;
         musicTransition.secondary_unpause = 0;
     }
@@ -94,14 +94,14 @@ void music_Unpause(void)
 
 enum { MUSIC_PAUSED_FLAG = 0x8000 };
 
-void music_UnpauseDelay(int frames)
+void music_UnpauseDelay(int time)
 {
     if (musicTransition.primary_command & MUSIC_PAUSED_FLAG)
-        musicTransition.primary_unpause = frames;
+        musicTransition.primary_unpause = time;
     if (musicTransition.transition_command & MUSIC_PAUSED_FLAG)
-        musicTransition.transition_unpause = frames;
+        musicTransition.transition_unpause = time;
     if (musicTransition.secondary_command & MUSIC_PAUSED_FLAG)
-        musicTransition.secondary_unpause = frames;
+        musicTransition.secondary_unpause = time;
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/music", music_UpdateStream);
