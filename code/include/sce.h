@@ -40,8 +40,41 @@ struct sceMpegCbDataError {
     char *message;
 };
 
+struct tD_CHCR {
+    unsigned int DIR : 1;
+    unsigned int p0 : 1;
+    unsigned int MOD : 2;
+    unsigned int ASP : 2;
+    unsigned int TTE : 1;
+    unsigned int TIE : 1;
+    unsigned int STR : 1;
+    unsigned int p1 : 7;
+    unsigned int TAG : 16;
+};
+
+struct sceDmaTag;
+
+// DMA channel register image; the reserved words preserve the 16-byte register stride.
 struct sceDmaChan {
-    unsigned int chcr;
+    union {
+        unsigned int chcr;
+        tD_CHCR chcrFields;
+    };
+    unsigned int p0[3];
+    void *madr;
+    unsigned int p1[3];
+    unsigned int qwc;
+    unsigned int p2[3];
+    sceDmaTag *tadr;
+    unsigned int p3[3];
+    void *as0;
+    unsigned int p4[3];
+    void *as1;
+    unsigned int p5[3];
+    unsigned int p6[4];
+    unsigned int p7[4];
+    void *sadr;
+    unsigned int p8[3];
 };
 
 // GS image readback packet built by libgraph (112 bytes).
