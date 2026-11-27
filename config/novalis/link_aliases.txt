@@ -713,3 +713,6 @@ Space_DrawQuadStrip__Fv = 0x002A31D0;
 Space_DrawHelper__Fi = 0x002A3310;
 
 Hero_MakeInvisible__Fv = 0x002486C0;
+
+MB_compressVector__FP4Vec4PUi = 0x00276380;
+MB_decompressVector__FP4Vec4PUi = 0x002764A8;

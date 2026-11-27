@@ -2,6 +2,7 @@
 #define EEREGS_H
 
 // EE hardware registers (names from Sony eeregs.h).
+#define T0_COUNT ((volatile unsigned int *)0x10000000)
 #define D0_CHCR ((volatile unsigned int *)0x10008000)
 #define D0_QWC ((volatile unsigned int *)0x10008020)
 #define D0_TADR ((volatile unsigned int *)0x10008030)

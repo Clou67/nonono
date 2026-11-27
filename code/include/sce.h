@@ -322,7 +322,7 @@ int AddIntcHandler(int cause, int (*handler)(int), int next);
 int EnableIntc(int cause);
 }
 
-// EE timer 0 count register (eeregs.h).
-#define T0_COUNT ((volatile unsigned int *)(0x10000800))
+// EE timer 1 count register (eeregs.h).
+#define T1_COUNT ((volatile unsigned int *)(0x10000800))
 
 #endif

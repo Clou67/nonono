@@ -1,3 +1,4 @@
+#include "eeregs.h"
 #include "common.h"
 #include "hero.h"
 #include "fastfunc.h"
@@ -1439,7 +1440,75 @@ void UpdatePart_071(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028A0D8);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_072);
+void UpdatePart_072(PartInstance *particle)
+{
+    PartThreePhaseMotion *motion = &particle->threePhaseMotion;
+    Vec4 appliedDelta, motionScratch, finalMotion;
+    float blendOrDistance;
+    int rgb;
+
+    if (worldUpdateTime & 1)
+        particle->rot++;
+
+    blendOrDistance = FastVec3Dist(&particle->pos, &Hero.cgPos);
+    if (blendOrDistance < 5.0f && 0.0f < motion->target->z) {
+        FastSubVec3(&motionScratch, motion->target, &particle->pos);
+        if (0.5f < FastVec3Length2(&motionScratch)) {
+            FastVec3Normalize(&motionScratch, &motionScratch, 0.1f / blendOrDistance);
+            FastVec3Add(&particle->pos, &particle->pos, &motionScratch);
+        }
+
+        else {
+            FastVec3Normalize(&motionScratch, &motionScratch, 0.005f);
+            MB_compressVector(&motionScratch, &motion->finalVelocity);
+        }
+    }
+
+    blendOrDistance = (2.5f - (blendOrDistance - 0.5f)) / 2.5f;
+    if (1.0f < blendOrDistance)
+        blendOrDistance = 1.0f;
+
+    else if (blendOrDistance < 0.0f)
+        blendOrDistance = 0.0f;
+
+    particle->rgba = FastTweenColor(motion->farColor, motion->nearColor, blendOrDistance);
+
+    if (motion->initialFrames) {
+        *T0_COUNT = 0;
+        MB_decompressVector(&appliedDelta, &motion->initialVelocity);
+        FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
+        blendOrDistance = FastIntToFloat(particle->timer) / FastIntToFloat(motion->initialFrames);
+        particle->rgba =
+            FastTweenColor(particle->rgba & 0xFFFFFF, particle->rgba, 1.0f - blendOrDistance);
+        if (FastDecTimer(particle->timer)) {
+            motion->initialFrames = 0;
+            particle->timer = motion->blendFrames;
+        }
+    }
+
+    else if (motion->blendFrames) {
+        MB_decompressVector(&motionScratch, &motion->initialVelocity);
+        MB_decompressVector(&finalMotion, &motion->finalVelocity);
+        FastVecLerp(&appliedDelta, &finalMotion, &motionScratch,
+                    FastIntToFloat(particle->timer) / FastIntToFloat(motion->blendFrames));
+        FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
+        if (FastDecTimer(particle->timer)) {
+            motion->blendFrames = 0;
+            particle->timer = motion->finalFrames;
+        }
+    }
+
+    else {
+        MB_decompressVector(&appliedDelta, &motion->finalVelocity);
+        FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
+        rgb = particle->rgba & 0xFFFFFF;
+        particle->rgba =
+            FastTweenColor(rgb, particle->rgba,
+                           FastIntToFloat(particle->timer) / FastIntToFloat(motion->finalFrames));
+        if (FastDecTimer(particle->timer))
+            DeletePart(particle);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_072);
 

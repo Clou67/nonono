@@ -307,4 +307,8 @@ float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int ax
 void CollDamageMobyDirect_2(MobyInstance *moby, int damage, int flags, Vec4 *position,
                             Vec4 *direction, float scale);
 
+// Four signed bytes: xyz normalized to the largest component, plus a shared scale.
+void MB_compressVector(Vec4 *vector, unsigned int *packed);
+void MB_decompressVector(Vec4 *vector, unsigned int *packed);
+
 #endif

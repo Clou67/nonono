@@ -194,6 +194,19 @@ struct PartTweenEmitterMotion {
     float damageScale;
 };
 
+// Two packed velocities and the durations of the blend between them.
+struct PartThreePhaseMotion {
+    unsigned int initialVelocity; // 0x00
+    unsigned int finalVelocity;   // 0x04
+    int farColor;                // 0x08
+    int nearColor;               // 0x0C
+    short initialFrames;         // 0x10
+    short blendFrames;           // 0x12
+    short finalFrames;           // 0x14
+    short unk_16;
+    Vec4 *target;                // 0x18
+};
+
 struct PartInstance {
     char i_class;
     char type;
@@ -227,6 +240,7 @@ struct PartInstance {
         PartLinkedMotion linkedMotion;
         PartSpiralMotion spiralMotion;
         PartTweenEmitterMotion tweenEmitterMotion;
+        PartThreePhaseMotion threePhaseMotion;
     };
 };
 
@@ -261,6 +275,7 @@ void UpdatePart_057(PartInstance *part);
 void UpdatePart_060(PartInstance *part);
 
 void UpdatePart_071(PartInstance *part);
+void UpdatePart_072(PartInstance *particle);
 
 void UpdatePart_073(PartInstance *part);
 

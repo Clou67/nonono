@@ -32,6 +32,7 @@ int FastDecTimer(unsigned char &timer);
 float FastAbsF(float value);
 float FastFSqrt(float value);
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
+void FastVecLerp(Vec4 *out, Vec4 *first, Vec4 *second, float amount);
 float FastVec3Length(float *vec);
 float FastVec3Dot(Vec4 *first, Vec4 *second);
 void FastMemCopy32(void *destination, void *source, int size);

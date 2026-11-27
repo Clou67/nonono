@@ -133,8 +133,8 @@ void startLevel(void)
     while (!g_newlevel) {
         reloadLevel = 0;
         reloadMode = 0;
-        frm_clock_time += *T0_COUNT;
-        *T0_COUNT = 0;
+        frm_clock_time += *T1_COUNT;
+        *T1_COUNT = 0;
         ResetLevelCounters();
         CutscenePlaying = 0;
         VU1_sendChain();
@@ -223,7 +223,7 @@ void startLevel(void)
         printf_stub2("system misc", 0x10);
         printf_stub3("system misc", 0x10);
         VU1_syncChain(1);
-        FrameLoad = FastIntToFloat(*T0_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
+        FrameLoad = FastIntToFloat(*T1_COUNT) / (videoModePal ? 11520.0f : 9600.0f);
         if (gameMode == GAME_MODE_NORMAL && Debug.profile) {
             STUB_00218990();
         }
@@ -236,7 +236,7 @@ void startLevel(void)
                     limit = 11520;
                 }
                 // The frame overran its budget: run one more update to catch up.
-                if (limit < (int)*T0_COUNT) {
+                if (limit < (int)*T1_COUNT) {
                     if (gameMode == GAME_MODE_NORMAL) {
                         UpdatePad();
                         UpdateGameplay();
