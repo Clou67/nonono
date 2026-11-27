@@ -11,6 +11,14 @@ struct GeometryQuad {
 };
 void FastDrawQuadReal(GeometryQuad *quad, int flags, int mode);
 
+extern int mobyVu1State;
+void ComposeCameraMatrix(void);
+void CleanAnimationCache(void);
+void DrawMobys(void);
+void SkySpace(void);
+void PatchMobyGifs(void);
+void SetScreenClearColorPacket(int red, int green, int blue, int alpha);
+
 struct MobyInstance;
 typedef void (*DrawMobyCallback)(MobyInstance *moby);
 

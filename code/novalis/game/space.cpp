@@ -1,5 +1,6 @@
 #include "libc.h"
 #include "font.h"
+#include "hud.h"
 #include "camera.h"
 #include "common.h"
 #include "draw.h"
@@ -138,16 +139,94 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DrawHelper)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_UpdateCutsceneScene);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", TransitionDraw_Space);
-
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_SpawnShipParticles);
-
 enum {
+    SPACE_LOADING_EARLY_PROGRESSION = 4,
     SPACE_CUTSCENE_TAKEOFF = 0,
     SPACE_CUTSCENE_FLIGHT = 3,
     SPACE_CUTSCENE_LOADING = 4,
     SPACE_CUTSCENE_ARRIVAL = 8
 };
+
+void TransitionDraw_Space(void)
+{
+    float rotationAngle;
+    float screenY;
+    float quadExtent;
+    int overlayAlpha;
+    float savedXRatio;
+    Screen *screen;
+    unsigned long texture;
+
+    // Retail omits the ignored black argument.
+    ((void (*)(void))ClearDrawBufferLarge)();
+    ComposeCameraMatrix();
+    CleanAnimationCache();
+    SetupFogColorGsReg();
+
+    savedXRatio = VC.xratio;
+    mobyVu1State = -1;
+    if (savedXRatio < 0.63f)
+        VC.xratio = 0.63f;
+
+    UpdateViewContext();
+    ComposeCameraMatrix();
+    SkySpace();
+    VC.xratio = savedXRatio;
+
+    UpdateViewContext();
+    ComposeCameraMatrix();
+
+    if (bootSpaceTransitionState.loadingScreen == SPACE_LOADING_EARLY_PROGRESSION) {
+        FlipAndExploreTimersVU1(1);
+        Space_DrawQuadStrip();
+        FinalizeVU1FramePacketChain();
+    }
+
+    DrawMobys();
+    Vif1ChainCmd(0x02080000);
+    FlipAndExploreTimersVU1(1);
+
+    if ((Level != LEVEL_VELDIN) && ((Level != LEVEL_NOVALIS) || (g_SeenPlanets[3] != 0)))
+        Space_DrawShipEffects(SceneLoad.mobys[0]);
+
+    if ((bootSpaceTransitionState.loadingScreen == SPACE_LOADING_EARLY_PROGRESSION) &&
+        (SceneLoad.sceneFrame >= 0x3D)) {
+        overlayAlpha = (SceneLoad.sceneFrame - 0x3C) * 2;
+        if (overlayAlpha >= 0x81)
+            overlayAlpha = 0x80;
+        Space_DrawHelper(overlayAlpha);
+    }
+
+    if ((Level != LEVEL_VELDIN) && ((Level != LEVEL_NOVALIS) || (g_SeenPlanets[3] != 0)))
+        Space_DrawTransitionOverlay(SceneLoad.mobys[0]);
+
+    if ((g_memcard.stage >= MC_STAGE_FORMAT) || (g_memcard.nextstage >= MC_STAGE_GET_INFO)) {
+        VU1_addGSregister(0x47, 0x3004B);
+        quadExtent = 272.0f;
+        texture = FontSet(2);
+        screen = &Scrn;
+        DrawSprite(0x2C, screen->paramY - 0x60, 0x40, 0x40, 0, 0, 0x40, 0x40, 0x80808080, texture);
+        screenY = (float)((screen->paramY - 0x40) * 16);
+        rotationAngle = ((gsFrame % 55) * (-6.2831855f)) / 55.0f;
+        Hud_DrawRotatedSprite16(1216.0f, screenY, quadExtent, 272.0f, rotationAngle, 0x40, 0x40,
+                                FontSet(3));
+    }
+
+    FinalizeVU1FramePacketChain();
+
+    if (screenFade > 0.0f) {
+        if (screenFade > 1.0f)
+            screenFade = 1.0f;
+        SetScreenClearColorPacket(0, 0, 0, FastFloatToInt(screenFade * 128.0f));
+    }
+
+    VU1_syncChain(0x10);
+    PatchMobyGifs();
+}
+
+INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_SpawnShipParticles);
+
+
 
 void UpdateSpace(void)
 {
