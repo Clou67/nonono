@@ -42,6 +42,7 @@ struct MusicTransition {
 
 // Speech ids are offset by this much from the ids stored in the help messages.
 #define MUSIC_SPEECH_ID_BASE 30000
+#define MUSIC_SCENE_SPEECH_BASE 40000
 
 // Values of MusicTransition::state seen so far; 6 and 7 are the finishing states.
 #define MUSIC_STATE_READY 3

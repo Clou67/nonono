@@ -711,3 +711,5 @@ FastDrawQuadReal__FP12GeometryQuadii = 0x0021EE28;
 SkySpace__Fv = 0x0029F260;
 Space_DrawQuadStrip__Fv = 0x002A31D0;
 Space_DrawHelper__Fi = 0x002A3310;
+
+Hero_MakeInvisible__Fv = 0x002486C0;

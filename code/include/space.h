@@ -109,6 +109,7 @@ extern unsigned char SceneScratchB[];
 
 extern const char SpaceUnloadBankFormat[];
 
+void space_PlayCutscene(int cutscene);
 void TransitionDraw_Space(void);
 void Space_DrawQuadStrip(void);
 void Space_DrawHelper(int alpha);

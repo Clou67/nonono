@@ -62,6 +62,14 @@ Vec4 *SpaceEnvPositions[4] = {SpaceEnvPositions0, SpaceEnvPositions1, SpaceEnvPo
 IndexedQuad *SpaceEnvQuads[4] = {SpaceEnvQuads0, SpaceEnvQuads1, SpaceEnvQuads2, SpaceEnvQuads3};
 
 
+enum {
+    SPACE_LOADING_EARLY_PROGRESSION = 4,
+    SPACE_CUTSCENE_TAKEOFF = 0,
+    SPACE_CUTSCENE_FLIGHT = 3,
+    SPACE_CUTSCENE_LOADING = 4,
+    SPACE_CUTSCENE_ARRIVAL = 8
+};
+
 void ResetGameCounters(void);
 void UpdateMobyChain(void);
 void sound_UpdateAmbient(void);
@@ -112,7 +120,91 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DisableShip
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_EnableShip);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", space_PlayCutscene);
+void space_PlayCutscene(int cutscene)
+{
+    MobyInstance *moby;
+    int speechTrack, shipVariant, sceneIndex, arrivalScene, sceneWorkspaceOffset;
+
+    bootSpaceTransitionState.timer = -1;
+    CutscenePlaying = 1;
+    bootSpaceTransitionState.cutscene = cutscene;
+    bootSpaceTransitionState.o2Mask = 0;
+
+    FastMemSet(&SceneLoad, 0, 0x1C0);
+    FastMemSet(SceneScratchA, 0, 0x40);
+    FastMemSet(SceneScratchB, 0, 0x40);
+
+    VU1_setBufSizeByLevel();
+    sceneWorkspaceOffset = vu1_bufSize - 0x60000;
+    SceneLoad.decodedChunk = MemSlots.vu1_chain[0] + sceneWorkspaceOffset;
+    SceneLoad.buffer = MemSlots.vu1_chain[1] + sceneWorkspaceOffset;
+    screenFade = 1.0f;
+    gameMode = GAME_MODE_SPACE;
+    vu1_bufSize = sceneWorkspaceOffset;
+    g_SceneFlash = 0.0f;
+
+    Hero_InitBodyState(HERO_STATE_CUSTOM_UI, 2);
+    Hero.invisible = 1;
+    Hero_MakeInvisible();
+
+    bootSpaceTransitionState.spaceship->modeBits |= DISABLED;
+    for (moby = MobyInstancePermEnd; moby->state != 0xFF; moby++)
+        if (!(moby->state & 0x80) &&
+            ((short)moby->oClass == OCLASS_MINE_74 || (short)moby->oClass == OCLASS_DECOY))
+            moby->modeBits |= NO_DRAW;
+
+    if (cutscene == SPACE_CUTSCENE_TAKEOFF) {
+        shipVariant = bootSpaceTransitionState.shipVariant;
+        sceneIndex = shipVariant + 1;
+        speechTrack = shipVariant + 6;
+        if (Level == LEVEL_ORXON && shipVariant == 1 && UnlockableItems[ITEM_O2_MASK] == 0) {
+            sceneIndex = 0;
+            speechTrack = 11;
+        }
+
+        else if (Level == LEVEL_OLTANIS && bootSpaceTransitionState.shipVariant == 2) {
+            sceneIndex = 8;
+            speechTrack = 14;
+        }
+        LoadSpaceScene(sceneIndex, FastScaleRoundInt(6));
+    }
+
+    else {
+        int arrivalPending, fadeFrames;
+        shipVariant = bootSpaceTransitionState.shipVariant;
+        arrivalPending = bootSpaceTransitionState.arrivalPending;
+        speechTrack = shipVariant + 3;
+        if (arrivalPending)
+            speechTrack = shipVariant;
+        arrivalScene = shipVariant + 5;
+        if (Level == LEVEL_ORXON && shipVariant == 1 && UnlockableItems[ITEM_O2_MASK] == 0) {
+            speechTrack = 10;
+            if (arrivalPending)
+                speechTrack = 9;
+            arrivalScene = 4;
+        }
+
+        else if (Level == LEVEL_OLTANIS && bootSpaceTransitionState.shipVariant == 2) {
+            speechTrack = 13;
+            if (bootSpaceTransitionState.arrivalPending)
+                speechTrack = 12;
+            arrivalScene = 9;
+        }
+        fadeFrames = 0;
+        if (!bootSpaceTransitionState.arrivalPending)
+            fadeFrames = FastScaleRoundInt(6);
+        LoadSpaceScene(arrivalScene, fadeFrames);
+    }
+
+    musicTransition.queuedSpeech = speechTrack + MUSIC_SCENE_SPEECH_BASE;
+    ParseSpaceSceneChunk(0);
+    while (musicTransition.state != MUSIC_STATE_READY) {
+        sound_Update();
+        sceGsSyncV(0);
+    }
+
+    music_PlayPreseekedSpeech();
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_StartTakeoffCutscene);
 
@@ -138,14 +230,6 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DrawQuadStr
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DrawHelper);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_UpdateCutsceneScene);
-
-enum {
-    SPACE_LOADING_EARLY_PROGRESSION = 4,
-    SPACE_CUTSCENE_TAKEOFF = 0,
-    SPACE_CUTSCENE_FLIGHT = 3,
-    SPACE_CUTSCENE_LOADING = 4,
-    SPACE_CUTSCENE_ARRIVAL = 8
-};
 
 void TransitionDraw_Space(void)
 {
