@@ -137,10 +137,10 @@ void DoSkyGifPaging(void)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/skyfunc", func_0029F660);
 
-void SkyDrawShell(int shell_index)
+void SkyDrawShell(int ishell)
 {
-    if (shell_index < Sky->shell_cnt) {
-        sky_shell *shell = Sky->shells[shell_index];
+    if (ishell < Sky->shell_cnt) {
+        sky_shell *shell = Sky->shells[ishell];
 
         if (shell->gouraud)
             SkyDrawShellGouraud(shell);
