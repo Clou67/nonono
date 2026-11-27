@@ -111,7 +111,7 @@ int readMpeg(VideoDec *decoder, ReadBuf *buffer, StrFile *file)
         int available = readBufBeginGet(buffer, &read_ptr);
 
         if (available > 0) {
-            int transferred = sceMpegDemuxPssRing(&decoder->mpeg, read_ptr, available, buffer, buffer->capacity);
+            int transferred = sceMpegDemuxPssRing(&decoder->mpeg, read_ptr, available, buffer, buffer->size);
             decode_remaining -= transferred;
             readBufEndGet(buffer, transferred);
         }
