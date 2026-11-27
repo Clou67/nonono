@@ -91,7 +91,7 @@ extern DrawConfig drawConfig;
 void InitViewContext(void);
 void UpdateViewContext(void);
 
-int FontLen(char *text, int length);
+int FontLen(char *s, int len);
 
 int FontLenSmall(char *text, int length);
 
@@ -120,11 +120,11 @@ void SetupDefaultDrawMovie(int black);
 void ResetLevelCounters(void);
 
 
-// A full-screen colour wash; DrawScreenInsertEffect sets the alpha register from alphaReg and fills the screen.
+// A full-screen colour wash; DrawScreenInsertEffect sets the alpha register from alpha and fills the screen.
 struct ScreenInsertEffect {
     int enabled;
     unsigned int color;
-    unsigned long alphaReg;
+    unsigned long alpha;
 };
 
 // The colour washes the level starts with (space levels get their own).
