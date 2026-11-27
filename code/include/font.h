@@ -3,6 +3,14 @@
 
 enum { FONT_MEDIUM = 1, FONT_SMALL = 2, FONT_LARGE = 3 };
 
+// Shared RaC1 / DL four-byte letter metric (advance spacing, not glyph width).
+struct fontLetter {
+    unsigned char u;
+    unsigned char v;
+    signed char drop;
+    signed char spacing;
+};
+
 struct FontWindow {
     short win_top;
     short win_bot;

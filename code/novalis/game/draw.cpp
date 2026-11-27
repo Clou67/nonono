@@ -689,25 +689,20 @@ void DisableFontColors(void)
     FontColorsEnabled = 0;
 }
 
-struct FontGlyph {
-    unsigned char u;
-    unsigned char v;
-    signed char yOff;
-    signed char width;
-};
+
 
 int FontLenWithTable(char *text, int length, unsigned char *metrics)
 {
-    const FontGlyph *glyphs = (const FontGlyph *)metrics;
+    const fontLetter *glyphs = (const fontLetter *)metrics;
     int total = 0;
     int index = 0;
     if (length != 0 && *(unsigned char *)text != 0) {
         unsigned char *cursor = (unsigned char *)text;
         do {
             int code = *cursor++;
-            int width = glyphs[code].width;
-            if (width)
-                total += width;
+            int spacing = glyphs[code].spacing;
+            if (spacing)
+                total += spacing;
             index++;
         } while (index != length && *cursor != 0);
     }
