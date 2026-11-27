@@ -5,37 +5,189 @@
 
 struct PartInstance;
 
+// Numbered effect records use DL debug names. RaC1 update labels are shifted by one.
+
+struct Part000 {
+    Vec4 vel;
+};
+
+struct Part003 {
+    Vec4 vel;
+    char *existFlag;
+    int state;
+    int numFlipColls;
+    int numFramesSinceColl;
+};
+
+struct Part005 {
+    int fadeTimer;
+    float scaleDelta;
+};
+
+struct Part007 {
+    int fadeTimer;
+    float scaleDelta;
+};
+
+// RaC1 reads the state bytes unsigned; DL uses the same names and offsets.
+
+struct Part011 {
+    Vec4 vel;
+    int beginRGBA;
+    int endRGBA;
+    unsigned char totalTime;
+    unsigned char stateFlags;
+    unsigned char generationCount;
+    unsigned char lifeSpan;
+    float maxScale;
+};
+
+struct Part016 {
+    Vec4 vel;
+    int beginRGBA;
+    int endRGBA;
+    short lifeSpan;
+    short partClass;
+    float maxScale;
+};
+
+struct Part020 {
+    Mtx3 *rotmatrix;
+    float alpha;
+    float rot;
+    float asign;
+    float offset;
+    float angle;
+    MobyInstance *target;
+    float vel;
+};
+
+struct Part025 {
+    Vec4 vel;
+    float r;
+    float g;
+    float b;
+    float alpha;
+};
+
+struct Part027 {
+    Vec4 vel;
+    int timer;
+    int lifeSpan;
+    int alpha;
+};
+
+struct Part030 {
+    Vec4 vel;
+    PartInstance *prev;
+    PartInstance *next;
+    float ground;
+    short grounded;
+    unsigned short type;
+};
+
+struct Part040 {
+    Vec4 vel;
+    float rot;
+    short timer;
+    short posttimer;
+    unsigned char flags;
+    unsigned char scaleFactor;
+    short sPad;
+    MobyInstance *parent;
+};
+
+struct Part042 {
+    Vec4 vel;
+    float rot;
+    short timer;
+    short posttimer;
+    unsigned char flags;
+    unsigned char pad_19[3];
+    MobyInstance *parent;
+};
+
+// RaC1 uses an 8-bit rotSpeed; DL widened it to 16 bits.
+
+struct Part048 {
+    Vec4 vel;
+    float invTimer;
+    int RGBA1;
+    int RGBA2;
+    char rotSpeed;
+    unsigned char pad_1D[3];
+};
+
+struct Part052 {
+    float initScale;
+    float finalScale;
+    int initRGBA;
+    int finalRGBA;
+    float invTime;
+};
+
+struct Part058 {
+    Vec4 vel;
+    unsigned char type;
+    unsigned char fade_time;
+    unsigned char burst_time;
+    unsigned char spawn_rate;
+    unsigned char state;
+    unsigned char flame_time;
+    unsigned char alpha_top;
+    unsigned char pad;
+    MobyInstance *pParent;
+    float damageHp;
+};
+
+struct Part059 {
+    Vec4 ofs;
+    int type;
+    MobyInstance *hero;
+    int pad[2];
+};
+
+struct Part064 {
+    Vec4 vel;
+    float height;
+    float gravity;
+    int endRGBA;
+};
+
+struct Part066 {
+    Vec4 vel;
+    float expandSpeed;
+};
+
+struct update78 {
+    Vec4 closePt;
+    int generator;
+    int fadeTime;
+    int pad[2];
+};
+
+struct Part071 {
+    unsigned int vel1;
+    unsigned int vel2;
+    int rgba1;
+    int rgba2;
+    short shootTimer;
+    short slowTimer;
+    short fadeTimer;
+    short pad_16;
+    update78 *p78Var;
+};
+
+// RaC1-specific layouts without a verified named DL equivalent.
+
 struct PartLineMotion {
     Vec4 origin;
     Vec4 velocity;
 };
 
-struct PartTimedFade {
-    Vec4 velocity;
-    int timer;
-    int duration;
-    int alpha;
-};
-
 struct PartSpinMotion {
     Vec4 velocity;
-    union {
-        char rotationStep;
-        int relativeToHero;
-    };
-};
-
-struct PartScaleFade {
-    float startScale;
-    float endScale;
-    int startColor;
-    int endColor;
-    float rate;
-};
-
-struct PartFadingMotion {
-    Vec4 velocity;
-    float scaleStep;
+    char rotationStep;
 };
 
 struct PartRotationMotion {
@@ -43,25 +195,12 @@ struct PartRotationMotion {
     char rotationStep;
 };
 
-struct PartTweenSpin {
-    Vec4 velocity;
-    float rate;       // timer-to-fraction scale for the colour tween
-    int colorB;
-    int colorA;
-    char rotationStep;
-};
-
 struct PartFollowFade {
-    short fadeStep;   // alpha removed each frame
-    short mode;       // 1 = frozen, 2 = follows pMoby
+    short fadeStep; // alpha removed each frame
+    short mode;     // 1 = frozen, 2 = follows pMoby
     MobyInstance *pMoby;
     char unk_08[8];
-    Vec4 offset;      // offset from pMoby
-};
-
-struct PartTimedScale {
-    int timer;
-    float scaleStep;
+    Vec4 offset; // offset from pMoby
 };
 
 enum PartSplittingFlags {
@@ -77,16 +216,6 @@ enum {
     PART_SPLIT_DAMAGE_FLAGS = 0x10001
 };
 
-struct PartSplittingMotion {
-    Vec4 velocity;              // 0x00
-    float rotation;             // 0x10, fraction of a turn
-    short age;                  // 0x14
-    short fadeFrames;           // 0x16
-    unsigned char flags;        // 0x18
-    unsigned char unk_19[3];
-    MobyInstance *owner;         // 0x1C
-};
-
 enum PartBranchingFlags {
     PART_BRANCH_FADING = 1,
     PART_BRANCH_BOOST = 2,
@@ -94,82 +223,18 @@ enum PartBranchingFlags {
     PART_BRANCH_LONG_FADE = 8
 };
 
-struct PartBranchingMotion {
-    Vec4 velocity;              // w holds the child velocity scale
-    int startColor;             // 0x10
-    int endColor;               // 0x14
-    unsigned char timer;        // 0x18
-    unsigned char flags;        // 0x19
-    unsigned char generation;   // 0x1A
-    unsigned char lifetime;     // 0x1B
-    float sizeCurve;            // 0x1C
-};
-
 enum { PART_DRIFT_COLLISION_FLAGS = 0x12 };
 
-struct PartDriftingMotion {
-    Vec4 velocity;
-    unsigned char *active;
-    int fading;
-    int offscreenFrames;
-    int collisionCounter;
-};
-
 enum { PART_COLOR_DECAY_COLLISION_FLAGS = 2 };
-
-struct PartColorDecayMotion {
-    Vec4 velocity;              // w holds the vertical acceleration override
-    float red;
-    float green;
-    float blue;
-    float alpha;
-};
 
 enum PartDebrisKind {
     PART_DEBRIS_SPAWN_ON_LANDING = 1,
     PART_DEBRIS_UPWARD_ACCELERATING = 3
 };
 
-struct PartDebrisMotion {
-    Vec4 velocity;              // w holds the landing height
-    int startColor;
-    int endColor;
-    short lifetime;
-    short kind;
-    float startScale;
-};
-
 enum PartLinkedFlags {
     PART_LINK_FIXED = 1,
     PART_LINK_FADING = 2
-};
-
-// Collision and fixed flags share a packed status word used when walking a particle chain.
-#define PART_LINK_BLOCKED_MASK 0x1FFFF00000000LL
-
-struct PartLinkedMotion {
-    Vec4 velocity;
-    PartInstance *target;
-    PartInstance *link;
-    union {
-        long long status;
-        struct {
-            int unk_18;
-            short collided;
-            unsigned short flags;
-        };
-    };
-};
-
-struct PartSpiralMotion {
-    Mtx4 *basis;
-    float alpha;
-    float rotation;
-    float alphaStep;
-    float radius;
-    float angle;
-    MobyInstance *target;
-    float approachSpeed;
 };
 
 enum PartTweenEmitterPhase {
@@ -180,40 +245,8 @@ enum PartTweenEmitterPhase {
 
 enum { PART_TEXTURE_TWEEN_EMITTER = 58 };
 
-struct PartTweenEmitterMotion {
-    Vec4 velocity;
-    unsigned char singlePhase;
-    unsigned char tweenFrames;
-    unsigned char emitFrames;
-    unsigned char emitCount;
-    unsigned char phase;
-    unsigned char lifetime;
-    unsigned char alpha;
-    unsigned char unk_17;
-    int damage;
-    float damageScale;
-};
-
-// A falling ember emits smoke and debris when it crosses floorZ.
-struct PartFloorBurstMotion {
-    Vec4 velocity;  // 0x00
-    float floorZ;   // 0x10
-    float gravity;  // 0x14
-    int endColor;   // 0x18
-};
-
-// Two packed velocities and the durations of the blend between them.
-struct PartThreePhaseMotion {
-    unsigned int initialVelocity; // 0x00
-    unsigned int finalVelocity;   // 0x04
-    int farColor;                // 0x08
-    int nearColor;               // 0x0C
-    short initialFrames;         // 0x10
-    short blendFrames;           // 0x12
-    short finalFrames;           // 0x14
-    short unk_16;
-    Vec4 *target;                // 0x18
-};
+// Retail tests grounded/type with a packed 64-bit load beginning at ground.
+#define PART_LINK_BLOCKED_MASK 0x1FFFF00000000LL
 
 struct PartInstance {
     char i_class;
@@ -224,35 +257,11 @@ struct PartInstance {
     char rot;
     char draw_dist;
     short timer;
-    union {
-        float scale;
-        int rgbaScale;
-    };
+    float scale;
     Vec4 pos;
-    union {
-        int update[8];
-        PartLineMotion motion20;
-        PartTimedFade timedFade;
-        PartSpinMotion spinMotion;
-        PartScaleFade scaleFade;
-        PartFadingMotion fadingMotion;
-        PartRotationMotion rotationMotion;
-        PartTweenSpin tweenSpin;
-        PartFollowFade followFade;
-        PartTimedScale timedScale;
-        PartSplittingMotion splittingMotion;
-        PartBranchingMotion branchingMotion;
-        PartDriftingMotion driftingMotion;
-        PartColorDecayMotion colorDecayMotion;
-        PartDebrisMotion debrisMotion;
-        PartLinkedMotion linkedMotion;
-        PartSpiralMotion spiralMotion;
-        PartTweenEmitterMotion tweenEmitterMotion;
-        PartThreePhaseMotion threePhaseMotion;
-        PartFloorBurstMotion floorBurstMotion;
-    };
+    // Original fixed-size storage; the particle class selects its effect struct.
+    int update[8];
 };
-
 // Texture slot of each particle class, indexed by the iClass passed to CreatePart.
 extern unsigned char *PartTextures[];
 
@@ -324,9 +333,7 @@ void UpdatePart_031(PartInstance *particle);
 void UpdatePart_021(PartInstance *particle);
 
 extern PartInstance *PartInstances;
-PartInstance *SpawnPart_058(Vec4 *position, int phase, int tweenFrames, int emitFrames,
-                             int emitCount, int lifetime, int damage, float damageScale,
-                             float speedScale);
+PartInstance *SpawnPart_058(Vec4 *position, int phase, int tweenFrames, int emitFrames, int emitCount, int lifetime, MobyInstance *pParent, float damageScale, float speedScale);
 void UpdatePart_059(PartInstance *particle);
 
 #endif

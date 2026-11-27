@@ -1,22 +1,21 @@
-#include "eeregs.h"
-#include "common.h"
-#include "hero.h"
-#include "fastfunc.h"
-#include "part.h"
-#include "mobyutil.h"
-#include "mathfunc_inline.h"
-#include "vuchain.h"
-#include "gameglobals.h"
-#include "camera.h"
 #include "ambience.h"
+#include "camera.h"
+#include "common.h"
+#include "eeregs.h"
+#include "fastfunc.h"
+#include "gameglobals.h"
+#include "hero.h"
 #include "libc.h"
+#include "mathfunc_inline.h"
+#include "mobyutil.h"
+#include "part.h"
+#include "vuchain.h"
 
 extern float frameTimeSq __attribute__((section(".sdata")));
 
 int CollSphere(Vec4 *position, int flags, MobyInstance *ignore, float radius);
 int CollSphere(float radius, Vec4 *position, int flags, MobyInstance *ignore);
 int CollLine(Vec4 *start, Vec4 *end, int flags, MobyInstance *ignore, COLL_DAM_IN *damage);
-
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", ResetParticles);
 
@@ -34,7 +33,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027E0D0);
 
 void UpdatePart_004(PartInstance *particle)
 {
-    PartDriftingMotion *motion = &particle->driftingMotion;
+    Part003 *motion = (Part003 *)particle->update;
     Vec4 positionScratch;
     float cameraDistance, cameraAngleDelta;
     int collisionCounter, remainingLifetime, alpha;
@@ -43,19 +42,18 @@ void UpdatePart_004(PartInstance *particle)
     GAMECAMERA *camera;
     Vec4 *particlePosition;
 
-    collisionCounter = motion->collisionCounter;
+    collisionCounter = motion->numFramesSinceColl;
     if (collisionCounter >= 3) {
         remainingLifetime = particle->timer;
         particlePosition = &particle->pos;
-        if (remainingLifetime > FastScaleRoundInt(0x78) &&
-            CollSphere(7.99f, particlePosition, PART_DRIFT_COLLISION_FLAGS, 0)) {
-            motion->fading = 1;
+        if (remainingLifetime > FastScaleRoundInt(0x78) && CollSphere(7.99f, particlePosition, PART_DRIFT_COLLISION_FLAGS, 0)) {
+            motion->state = 1;
             particle->timer = FastScaleRoundInt(0x78);
-            motion->collisionCounter = -1;
+            motion->numFramesSinceColl = -1;
         }
 
         else
-            motion->collisionCounter = 0;
+            motion->numFramesSinceColl = 0;
     }
 
     else {
@@ -63,45 +61,37 @@ void UpdatePart_004(PartInstance *particle)
         // Negative counters disable wind motion without skipping the distance fade.
         if (collisionCounter < 0)
             goto updateDistanceFade;
-        motion->collisionCounter = collisionCounter + 1;
+        motion->numFramesSinceColl = collisionCounter + 1;
     }
 
-    if (motion->collisionCounter >= 0) {
+    if (motion->numFramesSinceColl >= 0) {
         wind = &WindState;
-        motion->velocity.x = FastAngleSinF(wind->rotation) * wind->strength / 2.5f;
-        motion->velocity.y = FastAngleCosF(wind->rotation) * wind->strength / 2.5f;
-        motion->velocity.z = 0.0f;
-        FastVec3Add(particlePosition, particlePosition, &motion->velocity);
+        motion->vel.x = FastAngleSinF(wind->rotation) * wind->strength / 2.5f;
+        motion->vel.y = FastAngleCosF(wind->rotation) * wind->strength / 2.5f;
+        motion->vel.z = 0.0f;
+        FastVec3Add(particlePosition, particlePosition, &motion->vel);
     }
 updateDistanceFade:
     cameraPosition = &GameCamera.position;
     camera = &GameCamera;
 
     cameraDistance = FastVec3Dist(particlePosition, cameraPosition);
-    cameraAngleDelta = FastSubRots(
-        FastArcTan(particle->pos.x - camera->position.x, particle->pos.y - camera->position.y),
-        camera->rot.radius);
+    cameraAngleDelta = FastSubRots(FastArcTan(particle->pos.x - camera->position.x, particle->pos.y - camera->position.y), camera->rot.radius);
 
     if (FastAbsF(cameraAngleDelta) > 1.0471976f) {
-        if ((motion->offscreenFrames)++ >= 6) {
-            *motion->active = 0;
+        if ((motion->numFlipColls)++ >= 6) {
+            *motion->existFlag = 0;
             DeletePart(particle);
             return;
         }
-        positionScratch.x =
-            FastAngleSinF(FastAddRots(camera->rot.radius,
-                                      cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) *
-            cameraDistance;
-        positionScratch.y =
-            FastAngleCosF(FastAddRots(camera->rot.radius,
-                                      cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) *
-            cameraDistance;
+        positionScratch.x = FastAngleSinF(FastAddRots(camera->rot.radius, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
+        positionScratch.y = FastAngleCosF(FastAddRots(camera->rot.radius, cameraAngleDelta > 0.0f ? -1.0471976f : 1.0471976f)) * cameraDistance;
         positionScratch.z = particle->pos.z - camera->position.z;
         FastVec3Add(particlePosition, &positionScratch, cameraPosition);
         CopyVec4Inline(&positionScratch, particlePosition);
         positionScratch.z = positionScratch.z + 32.0f;
         if (CollLine(particlePosition, &positionScratch, PART_DRIFT_COLLISION_FLAGS, 0, 0)) {
-            *motion->active = 0;
+            *motion->existFlag = 0;
             DeletePart(particle);
             return;
         }
@@ -112,7 +102,7 @@ updateDistanceFade:
 
     remainingLifetime = particle->timer;
     if (FastScaleRoundInt(0x78) >= remainingLifetime)
-        if (motion->fading)
+        if (motion->state)
             alpha = particle->timer * 0x14 / FastScaleRoundInt(0x78);
 
         else
@@ -122,7 +112,7 @@ updateDistanceFade:
         alpha = 0x14;
 
     if (cameraDistance < 8.0f || cameraDistance > 96.0f) {
-        *motion->active = 0;
+        *motion->existFlag = 0;
         DeletePart(particle);
         return;
     }
@@ -135,15 +125,14 @@ updateDistanceFade:
     particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
 
     if (FastDecTimer(particle->timer)) {
-        if (motion->fading) {
-            *motion->active = 0;
+        if (motion->state) {
+            *motion->existFlag = 0;
             DeletePart(particle);
         }
 
         else {
-            motion->fading = 1;
-            particle->timer =
-                MB_randRange(FastScaleRoundInt(0x78) * 3, FastScaleRoundInt(0x78) * 9);
+            motion->state = 1;
+            particle->timer = MB_randRange(FastScaleRoundInt(0x78) * 3, FastScaleRoundInt(0x78) * 9);
         }
     }
 }
@@ -156,17 +145,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_005);
 
 void UpdatePart_006(PartInstance *part)
 {
-    PartTimedScale *scale = &part->timedScale;
+    Part005 *scale = (Part005 *)part->update;
 
-    if (FastDecTimer(scale->timer)) {
+    if (FastDecTimer(scale->fadeTimer)) {
         DeletePart(part);
         return;
     }
 
-    part->scale += scale->scaleStep;
+    part->scale += scale->scaleDelta;
 
-    if (FastScaleRoundInt(6) > scale->timer)
-        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->timer * 0x7F) / FastScaleRoundInt(6)) << 24);
+    if (FastScaleRoundInt(6) > scale->fadeTimer)
+        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->fadeTimer * 0x7F) / FastScaleRoundInt(6)) << 24);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_006);
@@ -175,17 +164,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_007)
 
 void UpdatePart_008(PartInstance *part)
 {
-    PartTimedScale *scale = &part->timedScale;
+    Part007 *scale = (Part007 *)part->update;
 
-    if (FastDecTimer(scale->timer)) {
+    if (FastDecTimer(scale->fadeTimer)) {
         DeletePart(part);
         return;
     }
 
-    part->scale += scale->scaleStep;
+    part->scale += scale->scaleDelta;
 
-    if (FastScaleRoundInt(6) > scale->timer)
-        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->timer * 0x7F) / FastScaleRoundInt(6)) << 24);
+    if (FastScaleRoundInt(6) > scale->fadeTimer)
+        part->rgba = (part->rgba & 0xFFFFFF) | (((scale->fadeTimer * 0x7F) / FastScaleRoundInt(6)) << 24);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_008);
@@ -204,44 +193,36 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_011);
 
 void UpdatePart_012(PartInstance *particle)
 {
-    PartBranchingMotion *motion = &particle->branchingMotion;
+    Part011 *motion = (Part011 *)particle->update;
     particle->rot++;
-    if (!(motion->flags & PART_BRANCH_FADING)) {
+    if (!(motion->stateFlags & PART_BRANCH_FADING)) {
         int childIndex;
-        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
-        if (motion->flags & PART_BRANCH_GRAVITY)
-            motion->velocity.z += frameTimeSq * 9.8f;
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+        if (motion->stateFlags & PART_BRANCH_GRAVITY)
+            motion->vel.z += frameTimeSq * 9.8f;
         {
             float scaleFactor = 0.8f;
-            if (motion->flags & PART_BRANCH_BOOST)
+            if (motion->stateFlags & PART_BRANCH_BOOST)
                 scaleFactor = 0.6f;
-            FastVec3Scale(&motion->velocity, &motion->velocity, scaleFactor);
+            FastVec3Scale(&motion->vel, &motion->vel, scaleFactor);
         }
 
-        if (particle->timer == FastFloatToInt((float)motion->lifetime * 0.85f) &&
-            motion->generation < 2 && !(motion->flags & PART_BRANCH_GRAVITY)) {
+        if (particle->timer == FastFloatToInt((float)motion->lifeSpan * 0.85f) && motion->generationCount < 2 && !(motion->stateFlags & PART_BRANCH_GRAVITY)) {
             for (childIndex = 4; childIndex >= 0; childIndex--) {
-                int childLifetime =
-                    FastFloatToInt((float)motion->lifetime * MB_randRangeFloat(0.9f, 1.1f));
-                int childTimer = motion->timer;
+                int childLifetime = FastFloatToInt((float)motion->lifeSpan * MB_randRangeFloat(0.9f, 1.1f));
+                int childTimer = motion->totalTime;
                 float childVelocityScale = MB_randRangeFloat(0.85f, 1.0f);
-                SpawnPart_011(&particle->pos, &motion->velocity, motion->startColor,
-                              motion->endColor, motion->sizeCurve, childLifetime, childTimer,
-                              motion->generation + 1, motion->flags,
-                              motion->velocity.w * childVelocityScale);
+                SpawnPart_011(&particle->pos, &motion->vel, motion->beginRGBA, motion->endRGBA, motion->maxScale, childLifetime, childTimer, motion->generationCount + 1, motion->stateFlags, motion->vel.w * childVelocityScale);
             }
         }
 
-        if (!(motion->flags & PART_BRANCH_GRAVITY)) {
-            float sizeCurve = motion->sizeCurve;
-            float totalFrames = FastIntToFloat(motion->lifetime);
-            float linearCoeff = (totalFrames * 8.0f - totalFrames * 3.0f * sizeCurve) /
-                                (sizeCurve * 8.0f * sizeCurve + sizeCurve * 8.0f);
-            float quadraticCoeff =
-                (totalFrames * 3.0f + linearCoeff * 8.0f * sizeCurve) / (sizeCurve * -8.0f);
+        if (!(motion->stateFlags & PART_BRANCH_GRAVITY)) {
+            float sizeCurve = motion->maxScale;
+            float totalFrames = FastIntToFloat(motion->lifeSpan);
+            float linearCoeff = (totalFrames * 8.0f - totalFrames * 3.0f * sizeCurve) / (sizeCurve * 8.0f * sizeCurve + sizeCurve * 8.0f);
+            float quadraticCoeff = (totalFrames * 3.0f + linearCoeff * 8.0f * sizeCurve) / (sizeCurve * -8.0f);
             float remainingFrames = FastIntToFloat(particle->timer);
-            float scaleFactor = FastFSqrt(linearCoeff * linearCoeff -
-                                          quadraticCoeff * 4.0f * (totalFrames - remainingFrames));
+            float scaleFactor = FastFSqrt(linearCoeff * linearCoeff - quadraticCoeff * 4.0f * (totalFrames - remainingFrames));
             float rootPlus = (-linearCoeff + scaleFactor) / (quadraticCoeff + quadraticCoeff);
             float rootMinus = (-linearCoeff - scaleFactor) / (quadraticCoeff + quadraticCoeff);
             float referenceDistance;
@@ -255,50 +236,46 @@ void UpdatePart_012(PartInstance *particle)
                 particle->scale *= referenceDistance * 0.075f + 0.25f;
         }
 
-        if (motion->flags & PART_BRANCH_BOOST)
-            particle->rgba = FastTweenColor(motion->startColor, 0xFFFFFFF,
-                                            (float)particle->timer / (float)motion->lifetime);
+        if (motion->stateFlags & PART_BRANCH_BOOST)
+            particle->rgba = FastTweenColor(motion->beginRGBA, 0xFFFFFFF, (float)particle->timer / (float)motion->lifeSpan);
 
         else
-            particle->rgba = FastTweenColor(motion->endColor, motion->startColor,
-                                            (float)particle->timer / (float)motion->lifetime);
+            particle->rgba = FastTweenColor(motion->endRGBA, motion->beginRGBA, (float)particle->timer / (float)motion->lifeSpan);
 
-        FastDecTimer(motion->timer);
+        FastDecTimer(motion->totalTime);
         if (FastDecTimer(particle->timer)) {
-            if (motion->flags & PART_BRANCH_BOOST) {
-                int tripledLifetime = motion->lifetime * 3;
+            if (motion->stateFlags & PART_BRANCH_BOOST) {
+                int tripledLifetime = motion->lifeSpan * 3;
                 particle->timer = tripledLifetime;
-                motion->lifetime = tripledLifetime;
-                motion->flags = (motion->flags & ~PART_BRANCH_BOOST) | PART_BRANCH_GRAVITY;
-                FastVec3Normalize(&motion->velocity, &motion->velocity,
-                                  motion->velocity.w * MB_randRangeFloat(1.6f, 2.0f));
+                motion->lifeSpan = tripledLifetime;
+                motion->stateFlags = (motion->stateFlags & ~PART_BRANCH_BOOST) | PART_BRANCH_GRAVITY;
+                FastVec3Normalize(&motion->vel, &motion->vel, motion->vel.w * MB_randRangeFloat(1.6f, 2.0f));
             }
 
             else {
                 int fadeLifetime;
-                motion->startColor = motion->endColor;
-                motion->endColor = ((unsigned char)particle->gs_alpha == 0x48) ? 0 : 0xF2F3F3F;
-                motion->flags |= PART_BRANCH_FADING;
-                fadeLifetime = MB_randRange(motion->lifetime * 2, motion->lifetime * 3);
-                if (motion->flags & PART_BRANCH_LONG_FADE)
+                motion->beginRGBA = motion->endRGBA;
+                motion->endRGBA = ((unsigned char)particle->gs_alpha == 0x48) ? 0 : 0xF2F3F3F;
+                motion->stateFlags |= PART_BRANCH_FADING;
+                fadeLifetime = MB_randRange(motion->lifeSpan * 2, motion->lifeSpan * 3);
+                if (motion->stateFlags & PART_BRANCH_LONG_FADE)
                     fadeLifetime *= 5;
-                motion->lifetime = fadeLifetime;
+                motion->lifeSpan = fadeLifetime;
                 particle->timer = (unsigned char)fadeLifetime;
             }
         }
     }
 
     else {
-        int fadeDuration = FastFloatToInt((float)motion->lifetime * 0.75f) + 1;
-        int blendDuration = FastFloatToInt((float)motion->lifetime * 0.25f) + 1;
+        int fadeDuration = FastFloatToInt((float)motion->lifeSpan * 0.75f) + 1;
+        int blendDuration = FastFloatToInt((float)motion->lifeSpan * 0.25f) + 1;
         int timer;
-        motion->velocity.z += frameTimeSq * 3.0f;
-        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
-        FastVec3Scale(&motion->velocity, &motion->velocity, 0.98f);
+        motion->vel.z += frameTimeSq * 3.0f;
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+        FastVec3Scale(&motion->vel, &motion->vel, 0.98f);
         timer = particle->timer;
         if (fadeDuration < timer)
-            particle->rgba = FastTweenColor(motion->endColor, motion->startColor,
-                                            (float)(timer - fadeDuration) / (float)blendDuration);
+            particle->rgba = FastTweenColor(motion->endRGBA, motion->beginRGBA, (float)(timer - fadeDuration) / (float)blendDuration);
 
         else if ((unsigned char)particle->gs_alpha == 0x48)
             particle->timer = 0;
@@ -334,14 +311,12 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_016);
 void UpdatePart_017(PartInstance *particle)
 {
     Vec4 savedPosition;
-    float gravity[4] = {frameTimeSq * 4.8f, frameTimeSq * 24.5f, frameTimeSq * 9.8f,
-                        -(frameTimeSq * 0.24f)};
-    PartDebrisMotion *motion = &particle->debrisMotion;
+    float gravity[4] = {frameTimeSq * 4.8f, frameTimeSq * 24.5f, frameTimeSq * 9.8f, -(frameTimeSq * 0.24f)};
+    Part016 *motion = (Part016 *)particle->update;
     int alpha, spawnLifetime, kind;
     float distanceOrSpawnScale;
 
-
-    if (motion->kind == PART_DEBRIS_UPWARD_ACCELERATING && FrameLoad > 0.95f)
+    if (motion->partClass == PART_DEBRIS_UPWARD_ACCELERATING && FrameLoad > 0.95f)
         FastDecTimer(particle->timer);
     if (FastDecTimer(particle->timer)) {
         DeletePart(particle);
@@ -350,8 +325,7 @@ void UpdatePart_017(PartInstance *particle)
 
     {
         float remaining_lifetime_float = FastIntToFloat(particle->timer);
-        particle->rgba = TweenColor(motion->endColor, motion->startColor,
-                                    remaining_lifetime_float / FastIntToFloat(motion->lifetime));
+        particle->rgba = TweenColor(motion->endRGBA, motion->beginRGBA, remaining_lifetime_float / FastIntToFloat(motion->lifeSpan));
         alpha = particle->rgba >> 24;
         distanceOrSpawnScale = FastVec3Dist(&particle->pos, &GameCamera.position);
         if (particle->timer < FastScaleRoundInt(6))
@@ -366,24 +340,22 @@ void UpdatePart_017(PartInstance *particle)
 
         particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
 
-        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
-        kind = motion->kind;
-        motion->velocity.z -= gravity[kind];
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+        kind = motion->partClass;
+        motion->vel.z -= gravity[kind];
         CopyVec4Inline(&savedPosition, &particle->pos);
 
-        if (particle->pos.z < motion->velocity.w) {
+        if (particle->pos.z < motion->vel.w) {
             if (kind == PART_DEBRIS_SPAWN_ON_LANDING) {
                 int spawnStartColor, spawnEndColor, minSpawnLifetime;
-                spawnStartColor =
-                    TweenColor(0x7F000000, 0x7F182030, MB_randRangeFloat(0.25f, 1.0f));
+                spawnStartColor = TweenColor(0x7F000000, 0x7F182030, MB_randRangeFloat(0.25f, 1.0f));
                 spawnEndColor = TweenColor(0, 0x5F5F5F, MB_randRangeFloat(0.5f, 1.0f));
 
-                motion->velocity.z = 0;
+                motion->vel.z = 0;
                 distanceOrSpawnScale = MB_randRangeFloat(200000.0f, 300000.0f);
                 minSpawnLifetime = FastScaleRoundInt(0x5A);
                 spawnLifetime = MB_randRange(minSpawnLifetime, FastScaleRoundInt(0x96));
-                SpawnPart_016(&particle->pos, &motion->velocity, spawnStartColor, spawnEndColor,
-                              distanceOrSpawnScale, spawnLifetime, PART_DEBRIS_UPWARD_ACCELERATING);
+                SpawnPart_016(&particle->pos, &motion->vel, spawnStartColor, spawnEndColor, distanceOrSpawnScale, spawnLifetime, PART_DEBRIS_UPWARD_ACCELERATING);
             }
 
             DeletePart(particle);
@@ -410,73 +382,72 @@ void DeletePart(PartInstance *part);
 
 void UpdatePart_020(PartInstance *part)
 {
-    FastVec3Add(&part->pos, &part->pos, &part->motion20.velocity);
-    FastVec3Add(&part->motion20.origin, &part->motion20.origin, &part->motion20.velocity);
+    FastVec3Add(&part->pos, &part->pos, &((PartLineMotion *)part->update)->velocity);
+    FastVec3Add(&((PartLineMotion *)part->update)->origin, &((PartLineMotion *)part->update)->origin, &((PartLineMotion *)part->update)->velocity);
 
     part->rgba -= 6 << 24;
-    part->rgbaScale = part->rgba;
+    *(int *)&part->scale = part->rgba;
     if (part->rgba < 0)
         DeletePart(part);
 }
 
 void UpdatePart_021(PartInstance *particle)
 {
-    PartSpiralMotion *motion = &particle->spiralMotion;
+    Part020 *motion = (Part020 *)particle->update;
     Vec4 targetPosition, offset, rotatedOffset;
     Mtx4 basis;
 
-    if (motion->radius != 0.0f) {
+    if (motion->offset != 0.0f) {
         float zero = 0.0f;
-        CopyVec4(&basis.v0, &motion->basis->v0);
-        CopyVec4(&basis.v1, &motion->basis->v1);
-        CopyVec4(&basis.v2, &motion->basis->v2);
-        offset.y = FastAngleCosF(motion->angle) * motion->radius;
-        offset.z = FastAngleSinF(motion->angle) * motion->radius;
+        CopyVec4(&basis.v0, &motion->rotmatrix->v0);
+        CopyVec4(&basis.v1, &motion->rotmatrix->v1);
+        CopyVec4(&basis.v2, &motion->rotmatrix->v2);
+        offset.y = FastAngleCosF(motion->angle) * motion->offset;
+        offset.z = FastAngleSinF(motion->angle) * motion->offset;
         offset.x = zero;
         offset.w = zero;
         FastTransformVec4(&rotatedOffset, &offset, &basis);
         FastSubVec3(&particle->pos, &particle->pos, &rotatedOffset);
 
-        motion->approachSpeed += transStepScale * 0.06001f;
+        motion->vel += transStepScale * 0.06001f;
         MB_GetBonePos(motion->target, 0, &targetPosition);
         FastSubVec3(&offset, &targetPosition, &particle->pos);
-        FastVec3Normalize(&offset, &offset, motion->approachSpeed);
+        FastVec3Normalize(&offset, &offset, motion->vel);
         FastVec3Add(&particle->pos, &particle->pos, &offset);
 
         motion->angle = FastAddRots(motion->angle, transStepScale * 0.5235988f);
-        motion->radius *= transStepScale * -0.10000002384185791f + 1.0f;
-        offset.y = FastAngleCosF(motion->angle) * motion->radius;
-        offset.z = FastAngleSinF(motion->angle) * motion->radius;
+        motion->offset *= transStepScale * -0.10000002384185791f + 1.0f;
+        offset.y = FastAngleCosF(motion->angle) * motion->offset;
+        offset.z = FastAngleSinF(motion->angle) * motion->offset;
         offset.x = zero;
         offset.w = zero;
         FastTransformVec4(&rotatedOffset, &offset, &basis);
         FastVec3Add(&particle->pos, &particle->pos, &rotatedOffset);
-        if (zero < MB_GetNormalizedMtxElem(&targetPosition, &motion->target->transform,
-                                           &particle->pos, 1)) {
+        if (zero < MB_GetNormalizedMtxElem(&targetPosition, &motion->target->transform, &particle->pos, 1)) {
             DeletePart(particle);
             return;
         }
     }
 
-    motion->alpha += transStepScale * 0.011f * motion->alphaStep;
+    motion->alpha += transStepScale * 0.011f * motion->asign;
     if (motion->alpha <= 0.0f || FastDecTimer(particle->timer)) {
         DeletePart(particle);
         return;
     }
 
     if (1.0f <= motion->alpha) {
-        motion->alphaStep = -motion->alphaStep;
-        motion->alpha += transStepScale * 0.011f * motion->alphaStep;
+        motion->asign = -motion->asign;
+        motion->alpha += transStepScale * 0.011f * motion->asign;
     }
 
     particle->scale += transStepScale * -2940.0f;
     particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(motion->alpha * 255.0f) << 24);
 
-    motion->rotation += transStepScale * 0.006f;
-    if (1.0f < motion->rotation)
-        motion->rotation -= 1.0f;
+    motion->rot += transStepScale * 0.006f;
+    if (1.0f < motion->rot)
+        motion->rot -= 1.0f;
 
-    particle->rot = (int)(motion->rotation * 255.0f);
+    particle->rot = (int)(motion->rot * 255.0f);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_021);
@@ -496,17 +467,17 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_025);
 void UpdatePart_026(PartInstance *particle)
 {
     Vec4 nextPosition;
-    PartColorDecayMotion *motion;
+    Part025 *motion;
     float red, green, blue, timeScale;
     int reverseColors;
     if (particle == 0)
         return;
 
-    motion = &particle->colorDecayMotion;
-    red = motion->red;
+    motion = (Part025 *)particle->update;
+    red = motion->r;
     reverseColors = 0;
-    green = motion->green;
-    blue = motion->blue;
+    green = motion->g;
+    blue = motion->b;
     if (red < 0.0f || green < 0.0f || blue < 0.0f) {
         red = -red;
         reverseColors = 1;
@@ -516,27 +487,25 @@ void UpdatePart_026(PartInstance *particle)
 
     motion->alpha += transStepScale * 0.0f;
     particle->scale += transStepScale * -100.0f;
-    FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
-    if (motion->velocity.x != 0.0f || motion->velocity.y != 0.0f || motion->velocity.z != 0.0f) {
-        if (CollLine(&particle->pos, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, Hero.moby,
-                     0)) {
+    FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
+    if (motion->vel.x != 0.0f || motion->vel.y != 0.0f || motion->vel.z != 0.0f) {
+        if (CollLine(&particle->pos, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, Hero.moby, 0)) {
             CopyVec4(&particle->pos, &MemSlots.collisionPoint);
-            FastVecZero(&motion->velocity);
+            FastVecZero(&motion->vel);
             particle->scale += particle->scale;
         }
 
         else {
             CopyVec4(&particle->pos, &nextPosition);
-            if (motion->velocity.w != 0.0f)
-                motion->velocity.z += motion->velocity.w;
+            if (motion->vel.w != 0.0f)
+                motion->vel.z += motion->vel.w;
 
             else
-                motion->velocity.z += transStepScaleSq * -0.0063f;
+                motion->vel.z += transStepScaleSq * -0.0063f;
         }
     }
 
-    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer) || particle->scale < 0.0f ||
-        nextPosition.x < 0.01f || nextPosition.y < 0.01f || nextPosition.z < 0.01f) {
+    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer) || particle->scale < 0.0f || nextPosition.x < 0.01f || nextPosition.y < 0.01f || nextPosition.z < 0.01f) {
         DeletePart(particle);
         return;
     }
@@ -572,15 +541,15 @@ void UpdatePart_026(PartInstance *particle)
     particle->rgba = Float_To_RGBA(red, green, blue, motion->alpha);
 
     if (reverseColors > 0) {
-        motion->red = -red;
-        motion->green = -green;
-        motion->blue = -blue;
+        motion->r = -red;
+        motion->g = -green;
+        motion->b = -blue;
     }
 
     else {
-        motion->red = red;
-        motion->green = green;
-        motion->blue = blue;
+        motion->r = red;
+        motion->g = green;
+        motion->b = blue;
     }
 
     particle->rot--;
@@ -594,11 +563,11 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_027);
 
 void UpdatePart_028(PartInstance *part)
 {
-    PartTimedFade *fade = &part->timedFade;
+    Part027 *fade = (Part027 *)part->update;
 
-    FastVec3Add(&part->pos, &part->pos, &fade->velocity);
+    FastVec3Add(&part->pos, &part->pos, &fade->vel);
 
-    part->rgba = (part->rgba & 0xFFFFFF) + (((fade->alpha * fade->timer) / fade->duration) << 24);
+    part->rgba = (part->rgba & 0xFFFFFF) + (((fade->alpha * fade->timer) / fade->lifeSpan) << 24);
 
     if (FastDecTimer(fade->timer) != 0)
         DeletePart(part);
@@ -615,19 +584,18 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_030)
 void UpdatePart_031(PartInstance *particle)
 {
     Vec4 nextPosition, displacement, acceleration, projectedPosition;
-    PartLinkedMotion *motion = &particle->linkedMotion;
+    Part030 *motion = (Part030 *)particle->update;
 
-    if (!(motion->flags & PART_LINK_FIXED)) {
-        PartInstance *linkedParticle = motion->link;
-        PartLinkedMotion *linkedMotion = 0;
+    if (!(motion->type & PART_LINK_FIXED)) {
+        PartInstance *linkedParticle = motion->next;
+        Part030 *linkedMotion = 0;
         float linkRank = 2.0f, velocityScale;
         if (linkedParticle)
-            linkedMotion = &linkedParticle->linkedMotion;
+            linkedMotion = (Part030 *)linkedParticle->update;
 
         FastVecZero(&acceleration);
         velocityScale = 0.15f;
-        if (motion->collided == 0 && linkedParticle != 0 &&
-            !(linkedMotion->status & PART_LINK_BLOCKED_MASK)) {
+        if (motion->grounded == 0 && linkedParticle != 0 && !((*(long long *)&linkedMotion->ground) & PART_LINK_BLOCKED_MASK)) {
             float squaredRank;
             float linkStrength = 0.2f, rankStep = 1.0f, gainDecay = 0.999f;
             do {
@@ -637,87 +605,86 @@ void UpdatePart_031(PartInstance *particle)
                 velocityScale *= gainDecay;
                 FastVec3Normalize(&nextPosition, &nextPosition, linkStrength / squaredRank);
                 FastVec3Add(&acceleration, &acceleration, &nextPosition);
-                linkedParticle = linkedMotion->link;
+                linkedParticle = linkedMotion->next;
                 if (linkedParticle)
-                    linkedMotion = &linkedParticle->linkedMotion;
+                    linkedMotion = (Part030 *)linkedParticle->update;
                 if (!linkedParticle)
                     break;
-            } while (!(linkedMotion->status & PART_LINK_BLOCKED_MASK));
+            } while (!((*(long long *)&linkedMotion->ground) & PART_LINK_BLOCKED_MASK));
         }
 
         velocityScale = (0.15f - velocityScale) + 1.07f;
-        if (linkedMotion == 0 || linkedMotion->collided == 0)
-            FastVec3Add(&motion->velocity, &motion->velocity, &acceleration);
+        if (linkedMotion == 0 || linkedMotion->grounded == 0)
+            FastVec3Add(&motion->vel, &motion->vel, &acceleration);
 
         else
-            FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+            FastVec3Scale(&motion->vel, &motion->vel, 0.5f);
 
-        if (motion->link)
-            FastVec3Scale(&motion->velocity, &motion->velocity, velocityScale);
+        if (motion->next)
+            FastVec3Scale(&motion->vel, &motion->vel, velocityScale);
 
         else
-            FastVec3Scale(&motion->velocity, &motion->velocity, 0.97f);
+            FastVec3Scale(&motion->vel, &motion->vel, 0.97f);
 
-        motion->velocity.z -= transStepScaleSq * 0.02f;
-        FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
+        motion->vel.z -= transStepScaleSq * 0.02f;
+        FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
     }
 
     else
         CopyVec4Inline(&nextPosition, &particle->pos);
 
-    if (motion->target) {
-        FastSubVec3(&acceleration, &nextPosition, &motion->target->pos);
+    if (motion->prev) {
+        FastSubVec3(&acceleration, &nextPosition, &motion->prev->pos);
         if (0.1f < FastAbsF(FastVec3Length2(&acceleration) - 0.15f)) {
             FastVec3Normalize(&acceleration, &acceleration, 0.15f);
-            FastVec3Add(&nextPosition, &acceleration, &motion->target->pos);
+            FastVec3Add(&nextPosition, &acceleration, &motion->prev->pos);
         }
         if (CollSphere(&nextPosition, 0, 0, 0.15f)) {
-            if (motion->collided == 0)
+            if (motion->grounded == 0)
                 CopyVec4Inline(&nextPosition, &MemSlots.collisionPush);
 
             else
                 CopyVec4Inline(&nextPosition, &particle->pos);
-            motion->collided = 1;
+            motion->grounded = 1;
         }
 
         else
-            motion->collided = 0;
+            motion->grounded = 0;
 
-        FastSubVec3(&acceleration, &motion->target->pos, &GameCamera.position);
+        FastSubVec3(&acceleration, &motion->prev->pos, &GameCamera.position);
         FastTransformVec4(&acceleration, &acceleration, &GameCamera.mtx3);
         FastVec3Scale(&acceleration, &acceleration, 1.0f / acceleration.w);
         FastSubVec3(&projectedPosition, &nextPosition, &GameCamera.position);
         FastTransformVec4(&projectedPosition, &projectedPosition, &GameCamera.mtx3);
         FastVec3Scale(&projectedPosition, &projectedPosition, 1.0f / projectedPosition.w);
         FastSubVec3(&acceleration, &acceleration, &projectedPosition);
-        particle->rot =
-            FastFloatToInt(FastArcTan(acceleration.x, acceleration.y) * 128.0f / 3.1415927f) - 0x20;
+        particle->rot = FastFloatToInt(FastArcTan(acceleration.x, acceleration.y) * 128.0f / 3.1415927f) - 0x20;
 
-        if (motion->collided) {
-            FastVec3NormalizeFrom(&motion->velocity, &motion->velocity, &MemSlots.collisionNormal);
-            FastVec3Scale(&motion->velocity, &motion->velocity, 0.95f);
+        if (motion->grounded) {
+            FastVec3NormalizeFrom(&motion->vel, &motion->vel, &MemSlots.collisionNormal);
+            FastVec3Scale(&motion->vel, &motion->vel, 0.95f);
         }
 
         else {
             FastSubVec3(&displacement, &nextPosition, &particle->pos);
-            FastVec3Add(&motion->velocity, &motion->velocity, &displacement);
-            FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+            FastVec3Add(&motion->vel, &motion->vel, &displacement);
+            FastVec3Scale(&motion->vel, &motion->vel, 0.5f);
         }
         FastSubVec3(&displacement, &nextPosition, &particle->pos);
-        FastVec3Add(&motion->velocity, &motion->velocity, &displacement);
-        FastVec3Scale(&motion->velocity, &motion->velocity, 0.5f);
+        FastVec3Add(&motion->vel, &motion->vel, &displacement);
+        FastVec3Scale(&motion->vel, &motion->vel, 0.5f);
     }
 
     CopyVec4Inline(&particle->pos, &nextPosition);
 
-    if (motion->flags & PART_LINK_FADING) {
+    if (motion->type & PART_LINK_FADING) {
         int fadedAlpha = ((unsigned int)particle->rgba >> 24) - 2;
         if (fadedAlpha > 0)
             particle->rgba = (particle->rgba & 0xFFFFFF) | (fadedAlpha << 24);
 
-        else if (motion->link == 0) {
-            if (motion->target)
-                motion->target->linkedMotion.link = 0;
+        else if (motion->next == 0) {
+            if (motion->prev)
+                ((Part030 *)motion->prev->update)->next = 0;
             DeletePart(particle);
         }
     }
@@ -768,7 +735,7 @@ void UpdatePart_041(PartInstance *particle)
     Vec4 probeStart;
     COLL_DAM_IN damage;
     Vec4 collisionOffset;
-    PartSplittingMotion *motion;
+    Part040 *motion;
     PartInstance *spawnedParticle;
     unsigned char *textureFrames;
     unsigned char motionFlags;
@@ -780,10 +747,9 @@ void UpdatePart_041(PartInstance *particle)
     Vec4 *start, *end;
     float factor, rotationSign, alpha;
 
-    motion = &particle->splittingMotion;
+    motion = (Part040 *)particle->update;
     if (particle->timer != 0 && FastDecTimer(particle->timer) != 0) {
-        float positionSpread, minVelocityScale, maxVelocityScale, velocitySpread, zeroVelocity,
-            minPositionSpread;
+        float positionSpread, minVelocityScale, maxVelocityScale, velocitySpread, zeroVelocity, minPositionSpread;
         motion->flags |= PART_SPLIT_FADING | PART_SPLIT_CHILD;
         minVelocityScale = 0.5f;
         positionSpread = particle->scale / 900000.0f;
@@ -793,47 +759,34 @@ void UpdatePart_041(PartInstance *particle)
         zeroVelocity = 0.0f;
         factor = MB_randRangeFloat(minVelocityScale, maxVelocityScale);
         minPositionSpread = -positionSpread;
-        FastVec3Scale(&nextPosition, &motion->velocity, factor);
+        FastVec3Scale(&nextPosition, &motion->vel, factor);
         probeStart.x = particle->pos.x + MB_randRangeFloat(minPositionSpread, positionSpread);
         probeStart.y = particle->pos.y + MB_randRangeFloat(minPositionSpread, positionSpread);
         probeStart.z = particle->pos.z + MB_randRangeFloat(minPositionSpread, positionSpread);
-        nextPosition.x = nextPosition.x +
-                         MB_randRangeFloat(-particle->splittingMotion.velocity.x * velocitySpread,
-                                           particle->splittingMotion.velocity.x * velocitySpread);
-        nextPosition.y = nextPosition.y + MB_randRangeFloat(-motion->velocity.y * velocitySpread,
-                                                            motion->velocity.y * velocitySpread);
-        nextPosition.z =
-            nextPosition.z + MB_randRangeFloat(-motion->velocity.z * velocitySpread, zeroVelocity);
-        spawnedParticle = SpawnPart_040(&probeStart, &nextPosition,
-                                        PART_SPLIT_FADING | PART_SPLIT_CHILD, motion->owner);
+        nextPosition.x = nextPosition.x + MB_randRangeFloat(-((Part040 *)particle->update)->vel.x * velocitySpread, ((Part040 *)particle->update)->vel.x * velocitySpread);
+        nextPosition.y = nextPosition.y + MB_randRangeFloat(-motion->vel.y * velocitySpread, motion->vel.y * velocitySpread);
+        nextPosition.z = nextPosition.z + MB_randRangeFloat(-motion->vel.z * velocitySpread, zeroVelocity);
+        spawnedParticle = SpawnPart_040(&probeStart, &nextPosition, PART_SPLIT_FADING | PART_SPLIT_CHILD, motion->parent);
         if (spawnedParticle != 0) {
             spawnedParticle->timer = FastScaleRoundInt(2);
             spawnedParticle->scale = particle->scale;
         }
-        FastVec3Scale(&motion->velocity, &motion->velocity,
-                      MB_randRangeFloat(minVelocityScale, maxVelocityScale));
-        particle->splittingMotion.velocity.x =
-            particle->splittingMotion.velocity.x +
-            MB_randRangeFloat(-particle->splittingMotion.velocity.x * velocitySpread,
-                              particle->splittingMotion.velocity.x * velocitySpread);
-        motion->velocity.y =
-            motion->velocity.y + MB_randRangeFloat(-motion->velocity.y * velocitySpread,
-                                                   motion->velocity.y * velocitySpread);
-        motion->velocity.z = motion->velocity.z +
-                             MB_randRangeFloat(-motion->velocity.z * velocitySpread, zeroVelocity);
+        FastVec3Scale(&motion->vel, &motion->vel, MB_randRangeFloat(minVelocityScale, maxVelocityScale));
+        ((Part040 *)particle->update)->vel.x = ((Part040 *)particle->update)->vel.x + MB_randRangeFloat(-((Part040 *)particle->update)->vel.x * velocitySpread, ((Part040 *)particle->update)->vel.x * velocitySpread);
+        motion->vel.y = motion->vel.y + MB_randRangeFloat(-motion->vel.y * velocitySpread, motion->vel.y * velocitySpread);
+        motion->vel.z = motion->vel.z + MB_randRangeFloat(-motion->vel.z * velocitySpread, zeroVelocity);
         particle->pos.x = particle->pos.x + MB_randRangeFloat(minPositionSpread, positionSpread);
         particle->pos.y = particle->pos.y + MB_randRangeFloat(minPositionSpread, positionSpread);
         particle->pos.z = particle->pos.z + MB_randRangeFloat(minPositionSpread, positionSpread);
     }
 
     textureFrames = PartTextures[PART_TEXTURE_SPLITTING];
-    particle->tex = textureFrames[(particle->timer + motion->fadeFrames +
-                                   ((unsigned char)particle->tex - textureFrames[0])) &
+    particle->tex = textureFrames[(particle->timer + motion->posttimer + ((unsigned char)particle->tex - textureFrames[0])) &
                                   7];
-    FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
-    age = motion->age;
+    FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
+    age = motion->timer;
     if (FastScaleRoundInt(3) < age)
-        FastSubVec3(&probeStart, &particle->pos, &motion->velocity);
+        FastSubVec3(&probeStart, &particle->pos, &motion->vel);
 
     else
         CopyVec4(&probeStart, &particle->pos);
@@ -847,7 +800,7 @@ void UpdatePart_041(PartInstance *particle)
             return;
         }
         motion->flags = motionFlags | PART_SPLIT_FADING;
-        owner = motion->owner;
+        owner = motion->parent;
         start = &probeStart;
         end = &nextPosition;
         collisionFlags = PART_SPLIT_COLLISION_NO_DAMAGE;
@@ -855,14 +808,14 @@ void UpdatePart_041(PartInstance *particle)
     }
 
     else {
-        damage.pMoby = motion->owner;
+        damage.pMoby = motion->parent;
         damage.damageFlags = PART_SPLIT_DAMAGE_FLAGS;
         damage.damageHp = 1.0f;
-        CopyVec4(&damage.momentum, &motion->velocity);
+        CopyVec4(&damage.momentum, &motion->vel);
         if (motionFlags & PART_SPLIT_NO_MOMENTUM)
             FastVecZero(&damage.momentum);
         damage.flags = 1;
-        owner = motion->owner;
+        owner = motion->parent;
         damageInput = &damage;
         start = &probeStart;
         end = &nextPosition;
@@ -872,8 +825,8 @@ void UpdatePart_041(PartInstance *particle)
     hitCollision = CollLine(start, end, collisionFlags, owner, damageInput) != 0;
     if (hitCollision) {
         FastVec3Normalize(&collisionOffset, &MemSlots.collisionNormal, 1.0f);
-        FastVec3NormalizeFrom(&motion->velocity, &motion->velocity, &MemSlots.collisionNormal);
-        FastVec3Scale(&motion->velocity, &motion->velocity, 0.02f);
+        FastVec3NormalizeFrom(&motion->vel, &motion->vel, &MemSlots.collisionNormal);
+        FastVec3Scale(&motion->vel, &motion->vel, 0.02f);
         FastVec3Normalize(&collisionOffset, &MemSlots.collisionNormal, 0.055f);
         FastVec3Add(&particle->pos, &MemSlots.collisionPoint, &collisionOffset);
         if (particle->scale < 200000.0f && (motion->flags & PART_SPLIT_FADING) == 0)
@@ -889,7 +842,7 @@ void UpdatePart_041(PartInstance *particle)
         float timeScale = transStepScale;
         float decayedScale;
         frameDivisor = (int)(8.0f / (timeScale * 0.443f));
-        motion->fadeFrames++;
+        motion->posttimer++;
         decayedScale = particle->scale - 260000.0f / (float)frameDivisor * timeScale * 1.25f;
         particle->scale = decayedScale;
         if (decayedScale <= 0.0f) {
@@ -904,7 +857,7 @@ void UpdatePart_041(PartInstance *particle)
         particle->scale = particle->scale + 260000.0f / (float)frameDivisor * timeScale;
     }
 
-    factor = FastIntToFloat(motion->age);
+    factor = FastIntToFloat(motion->timer);
     {
         float timeScale = transStepScale;
         float divisor;
@@ -917,14 +870,14 @@ void UpdatePart_041(PartInstance *particle)
             alpha = 0.08f;
     }
     if (motion->flags & PART_SPLIT_FADING)
-        alpha = alpha / ((float)motion->fadeFrames / 7.0f + 1.0f);
+        alpha = alpha / ((float)motion->posttimer / 7.0f + 1.0f);
 
     particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(alpha * 256.0f) << 24);
-    motion->velocity.z = motion->velocity.z + transStepScaleSq * 0.008f;
-    dampingAge = motion->age;
+    motion->vel.z = motion->vel.z + transStepScaleSq * 0.008f;
+    dampingAge = motion->timer;
     if (FastScaleRoundInt(25) < dampingAge || (motion->flags & PART_SPLIT_FADING)) {
-        motion->velocity.x = motion->velocity.x * 0.95f;
-        motion->velocity.y = motion->velocity.y * 0.95f;
+        motion->vel.x = motion->vel.x * 0.95f;
+        motion->vel.y = motion->vel.y * 0.95f;
     }
 
     rotationFlags = motion->flags;
@@ -932,21 +885,21 @@ void UpdatePart_041(PartInstance *particle)
     if (rotationFlags & PART_SPLIT_REVERSE_ROTATION)
         rotationSign = 1.0f;
     if (rotationFlags & PART_SPLIT_FADING) {
-        motion->velocity.z = motion->velocity.z + transStepScaleSq * 0.008f;
-        factor = FastIntToFloat(motion->fadeFrames);
-        motion->rotation = motion->rotation + rotationSign * (transStepScale * -0.01f) / factor;
+        motion->vel.z = motion->vel.z + transStepScaleSq * 0.008f;
+        factor = FastIntToFloat(motion->posttimer);
+        motion->rot = motion->rot + rotationSign * (transStepScale * -0.01f) / factor;
     }
 
     else {
-        motion->rotation = motion->rotation + rotationSign * (transStepScale * -0.01f);
+        motion->rot = motion->rot + rotationSign * (transStepScale * -0.01f);
     }
 
-    if (1.0f < motion->rotation)
-        motion->rotation = motion->rotation - 1.0f;
-    if (motion->rotation < 0.0f)
-        motion->rotation = motion->rotation + 1.0f;
+    if (1.0f < motion->rot)
+        motion->rot = motion->rot - 1.0f;
+    if (motion->rot < 0.0f)
+        motion->rot = motion->rot + 1.0f;
 
-    particle->rot = (int)(motion->rotation * 256.0f);
+    particle->rot = (int)(motion->rot * 256.0f);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_041);
@@ -963,7 +916,7 @@ void UpdatePart_043(PartInstance *particle)
 {
     Vec4 nextPosition, probeStart;
     COLL_DAM_IN damage;
-    PartSplittingMotion *motion = &particle->splittingMotion;
+    Part042 *motion = (Part042 *)particle->update;
     PartInstance *spawnedParticle;
     float positionSpread, minPositionSpread, alpha, factor;
     int hitCollision;
@@ -974,39 +927,34 @@ void UpdatePart_043(PartInstance *particle)
         positionSpread = particle->scale / 900000.0f;
         particle->scale *= 0.8f;
         minPositionSpread = -positionSpread;
-        FastVec3Scale(&nextPosition, &motion->velocity, MB_randRangeFloat(0.5f, 0.7f));
+        FastVec3Scale(&nextPosition, &motion->vel, MB_randRangeFloat(0.5f, 0.7f));
         probeStart.x = particle->pos.x + MB_randRangeFloat(minPositionSpread, positionSpread);
         probeStart.y = particle->pos.y + MB_randRangeFloat(minPositionSpread, positionSpread);
         probeStart.z = particle->pos.z + MB_randRangeFloat(minPositionSpread, positionSpread);
-        nextPosition.x += MB_randRangeFloat(-motion->velocity.x * 0.2f, motion->velocity.x * 0.2f);
-        nextPosition.y += MB_randRangeFloat(-motion->velocity.y * 0.2f, motion->velocity.y * 0.2f);
-        nextPosition.z += MB_randRangeFloat(-motion->velocity.z * 0.2f, 0.0f);
-        spawnedParticle = SpawnPart_042(&probeStart, &nextPosition,
-                                        PART_SPLIT_FADING | PART_SPLIT_CHILD, motion->owner);
+        nextPosition.x += MB_randRangeFloat(-motion->vel.x * 0.2f, motion->vel.x * 0.2f);
+        nextPosition.y += MB_randRangeFloat(-motion->vel.y * 0.2f, motion->vel.y * 0.2f);
+        nextPosition.z += MB_randRangeFloat(-motion->vel.z * 0.2f, 0.0f);
+        spawnedParticle = SpawnPart_042(&probeStart, &nextPosition, PART_SPLIT_FADING | PART_SPLIT_CHILD, motion->parent);
         if (spawnedParticle) {
             spawnedParticle->timer = FastScaleRoundInt(2);
             spawnedParticle->scale = particle->scale;
         }
-        FastVec3Scale(&motion->velocity, &motion->velocity, MB_randRangeFloat(0.5f, 0.7f));
-        motion->velocity.x +=
-            MB_randRangeFloat(-motion->velocity.x * 0.2f, motion->velocity.x * 0.2f);
-        motion->velocity.y +=
-            MB_randRangeFloat(-motion->velocity.y * 0.2f, motion->velocity.y * 0.2f);
-        motion->velocity.z += MB_randRangeFloat(-motion->velocity.z * 0.2f, 0.0f);
+        FastVec3Scale(&motion->vel, &motion->vel, MB_randRangeFloat(0.5f, 0.7f));
+        motion->vel.x += MB_randRangeFloat(-motion->vel.x * 0.2f, motion->vel.x * 0.2f);
+        motion->vel.y += MB_randRangeFloat(-motion->vel.y * 0.2f, motion->vel.y * 0.2f);
+        motion->vel.z += MB_randRangeFloat(-motion->vel.z * 0.2f, 0.0f);
         particle->pos.x += MB_randRangeFloat(minPositionSpread, positionSpread);
         particle->pos.y += MB_randRangeFloat(minPositionSpread, positionSpread);
         particle->pos.z += MB_randRangeFloat(minPositionSpread, positionSpread);
     }
 
-    particle->tex =
-        PartTextures[PART_TEXTURE_SPLITTING]
-                    [(particle->timer + motion->fadeFrames +
-                      ((unsigned char)particle->tex - PartTextures[PART_TEXTURE_SPLITTING][0])) &
-                     7];
-    FastVec3Add(&nextPosition, &particle->pos, &motion->velocity);
+    particle->tex = PartTextures[PART_TEXTURE_SPLITTING]
+                                [(particle->timer + motion->posttimer + ((unsigned char)particle->tex - PartTextures[PART_TEXTURE_SPLITTING][0])) &
+                                 7];
+    FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
     hitCollision = 0;
-    if (motion->age > FastScaleRoundInt(3))
-        FastSubVec3(&probeStart, &particle->pos, &motion->velocity);
+    if (motion->timer > FastScaleRoundInt(3))
+        FastSubVec3(&probeStart, &particle->pos, &motion->vel);
 
     else
         CopyVec4(&probeStart, &particle->pos);
@@ -1021,17 +969,17 @@ void UpdatePart_043(PartInstance *particle)
         }
         motion->flags = motionFlags | PART_SPLIT_FADING;
         if (!MB_randInt(3))
-            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->owner, 0) != 0;
+            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->parent, 0) != 0;
     }
 
     else {
-        damage.pMoby = motion->owner;
+        damage.pMoby = motion->parent;
         damage.damageHp = 1.0f;
-        CopyVec4(&damage.momentum, &motion->velocity);
+        CopyVec4(&damage.momentum, &motion->vel);
         damage.damageFlags = 1;
         damage.flags = 1;
         if (!MB_randInt(3))
-            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->owner, &damage) != 0;
+            hitCollision = CollLine(&probeStart, &nextPosition, 0, motion->parent, &damage) != 0;
     }
 
     if (hitCollision)
@@ -1041,9 +989,8 @@ void UpdatePart_043(PartInstance *particle)
         CopyVec4Inline(&particle->pos, &nextPosition);
 
     if (motion->flags & PART_SPLIT_FADING) {
-        motion->fadeFrames++;
-        particle->scale -=
-            260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale * 1.25f;
+        motion->posttimer++;
+        particle->scale -= 260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale * 1.25f;
         if (particle->scale <= 0.0f) {
             DeletePart(particle);
             return;
@@ -1051,10 +998,9 @@ void UpdatePart_043(PartInstance *particle)
     }
 
     else
-        particle->scale +=
-            260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale;
+        particle->scale += 260000.0f / (float)(int)(8.0f / (transStepScale * 0.443f)) * transStepScale;
 
-    factor = FastIntToFloat(motion->age);
+    factor = FastIntToFloat(motion->timer);
     {
         float divisor = (float)(int)(8.0f / (transStepScale * 0.443f));
         alpha = 0.08f / divisor * transStepScale * (factor / divisor) + 0.08f;
@@ -1064,13 +1010,13 @@ void UpdatePart_043(PartInstance *particle)
     if (0.08f < alpha)
         alpha = 0.08f;
     if (motion->flags & PART_SPLIT_FADING)
-        alpha /= (float)motion->fadeFrames / 7.0f + 1.0f;
+        alpha /= (float)motion->posttimer / 7.0f + 1.0f;
 
     particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(alpha * 256.0f) << 24);
-    motion->velocity.z += transStepScaleSq * 0.008f;
-    if (motion->age > FastScaleRoundInt(0x19) || (motion->flags & PART_SPLIT_FADING)) {
-        motion->velocity.x *= 0.95f;
-        motion->velocity.y *= 0.95f;
+    motion->vel.z += transStepScaleSq * 0.008f;
+    if (motion->timer > FastScaleRoundInt(0x19) || (motion->flags & PART_SPLIT_FADING)) {
+        motion->vel.x *= 0.95f;
+        motion->vel.y *= 0.95f;
     }
 
     {
@@ -1079,21 +1025,20 @@ void UpdatePart_043(PartInstance *particle)
         if (rotationFlags & PART_SPLIT_REVERSE_ROTATION)
             factor = 1.0f;
         if (rotationFlags & PART_SPLIT_FADING) {
-            motion->velocity.z += transStepScaleSq * 0.008f;
-            motion->rotation +=
-                factor * (transStepScale * -0.01f) / FastIntToFloat(motion->fadeFrames);
+            motion->vel.z += transStepScaleSq * 0.008f;
+            motion->rot += factor * (transStepScale * -0.01f) / FastIntToFloat(motion->posttimer);
         }
 
         else
-            motion->rotation += factor * (transStepScale * -0.01f);
+            motion->rot += factor * (transStepScale * -0.01f);
     }
 
-    if (1.0f < motion->rotation)
-        motion->rotation -= 1.0f;
-    if (motion->rotation < 0.0f)
-        motion->rotation += 1.0f;
+    if (1.0f < motion->rot)
+        motion->rot -= 1.0f;
+    if (motion->rot < 0.0f)
+        motion->rot += 1.0f;
 
-    particle->rot = (int)(motion->rotation * 256.0f);
+    particle->rot = (int)(motion->rot * 256.0f);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_044);
@@ -1125,7 +1070,7 @@ PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
         part->tex = *PartTextures[0x2F];
         part->scale = scale;
 
-        CopyVec4Inline(&part->motion20.origin, velocity);
+        CopyVec4Inline(&((Part000 *)part->update)->vel, velocity);
         part->rot = MB_randInt(0x100);
     }
 
@@ -1134,7 +1079,7 @@ PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
 
 void UpdatePart_048(PartInstance *part)
 {
-    PartSpinMotion *motion = &part->spinMotion;
+    PartSpinMotion *motion = (PartSpinMotion *)part->update;
     int rgba;
 
     FastVec3Scale(&motion->velocity, &motion->velocity, 0.975f);
@@ -1153,12 +1098,12 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00286E18);
 
 void UpdatePart_049(PartInstance *part)
 {
-    PartTweenSpin *spin = &part->tweenSpin;
+    Part048 *spin = (Part048 *)part->update;
 
-    part->rot += spin->rotationStep;
-    FastVec3Add(&part->pos, &part->pos, &spin->velocity);
+    part->rot += spin->rotSpeed;
+    FastVec3Add(&part->pos, &part->pos, &spin->vel);
 
-    part->rgba = FastTweenColor(spin->colorA, spin->colorB, FastAbsF(FastIntToFloat(part->timer) * spin->rate - 1.0f));
+    part->rgba = FastTweenColor(spin->RGBA2, spin->RGBA1, FastAbsF(FastIntToFloat(part->timer) * spin->invTimer - 1.0f));
 
     if (FastDecTimer(part->timer) != 0)
         DeletePart(part);
@@ -1180,11 +1125,11 @@ void UpdatePart_053(PartInstance *part)
         DeletePart(part);
 
     else {
-        PartScaleFade *fade = &part->scaleFade;
-        float fraction = FastIntToFloat(part->timer) * fade->rate;
+        Part052 *fade = (Part052 *)part->update;
+        float fraction = FastIntToFloat(part->timer) * fade->invTime;
 
-        part->rgba = FastTweenColor(fade->endColor, fade->startColor, fraction);
-        part->scale = ((fade->startScale - fade->endScale) * fraction + fade->endScale) * 210000.0f;
+        part->rgba = FastTweenColor(fade->finalRGBA, fade->initRGBA, fraction);
+        part->scale = ((fade->initScale - fade->finalScale) * fraction + fade->finalScale) * 210000.0f;
     }
 }
 
@@ -1219,7 +1164,7 @@ PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
         part->tex = *PartTextures[0x38];
         part->scale = scale;
 
-        CopyVec4Inline(&part->motion20.origin, velocity);
+        CopyVec4Inline(&((Part000 *)part->update)->vel, velocity);
         part->rot = MB_randInt(0x100);
     }
 
@@ -1228,14 +1173,15 @@ PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
 
 void UpdatePart_057(PartInstance *part)
 {
-    PartSpinMotion *motion = &part->spinMotion;
-    FastVec3Scale(&motion->velocity, &motion->velocity, 0.975f);
-    FastVec3Add(&part->pos, &part->pos, &motion->velocity);
+    Part000 *motion = (Part000 *)part->update;
+    FastVec3Scale(&motion->vel, &motion->vel, 0.975f);
+    FastVec3Add(&part->pos, &part->pos, &motion->vel);
 
     part->scale += 6300.0f;
     int intensity = (part->rgba & 0xFF) - 4;
     if (intensity <= 0)
         DeletePart(part);
+
     else
         part->rgba = 0x60000000 | (intensity << 16) | (intensity << 8) | intensity;
 }
@@ -1249,43 +1195,40 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_058);
 void UpdatePart_059(PartInstance *particle)
 {
     Vec4 scratch;
-    PartTweenEmitterMotion *motion;
+    Part058 *motion;
     Vec4 *heroPosition;
     HeroState *hero;
     int childIndex;
     float lifetime;
     float fraction;
 
-    motion = &particle->tweenEmitterMotion;
+    motion = (Part058 *)particle->update;
 
-    switch (motion->phase) {
+    switch (motion->state) {
     case PART_TWEEN_INITIAL: {
-        float tweenDuration = FastIntToFloat(motion->tweenFrames);
-        particle->rgba = FastTweenColor(
-            0xFF4080FF, 0, (tweenDuration - FastIntToFloat(particle->timer)) / tweenDuration);
+        float tweenDuration = FastIntToFloat(motion->fade_time);
+        particle->rgba = FastTweenColor(0xFF4080FF, 0, (tweenDuration - FastIntToFloat(particle->timer)) / tweenDuration);
     }
 
         if (FastDecTimer(particle->timer)) {
-            if (motion->singlePhase == 1)
+            if (motion->type == 1)
                 DeletePart(particle);
 
             else {
-                motion->phase = PART_TWEEN_EMITTING;
-                particle->timer = motion->emitFrames;
+                motion->state = PART_TWEEN_EMITTING;
+                particle->timer = motion->burst_time;
             }
         }
         break;
     case PART_TWEEN_EMITTING: {
         float speedScale;
-        for (childIndex = 0; childIndex < motion->emitCount; childIndex++) {
+        for (childIndex = 0; childIndex < motion->spawn_rate; childIndex++) {
             CopyVec4Inline(&scratch, &particle->pos);
             speedScale = 1.0f;
             MB_randOffset(&scratch, 0.05f);
             if (particle->timer < FastScaleRoundInt(10))
                 speedScale = FastIntToFloat(particle->timer) / (float)FastScaleRoundInt(10);
-            SpawnPart_058(&scratch, PART_TWEEN_EMITTED, motion->tweenFrames, motion->emitFrames,
-                          motion->emitCount, motion->lifetime, motion->damage, motion->damageScale,
-                          speedScale);
+            SpawnPart_058(&scratch, PART_TWEEN_EMITTED, motion->fade_time, motion->burst_time, motion->spawn_rate, motion->flame_time, motion->pParent, motion->damageHp, speedScale);
         }
     }
 
@@ -1299,17 +1242,16 @@ void UpdatePart_059(PartInstance *particle)
                 FastSubVec3(&scratch, heroPosition, &particle->pos);
                 FastVec3Normalize(&scratch, &scratch, 1.0f);
                 scratch.z = 1.0f;
-                CollDamageMobyDirect_2(hero->moby, motion->damage, 1, &particle->pos, &scratch,
-                                       motion->damageScale);
+                CollDamageMobyDirect_2(hero->moby, motion->pParent, 1, &particle->pos, &scratch, motion->damageHp);
             }
         }
         break;
     case PART_TWEEN_EMITTED:
-        FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
-        lifetime = FastIntToFloat(motion->lifetime);
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+        lifetime = FastIntToFloat(motion->flame_time);
         fraction = lifetime - FastIntToFloat(particle->timer);
         fraction = fraction / lifetime;
-        particle->rgba = FastTweenColor((motion->alpha << 24) | 0x4060, 0x8FAFFF, fraction);
+        particle->rgba = FastTweenColor((motion->alpha_top << 24) | 0x4060, 0x8FAFFF, fraction);
         if (fraction < 0.6f)
             particle->scale += transStepScale * 0.043f * 210000.0f;
 
@@ -1336,9 +1278,9 @@ enum { PART_RELATIVE_TO_HERO = 1 };
 
 void UpdatePart_060(PartInstance *part)
 {
-    PartSpinMotion *motion = &part->spinMotion;
-    if (motion->relativeToHero == PART_RELATIVE_TO_HERO)
-        FastVec3Add(&part->pos, &Hero.position, &motion->velocity);
+    Part059 *motion = (Part059 *)part->update;
+    if (motion->type == PART_RELATIVE_TO_HERO)
+        FastVec3Add(&part->pos, &Hero.position, &motion->ofs);
 
     if (FastDecTimer(part->timer))
         DeletePart(part);
@@ -1354,7 +1296,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_062);
 
 void UpdatePart_063(PartInstance *part)
 {
-    PartFollowFade *fade = &part->followFade;
+    PartFollowFade *fade = (PartFollowFade *)part->update;
     int rgba;
     int alpha;
 
@@ -1393,18 +1335,18 @@ unsigned int PartFloorBurstRandomLimit = 15;
 
 void UpdatePart_065(PartInstance *particle)
 {
-    PartFloorBurstMotion *motion = &particle->floorBurstMotion;
+    Part064 *motion = (Part064 *)particle->update;
     Vec4 emittedPosition;
     int red, green, blue;
     int emittedLifetime, debrisStartColor, debrisEndColor;
     float spawnScale;
 
     if (FastDecTimer(particle->timer))
-        motion->velocity.z -= motion->gravity;
+        motion->vel.z -= motion->gravity;
 
-    FastVec3Add(&particle->pos, &particle->pos, &motion->velocity);
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
     particle->rot += 2;
-    if (!(particle->pos.z < motion->floorZ))
+    if (!(particle->pos.z < motion->height))
         return;
 
     red = particle->rgba & 0xFF;
@@ -1412,56 +1354,46 @@ void UpdatePart_065(PartInstance *particle)
     blue = ((unsigned int)particle->rgba >> 16) & 0xFF;
 
     if (!MB_randInt(PartFloorBurstRandomLimit - 1)) {
-        particle->pos.z = motion->floorZ;
-        motion->velocity.x *= MB_randRangeFloat(1.0f, 3.5f);
-        motion->velocity.y *= MB_randRangeFloat(1.0f, 3.5f);
-        motion->velocity.z *= MB_randRangeFloat(-1.0f, -1.5f);
+        particle->pos.z = motion->height;
+        motion->vel.x *= MB_randRangeFloat(1.0f, 3.5f);
+        motion->vel.y *= MB_randRangeFloat(1.0f, 3.5f);
+        motion->vel.z *= MB_randRangeFloat(-1.0f, -1.5f);
         spawnScale = particle->scale;
         spawnScale *= 0.5f;
         emittedLifetime = MB_randRange(FastScaleRoundInt(0x3C), FastScaleRoundInt(0x78));
-        SpawnPart_015(&particle->pos, &motion->velocity, particle->rgba, motion->endColor,
-                      spawnScale, emittedLifetime, 0, (unsigned char)particle->tex,
-                      (unsigned char)particle->gs_alpha);
+        SpawnPart_015(&particle->pos, &motion->vel, particle->rgba, motion->endRGBA, spawnScale, emittedLifetime, 0, (unsigned char)particle->tex, (unsigned char)particle->gs_alpha);
     }
 
     else {
-        particle->pos.z = motion->floorZ;
-        motion->velocity.x += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
-        motion->velocity.y += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
-        motion->velocity.z *= MB_randRangeFloat(-0.5f, -1.0f);
+        particle->pos.z = motion->height;
+        motion->vel.x += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
+        motion->vel.y += MB_randRangeFloat(-5.0f, 5.0f) * frameTime;
+        motion->vel.z *= MB_randRangeFloat(-0.5f, -1.0f);
         spawnScale = particle->scale;
         spawnScale *= 0.25f;
         emittedLifetime = MB_randRange(FastScaleRoundInt(0x1E), FastScaleRoundInt(0x3C));
-        SpawnPart_015(&particle->pos, &motion->velocity, particle->rgba, motion->endColor,
-                      spawnScale, emittedLifetime, 0, (unsigned char)particle->tex,
-                      (unsigned char)particle->gs_alpha);
+        SpawnPart_015(&particle->pos, &motion->vel, particle->rgba, motion->endRGBA, spawnScale, emittedLifetime, 0, (unsigned char)particle->tex, (unsigned char)particle->gs_alpha);
     }
 
     if (Level == LEVEL_ORXON) {
         if (!MB_randInt(0x13)) {
             CopyVec4(&emittedPosition, &particle->pos);
             emittedPosition.z += 0.1f;
-            SpawnPart_045(&emittedPosition, 0,
-                          ((MB_randInt(6) + 0x34) << 24) | (blue << 16) | (green << 8) | red, 0.05f,
-                          10500.0f);
+            SpawnPart_045(&emittedPosition, 0, ((MB_randInt(6) + 0x34) << 24) | (blue << 16) | (green << 8) | red, 0.05f, 10500.0f);
         }
         if (!MB_randInt(9)) {
-            debrisStartColor =
-                TweenColor(0x7F000000, 0x7F000000 | (blue << 16) | (green << 8) | red,
-                           MB_randRangeFloat(0.25f, 1.0f));
+            debrisStartColor = TweenColor(0x7F000000, 0x7F000000 | (blue << 16) | (green << 8) | red, MB_randRangeFloat(0.25f, 1.0f));
             debrisEndColor = TweenColor(0, 0x5F00, MB_randRangeFloat(0.5f, 1.0f));
-            motion->velocity.x = MB_randRangeFloat(-1.0f, 1.0f);
-            motion->velocity.y = MB_randRangeFloat(-1.0f, 1.0f);
-            motion->velocity.z = 0.0f;
-            FastVec3Normalize(&motion->velocity, &motion->velocity,
-                              MB_randRangeFloat(1.5f, 3.0f) * frameTime);
-            motion->velocity.z = frameTime * 3.0f;
+            motion->vel.x = MB_randRangeFloat(-1.0f, 1.0f);
+            motion->vel.y = MB_randRangeFloat(-1.0f, 1.0f);
+            motion->vel.z = 0.0f;
+            FastVec3Normalize(&motion->vel, &motion->vel, MB_randRangeFloat(1.5f, 3.0f) * frameTime);
+            motion->vel.z = frameTime * 3.0f;
             CopyVec4(&emittedPosition, &particle->pos);
             emittedPosition.z -= 1.5f;
             spawnScale = MB_randRangeFloat(420000.0f, 630000.0f);
             emittedLifetime = MB_randRange(FastScaleRoundInt(0x5A), FastScaleRoundInt(0x96));
-            SpawnPart_016(&emittedPosition, &motion->velocity, debrisStartColor, debrisEndColor,
-                          spawnScale, emittedLifetime, 3);
+            SpawnPart_016(&emittedPosition, &motion->vel, debrisStartColor, debrisEndColor, spawnScale, emittedLifetime, 3);
         }
     }
 
@@ -1474,12 +1406,12 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_066);
 
 void UpdatePart_067(PartInstance *part)
 {
-    PartFadingMotion *motion = &part->fadingMotion;
+    Part066 *motion = (Part066 *)part->update;
     int timer;
 
-    FastVec3Add(&part->pos, &part->pos, &motion->velocity);
+    FastVec3Add(&part->pos, &part->pos, &motion->vel);
 
-    part->scale += motion->scaleStep;
+    part->scale += motion->expandSpeed;
     part->rot += 1;
 
     timer = (unsigned short)part->timer - 1;
@@ -1519,7 +1451,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028A0D8);
 
 void UpdatePart_072(PartInstance *particle)
 {
-    PartThreePhaseMotion *motion = &particle->threePhaseMotion;
+    Part071 *motion = (Part071 *)particle->update;
     Vec4 appliedDelta, motionScratch, finalMotion;
     float blendOrDistance;
     int rgb;
@@ -1528,8 +1460,8 @@ void UpdatePart_072(PartInstance *particle)
         particle->rot++;
 
     blendOrDistance = FastVec3Dist(&particle->pos, &Hero.cgPos);
-    if (blendOrDistance < 5.0f && 0.0f < motion->target->z) {
-        FastSubVec3(&motionScratch, motion->target, &particle->pos);
+    if (blendOrDistance < 5.0f && 0.0f < motion->p78Var->closePt.z) {
+        FastSubVec3(&motionScratch, &motion->p78Var->closePt, &particle->pos);
         if (0.5f < FastVec3Length2(&motionScratch)) {
             FastVec3Normalize(&motionScratch, &motionScratch, 0.1f / blendOrDistance);
             FastVec3Add(&particle->pos, &particle->pos, &motionScratch);
@@ -1537,7 +1469,7 @@ void UpdatePart_072(PartInstance *particle)
 
         else {
             FastVec3Normalize(&motionScratch, &motionScratch, 0.005f);
-            MB_compressVector(&motionScratch, &motion->finalVelocity);
+            MB_compressVector(&motionScratch, &motion->vel2);
         }
     }
 
@@ -1548,40 +1480,36 @@ void UpdatePart_072(PartInstance *particle)
     else if (blendOrDistance < 0.0f)
         blendOrDistance = 0.0f;
 
-    particle->rgba = FastTweenColor(motion->farColor, motion->nearColor, blendOrDistance);
+    particle->rgba = FastTweenColor(motion->rgba1, motion->rgba2, blendOrDistance);
 
-    if (motion->initialFrames) {
+    if (motion->shootTimer) {
         *T0_COUNT = 0;
-        MB_decompressVector(&appliedDelta, &motion->initialVelocity);
+        MB_decompressVector(&appliedDelta, &motion->vel1);
         FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
-        blendOrDistance = FastIntToFloat(particle->timer) / FastIntToFloat(motion->initialFrames);
-        particle->rgba =
-            FastTweenColor(particle->rgba & 0xFFFFFF, particle->rgba, 1.0f - blendOrDistance);
+        blendOrDistance = FastIntToFloat(particle->timer) / FastIntToFloat(motion->shootTimer);
+        particle->rgba = FastTweenColor(particle->rgba & 0xFFFFFF, particle->rgba, 1.0f - blendOrDistance);
         if (FastDecTimer(particle->timer)) {
-            motion->initialFrames = 0;
-            particle->timer = motion->blendFrames;
+            motion->shootTimer = 0;
+            particle->timer = motion->slowTimer;
         }
     }
 
-    else if (motion->blendFrames) {
-        MB_decompressVector(&motionScratch, &motion->initialVelocity);
-        MB_decompressVector(&finalMotion, &motion->finalVelocity);
-        FastVecLerp(&appliedDelta, &finalMotion, &motionScratch,
-                    FastIntToFloat(particle->timer) / FastIntToFloat(motion->blendFrames));
+    else if (motion->slowTimer) {
+        MB_decompressVector(&motionScratch, &motion->vel1);
+        MB_decompressVector(&finalMotion, &motion->vel2);
+        FastVecLerp(&appliedDelta, &finalMotion, &motionScratch, FastIntToFloat(particle->timer) / FastIntToFloat(motion->slowTimer));
         FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
         if (FastDecTimer(particle->timer)) {
-            motion->blendFrames = 0;
-            particle->timer = motion->finalFrames;
+            motion->slowTimer = 0;
+            particle->timer = motion->fadeTimer;
         }
     }
 
     else {
-        MB_decompressVector(&appliedDelta, &motion->finalVelocity);
+        MB_decompressVector(&appliedDelta, &motion->vel2);
         FastVec3Add(&particle->pos, &particle->pos, &appliedDelta);
         rgb = particle->rgba & 0xFFFFFF;
-        particle->rgba =
-            FastTweenColor(rgb, particle->rgba,
-                           FastIntToFloat(particle->timer) / FastIntToFloat(motion->finalFrames));
+        particle->rgba = FastTweenColor(rgb, particle->rgba, FastIntToFloat(particle->timer) / FastIntToFloat(motion->fadeTimer));
         if (FastDecTimer(particle->timer))
             DeletePart(particle);
     }
@@ -1591,7 +1519,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_072);
 
 void UpdatePart_073(PartInstance *part)
 {
-    part->rot += part->rotationMotion.rotationStep;
+    part->rot += ((PartRotationMotion *)part->update)->rotationStep;
     if (part->scale <= 0.0f) {
         part->scale = 0.0f;
         DeletePart(part);
@@ -1635,7 +1563,7 @@ void UpdatePart_078(PartInstance *part)
     float duration;
     float fraction;
 
-    *(Vec4Quad *)&origin = *(Vec4Quad *)&part->motion20.origin;
+    *(Vec4Quad *)&origin = *(Vec4Quad *)&((Part000 *)part->update)->vel;
 
     duration = origin.w;
     origin.w = 0.0f;

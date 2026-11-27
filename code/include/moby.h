@@ -16,6 +16,12 @@ struct Mtx4 {
     Vec4 v3;
 };
 
+struct Mtx3 {
+    Vec4 v0;
+    Vec4 v1;
+    Vec4 v2;
+};
+
 struct BSphere {
     float x;
     float y;
