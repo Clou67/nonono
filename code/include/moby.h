@@ -194,7 +194,7 @@ struct Manipulator {
     int jointId;
     Manipulator *pChain;
     float interp;
-    Vec4 rot;
+    Vec4 q; // Quaternion in x/y/z/w representation (DL: q).
     Vec4 scale;
     Vec4 trans;
 };

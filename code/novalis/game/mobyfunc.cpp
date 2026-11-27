@@ -559,7 +559,7 @@ void AttachManipulator(MobyInstance *pMoby, int animJoint, Manipulator *pManip)
         pManip->animJoint = animJoint;
         pManip->state = 1;
 
-        pManip->rot.w = 1.0f;
+        pManip->q.w = 1.0f;
         pManip->scale.x = 1.0f;
         pManip->scale.y = 1.0f;
         pManip->scale.z = 1.0f;
