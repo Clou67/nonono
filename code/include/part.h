@@ -286,8 +286,7 @@ extern const float PartLiteralHalf;
 extern const float PartLiteralZero;
 extern const unsigned int PartLiteralNine;
 
-PartInstance *SpawnPart_015(Vec4 *position, Vec4 *velocity, int startColor, int endColor,
-                             float scale, int lifetime, int flags, int texture, int blend);
+PartInstance *SpawnPart_015(Vec4 *pos, Vec4 *vel, int beginRGBA, int endRGBA, float maxScale, int numFrames, int master, int useTex, int useGsAlpha);
 PartInstance *SpawnPart_045(Vec4 *position, int flags, int color, float scale, float scaleStep);
 
 void SpawnPart_008(Vec4 *position, Vec4 *velocity, int startColor, int endColor, int lifetime, float scale);
@@ -308,8 +307,8 @@ void UpdatePart_041(PartInstance *particle);
 PartInstance *SpawnPart_042(Vec4 *position, Vec4 *velocity, int flags, MobyInstance *owner);
 void UpdatePart_043(PartInstance *particle);
 
-void SpawnPart_011(Vec4 *position, Vec4 *velocity, int startColor, int endColor, float sizeCurve,
-                   int lifetime, int timer, int generation, int flags, float velocityScale);
+// RaC1 places randomVelSpeed last; DL places it before generationCount.
+void SpawnPart_011(Vec4 *pos, Vec4 *vel, int beginRGBA, int endRGBA, float maxScale, int numFrames, int totalTime, int generationCount, int state, float randomVelSpeed);
 void UpdatePart_012(PartInstance *particle);
 
 void UpdatePart_004(PartInstance *particle);

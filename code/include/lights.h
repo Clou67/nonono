@@ -9,31 +9,44 @@
 #define MAX_POINT_LIGHTS 8
 #define POINT_LIGHT_LIST_LENGTH 512
 
-struct ExplosionLightChannel {
-    unsigned char initial;
-    unsigned char maximum;
-    unsigned char minimum;
-    unsigned char riseRate;
-    unsigned char fallRate;
-};
-
-// Template copied into the animated point light (moby class 639).
-struct ExplosionLightSettings {
-    Vec4 offset;             // 0x00
-    unsigned char intensity; // 0x10
-    ExplosionLightChannel channels[3];
-    float radiusInitial; // 0x20
-    float radiusMax;
-    float radiusMin;
-    float radiusRiseRate;
-    float radiusFallRate;
+// DL debug type; the RaC1 light template has the same 0x50-byte layout.
+struct M639_paramInit {
+    Vec4 offset; // 0x00
+    unsigned char backlight; // 0x10
+    unsigned char r_start;
+    unsigned char r_peak;
+    unsigned char r_min;
+    unsigned char r_inc;
+    unsigned char r_dec;
+    unsigned char g_start;
+    unsigned char g_peak;
+    unsigned char g_min;
+    unsigned char g_inc;
+    unsigned char g_dec;
+    unsigned char b_start;
+    unsigned char b_peak;
+    unsigned char b_min;
+    unsigned char b_inc;
+    unsigned char b_dec;
+    float radius_start; // 0x20
+    float radius_peak;
+    float radius_min;
+    float radius_inc;
+    float radius_dec;
     int lifetime; // 0x34
-    int flags;
-    unsigned char drawDistance; // 0x3C
-    unsigned char holdFrames[3];
-    unsigned short periods[4];      // 0x40
-    unsigned char radiusHoldFrames; // 0x48
-    unsigned char startDelay;
+    unsigned int flags;
+    unsigned char drawDist; // 0x3C
+    unsigned char r_sustain;
+    unsigned char g_sustain;
+    unsigned char b_sustain;
+    short r_duty_cycle; // 0x40
+    short g_duty_cycle;
+    short b_duty_cycle;
+    short radius_duty_cycle;
+    unsigned char radius_sustain; // 0x48
+    unsigned char delay;
+    unsigned char pad2[2];
+    int pad3;
 };
 
 struct ExplosionColorPalette {
@@ -42,9 +55,9 @@ struct ExplosionColorPalette {
 
 extern ExplosionColorPalette ExplosionStartColors;
 extern ExplosionColorPalette ExplosionEndColors;
-extern ExplosionLightSettings DefaultExplosionFlash;
-extern ExplosionLightSettings AlternateExplosionFlash;
-MobyInstance *M639_SpawnExplosionLight(ExplosionLightSettings *settings, Vec4 *position, MobyInstance *attachMoby, Vec4 *offset);
+extern M639_paramInit DefaultExplosionFlash;
+extern M639_paramInit AlternateExplosionFlash;
+MobyInstance *SpawnMoby_639(M639_paramInit *params, Vec4 *pos, MobyInstance *parent, Vec4 *offset);
 
 // One point light: its colour (w is the backlight) and position (w is the radius).
 struct PointLight {

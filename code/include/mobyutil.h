@@ -17,32 +17,33 @@ enum KickResult {
     KICK_OUT_OF_BOUNDS = 0x100
 };
 
-struct KnockbackMotion {
-    Vec4 velocity; // 0x00
-    float gravity; // 0x10
-    float speedApproachStep;
-    float speed;
-    float verticalSpeed;
-    int collisionRadius; // 0x20: in 1/1024 world units
-    int flags;
-    float collisionZOffset;
-    short timer; // 0x2C
-    unsigned char particleMode;
-    unsigned char particleMask;
-    float restitution;
-    float unk34;
-    float unk38;
-    unsigned char active;
-    unsigned char unk3D;
-    short phase;      // 0x3E
-    float turnTarget; // 0x40
-    float turnVelocity;
-    float maxTurnStep;
-    float targetSpeed;
-    float apexAnimationFrame; // 0x50
-    float landingAnimationFrame;
-    unsigned char pad58[4];
-    float groundBounces; // 0x5C
+// Shared PS2 knockback record; field names from DL's KickVars debug type.
+struct KickVars {
+    Vec4 kickVel; // 0x00
+    float grav; // 0x10
+    float drag;
+    float xySpeed;
+    float zSpeed;
+    int radius; // 0x20: in 1/1024 world units
+    int flag;
+    float zOfs;
+    short timeout; // 0x2C
+    unsigned char effectType;
+    unsigned char effectPrimMask;
+    float xyBounceDamp;
+    float zBounceDamp;
+    float wallBounceDamp;
+    unsigned char kickActive;
+    unsigned char type;
+    short stage;      // 0x3E
+    float faceAng; // 0x40
+    float faceSpeed;
+    float faceLimit;
+    float minXySpeed;
+    float peakFrame; // 0x50
+    float landFrame;
+    float prevZHeight; // 0x58
+    float hitWater; // 0x5C
 };
 
 enum BoltDropFlags {
@@ -225,7 +226,7 @@ void *MB_GetPvarsIfMobyHasThem(MobyInstance *moby);
 void MB_CopyHeroLights(MobyInstance *moby);
 
 int MB_randInt(int limit);
-int MB_randPrimPoints(float density, MobyInstance *moby, int maximum, Vec4 *points, int mask);
+int MB_randPrimPoints(MobyInstance *pMoby, float pointDensity, int maxPoints, Vec4 *pPoints, int primMask);
 
 int MB_randRange(int low, int high);
 
@@ -377,12 +378,12 @@ enum {
     EXPLOSION_DAMAGE_STRENGTH = 1
 };
 
-MobyInstance *M122_SpawnDebris(Vec4 *position, Vec4 *velocity, int lifetime, int variant, int flags);
-int M112_SpawnGlow(MobyInstance *owner, Vec4 *position, Vec4 *velocity, float scale, int lifetime, int red, int green, int blue, int alpha);
-void MB_genericExplosion(MobyInstance *owner, void *unused, Vec4 *position, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float effectScale, int soundId, float flashRadius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap);
+MobyInstance *Spawn_Moby122(Vec4 *pos, Vec4 *vel, int timer, int type, int reorder);
+MobyInstance *Spawn_Moby112(MobyInstance *pParent, Vec4 *pos, Vec4 *vel, float scale, int lifeSpan, int r, int g, int b, int a);
+void MB_genericExplosion(MobyInstance *pMoby, void *unused, Vec4 *pos, float damageRadius, float damageHp, int burstCount, int particlePairCount, int smokeCount, float glowScale, float whiteGlowScale, float minGlowDistance, float scale, int sound, float pointlight_radius, int shakeCamera, int debrisCount, int reductionLevel, unsigned char colorSwap);
 
 float MB_BlendAnimFrame(MobyInstance *moby);
-int MB_UpdateKick(MobyInstance *moby, KnockbackMotion *motion);
+int MB_UpdateKick(MobyInstance *moby, KickVars *motion);
 void MB_MistDeathEffect(MobyInstance *moby, Vec4 *velocity, int primitiveMask);
 void M775_SpawnSplash(Vec4 *position, float scale);
 void OrganicDeltAngSpeed(MobyInstance *moby, float *speed, float target, float gain, float damping, float limit);
