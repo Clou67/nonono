@@ -10,6 +10,10 @@
 #include "galaxymap.h"
 #include "help.h"
 #include "libc.h"
+#include "gameglobals.h"
+#include "memcard.h"
+#include "movie.h"
+#include "loaders.h"
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DropAmmo);
 
@@ -1108,9 +1112,249 @@ void MB_UnlockLevel(int level)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_UnlockItem);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_DistributeBolts);
+void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int dropFlags,
+                        int splineIndex)
+{
+    Vec4 baseVelocity, position, velocity, spread, landing, pathPoint, quarter;
+    float firstRoot, secondRoot;
+    int counted;
+    int total, remaining, sum, rate, roots, ones;
+    int upperTotal, upperFives, lowerTotal, upperTwenties, lowerTwenties, lowerFives, upperOnes,
+        lowerFifties;
+    int lowerOnes, upperFifties, twenties, fives, fifties;
+    BoltSourceVars *sourceVars;
+    float time;
+    float gravity, rise, height, angle;
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_0027624C);
+    fives = 0;
+    twenties = 0;
+    fifties = 0;
+    FastVecZero(&baseVelocity);
+    if (!(dropFlags & BOLT_DROP_UNCOUNTED)) {
+        if (moby->levelFlagIdx != 0xFF && (unsigned)((unsigned short)moby->oClass - 0x1F4) >= 0x29)
+            CountAdaptiveBolts = CheckpointLevelFlags[moby->levelFlagIdx] == 0xFF;
+    }
+
+    counted = 0;
+    if (CountAdaptiveBolts) {
+        if (!(dropFlags & BOLT_DROP_UNCOUNTED))
+            counted = 1;
+    }
+
+    if (dropFlags == 0)
+        return;
+    if (minimum == 0 && maximum == 0)
+        return;
+    if (dropFlags & BOLT_DROP_INHERIT_VELOCITY) {
+        sourceVars = (BoltSourceVars *)MB_GetPvarsIfMobyHasThem(moby);
+        if (sourceVars)
+            CopyVec4Inline(&baseVelocity, &sourceVars->velocity);
+    }
+    if (minimum <= 0)
+        minimum = 1;
+
+    total = MB_randInt(maximum - minimum + 1) + minimum;
+    if (GoodiesMenuUnlocked || ChallengeMode)
+        total <<= 1;
+    if (total < 0x1F4) {
+        if (counted && AdaptiveBoltFrames) {
+            rate = (int)((float)FastScaleRoundInt(0x3C) * 60.0f) * AdaptiveBoltCount /
+                   AdaptiveBoltFrames;
+            if (GoodiesMenuUnlocked || ChallengeMode)
+                rate /= 2;
+            if (rate < 0x96) {
+                if (rate < 0x5B) {
+                    printf_stub(BoltScaleFiveMessage);
+                    total *= 5;
+                }
+
+                else {
+                    printf_stub(BoltIntegerScaleFormat, (0xBE - rate) / 20);
+                    total *= (0xBE - rate) / 20;
+                }
+                if (GoodiesMenuUnlocked) {
+                    if (total > 0x3E8)
+                        total = 0x3E8;
+                }
+
+                else {
+                    if (total > 0x1F4)
+                        total = 0x1F4;
+                }
+            }
+
+            else if (rate >= 0x12D) {
+                if (rate >= 0x160) {
+                    printf_stub(BoltFloatScaleFormat, (double)0.1f);
+                    total /= 10;
+                }
+
+                else {
+                    printf_stub(BoltFloatScaleFormat, FastIntToFloat(0x168 - rate) / 20.0f);
+                    total *= (0x168 - rate) / 80;
+                }
+                if (total <= 0)
+                    total = 1;
+            }
+        }
+    }
+
+    remaining = total;
+    if (total >= 0x12C) {
+        do {
+            remaining -= 50;
+            fifties++;
+        } while (remaining >= 0x12C);
+    }
+    while (remaining >= 0xC8) {
+        remaining -= 20;
+        twenties++;
+    }
+    if (remaining >= 0x1E) {
+        do {
+            remaining -= 25;
+            twenties++;
+            fives++;
+        } while (remaining >= 0x1E);
+    }
+    if (remaining >= 7) {
+        do {
+            remaining -= 5;
+            fives++;
+        } while (remaining >= 7);
+    }
+
+    ones = remaining;
+    sum = fifties + twenties + fives + ones;
+    if (sum >= 4 && (dropFlags & BOLT_DROP_THREE_COINS)) {
+        lowerOnes = 0;
+        lowerFives = 0;
+        lowerTwenties = 0;
+        lowerFifties = 3;
+        upperOnes = 3;
+        upperFives = 0;
+        upperTwenties = 0;
+        upperFifties = 0;
+        lowerTotal = 0x96;
+        upperTotal = 3;
+        if (ones + fives + twenties + fifties >= 4) {
+            if (total < lowerTotal) {
+                do {
+                    if (lowerFifties) {
+                        lowerFifties--;
+                        lowerTwenties++;
+                    }
+
+                    else if (lowerTwenties) {
+                        lowerTwenties--;
+                        lowerFives++;
+                    }
+
+                    else if (lowerFives) {
+                        lowerFives--;
+                        lowerOnes++;
+                    }
+                    lowerTotal =
+                        lowerFifties * 50 + lowerTwenties * 20 + lowerFives * 5 + lowerOnes;
+                } while (total < lowerTotal && lowerTotal >= 4);
+            }
+            upperTotal = 3;
+            if (upperTotal < total) {
+                do {
+                    if (upperOnes) {
+                        upperOnes--;
+                        upperFives++;
+                    }
+
+                    else if (upperFives) {
+                        upperFives--;
+                        upperTwenties++;
+                    }
+
+                    else if (upperTwenties) {
+                        upperTwenties--;
+                        upperFifties++;
+                    }
+                    upperTotal =
+                        upperFifties * 50 + upperTwenties * 20 + upperFives * 5 + upperOnes;
+                } while (upperTotal < total && upperTotal < 0x96);
+            }
+        }
+        if ((lowerTotal - total) < (total - upperTotal)) {
+            ones = lowerOnes;
+            fives = lowerFives;
+            twenties = lowerTwenties;
+            fifties = lowerFifties;
+        }
+
+        else {
+            ones = upperOnes;
+            fives = upperFives;
+            twenties = upperTwenties;
+            fifties = upperFifties;
+        }
+    }
+
+    while (ones || fives || twenties || fifties) {
+        CopyVec4Inline(&position, &moby->pos);
+        position.z = position.z + 0.5f;
+        angle = MB_randRot();
+        velocity.x = FastAngleSinF(angle) * (MB_randRangeFloat(0.0f, 3.0f) * frameTime);
+        velocity.y = FastAngleCosF(angle) * (MB_randRangeFloat(0.0f, 3.0f) * frameTime);
+        velocity.z = 0.0f;
+        velocity.z = MB_randRangeFloat(3.7f, 6.0f) * frameTime;
+        spread.x = velocity.x;
+        spread.y = velocity.y;
+        spread.z = 0.0f;
+        FastVec3Normalize(&spread, &spread, 0.5f);
+        FastVec3Add(&position, &position, &spread);
+
+        if (splineIndex >= 0) {
+            gravity = frameTimeSq * 10.8f * -0.5f;
+            rise = velocity.z - gravity;
+            height = position.z - Splines[splineIndex]->points[0].z;
+            time = 120.0f;
+            roots = MB_SolveQuad(gravity, rise, height, &firstRoot, &secondRoot);
+            if (1.0f <= (float)roots) {
+                if (0.0f < firstRoot) {
+                    if (firstRoot < time)
+                        time = firstRoot;
+                }
+            }
+            FastVec3Scale(&landing, &velocity, time);
+            FastVec3Add(&landing, &landing, &moby->pos);
+            roots = MB_SplineIntersect(splineIndex, &moby->pos, &landing, &pathPoint);
+            FastSubVec3(&landing, &pathPoint, &position);
+            landing.z = 0.0f;
+            FastVec3Normalize(&quarter, &landing, 0.25f);
+            FastSubVec3(&landing, &landing, &quarter);
+            FastVec3Scale(&landing, &landing, 1.0f / time);
+            velocity.x = landing.x;
+            velocity.y = landing.y;
+        }
+
+        FastVec3Add(&velocity, &velocity, &baseVelocity);
+        if (fifties) {
+            SpawnBoltByValue(moby, &position, &velocity, dropFlags, 50, counted);
+            fifties--;
+        }
+
+        else if (twenties) {
+            SpawnBoltByValue(moby, &position, &velocity, dropFlags, 20, counted);
+            twenties--;
+        }
+
+        else if (fives) {
+            SpawnBoltByValue(moby, &position, &velocity, dropFlags, 5, counted);
+            fives--;
+        }
+
+        else {
+            SpawnBoltByValue(moby, &position, &velocity, dropFlags, 1, counted);
+            ones--;
+        }
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", SetNtscPalTiming);
 

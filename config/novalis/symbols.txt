@@ -1045,7 +1045,7 @@ MB_GetOrientation = 0x002755F8; // type:func size:0x94
 MB_ScaledVecWrapper__FP4Vec4f = 0x00275690; // type:func size:0x40
 MB_UnlockLevel__Fi = 0x002756D0; // type:func size:0x90
 MB_UnlockItem = 0x00275760; // type:func size:0x228
-MB_DistributeBolts = 0x00275988; // type:func size:0x8C4
+MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988; // type:func size:0x8CC
 SetNtscPalTiming = 0x00276258; // type:func size:0x120
 MB_compressVector = 0x00276380; // type:func size:0x128
 MB_decompressVector = 0x002764A8; // type:func size:0x84
@@ -2514,3 +2514,8 @@ PartLiteralByteMask = 0x00160230; // size:0x4
 PartLiteralHalf = 0x00160234; // size:0x4
 PartLiteralZero = 0x00160238; // size:0x4
 PartLiteralNine = 0x0016023C; // size:0x4
+
+CountAdaptiveBolts = 0x0015F598; // size:0x4
+BoltScaleFiveMessage = 0x001600A0; // size:0x10
+BoltIntegerScaleFormat = 0x001600B0; // size:0x10
+BoltFloatScaleFormat = 0x001600C0; // size:0xC

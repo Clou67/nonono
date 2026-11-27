@@ -8,6 +8,31 @@ enum { MOBY_GROUP_INDEX_MASK = 0x7FFF };
 struct MobyPath;
 struct Manipulator;
 
+enum BoltDropFlags {
+    BOLT_DROP_INHERIT_VELOCITY = 4,
+    BOLT_DROP_THREE_COINS = 8,
+    BOLT_DROP_UNCOUNTED = 0x20
+};
+
+struct BoltSourceVars {
+    unsigned char unk_00[0x20];
+    Vec4 velocity; // 0x20: inherited by spawned bolts
+};
+
+// Adaptive drop statistics count frames and bolts in uncleared missions.
+extern int CountAdaptiveBolts;
+extern int AdaptiveBoltFrames;
+extern int AdaptiveBoltCount;
+extern char BoltScaleFiveMessage[];
+extern char BoltIntegerScaleFormat[];
+extern char BoltFloatScaleFormat[];
+extern MobyPath *Splines[];
+
+int MB_SplineIntersect(int splineIndex, Vec4 *start, Vec4 *end, Vec4 *intersection);
+void SpawnBoltByValue(MobyInstance *moby, Vec4 *position, Vec4 *velocity, int flags, int value, int counted);
+void MB_DistributeBolts(MobyInstance *moby, int minimum, int maximum, unsigned int flags, int splineIndex);
+
+
 // Trail of translucent copies that follow a moby.
 struct MotionBlur {
     Vec4 posHistory[8];        // 0x000

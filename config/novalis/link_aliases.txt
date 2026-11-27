@@ -413,7 +413,6 @@ VendorRender = 0x001CA940;
 
 FastVec3DistLen__FP4Vec4T0 = 0x00221398;
 
-MB_DistributeBolts__FP12MobyInstanceiiUii = 0x00275988;
 
 
 
@@ -719,3 +718,5 @@ MB_decompressVector__FP4Vec4PUi = 0x002764A8;
 
 SpawnPart_015__FP4Vec4T0iifiiii = 0x00280BD0;
 SpawnPart_045__FP4Vec4iiff = 0x00286780;
+MB_SplineIntersect__FiP4Vec4N21 = 0x00276820;
+SpawnBoltByValue__FP12MobyInstanceP4Vec4T1iii = 0x002BCDB8;

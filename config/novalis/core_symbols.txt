@@ -703,3 +703,6 @@ transStepScaleSq = 0x0015ED64;
 QuickSwapDefaultItem = 0x0015ED8C;
 
 rand = 0x001160D8;
+
+AdaptiveBoltFrames = 0x0015EE28; // size:0x4
+AdaptiveBoltCount = 0x0015EE2C; // size:0x4
