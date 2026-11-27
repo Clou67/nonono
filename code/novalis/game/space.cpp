@@ -1,3 +1,4 @@
+#include "libc.h"
 #include "camera.h"
 #include "common.h"
 #include "draw.h"
@@ -32,6 +33,11 @@ extern Vec4 ShipClankOffsets[3];
 extern float g_SceneFlash;
 extern float frameTime;
 extern float frameTimeSq __attribute__((section(".sdata")));
+
+// Loading-screen quad placement and its motion per frame.
+Vec4 SpaceQuadBase __attribute__((section(".sdata"))) = {-370.0f, -280.0f, 280.0f, 0.0f};
+Vec4 SpaceQuadOffset __attribute__((section(".sdata"))) = {0.0f, 0.0f, 0.0f, 0.0f};
+Vec4 SpaceQuadStep __attribute__((section(".sdata"))) = {0.3f, 0.5f, 0.0f, 0.0f};
 
 // Frame each take-off cutscene skips to, per ship variant.
 int ShipTakeoffSkipFrames[3] = {558, 558, 558};
@@ -820,7 +826,186 @@ void UpdateSpace(void)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", space_DefaultDraw);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", SpaceTransition_LoadWad);
+void SpaceTransition_LoadWad(void)
+{
+    enum { LEVEL_SCENE_MODE_EARLY_PROGRESSION = 4 };
+    unsigned long long texturePacket[4];
+    SpaceWadHeader *header;
+    int dataBase;
+    int mobyTexData;
+    TextureDef *mobyTextures;
+    SpaceMobyEntry *mobyEntry;
+    int *textureOffsets;
+    int languageIndex;
+    int archiveSize;
+    unsigned char *allocationCursor;
+    int *sceneOffsets;
+    int *sceneOffset;
+    SceneChunkEntry *sceneChunk;
+    int textureIndex;
+    int modelIndex;
+    int chunkIndex;
+    int textureCursor;
+    int sceneVariant;
+    int workspaceOffset;
+
+    bootSpaceTransitionState.cutscene = SPACE_CUTSCENE_LOADING;
+    bootSpaceTransitionState.timer = -1;
+    screenFade = 1.0f;
+    Hero.moby = 0;
+    vu1_bufSize = 0x100000;
+    CutscenePlaying = 0;
+    g_SceneFlash = 0.0f;
+
+    InitMemSlots();
+    GSloc = GSmemBase;
+    GSbase = GSmemBase;
+    FastMemSet(CollJointCacheKeys, 0x87654321, 0x10);
+    FastMemSet(MobyClassLookup, -1, 0x800);
+    FastMemSet(MobyTexLookup, -1, 0xE00);
+    FastMemSet(MobyMipDists, 0, 0xE0);
+
+    InitViewContext();
+    UpdateViewContext();
+    VU1_initChain();
+
+    music_LoadBankFromEE(MemSlots.levelBase + 0x400000, bootAssets.transition.offset,
+                         bootAssets.transition.length);
+    FadeToBlack(FastScaleRoundInt(0xC));
+    sceCdSync(0);
+    FlushCache(0);
+    archiveSize = WadDecompress(MemSlots.levelBase + 0x400000, MemSlots.levelBase);
+    FlushCache(0);
+
+    header = (SpaceWadHeader *)MemSlots.levelBase;
+    ParsePermGsRam((char *)header + header->permTexData, header->permTexCount,
+                   (PermGsTexture *)((char *)header + header->permTexDefs));
+
+    dataBase = (int)header + header->dataOffset;
+    mobyTexData = dataBase + header->mobyTexData;
+    VisGifSpecialTemplate[0] =
+        (int)((GSmemBase + header->specialTextureBase) >> 8) | 0x1D308000 |
+        ((unsigned long long)0xB800 << 19) |
+        ((unsigned long long)((GSmemBase + header->specialClutBase) >> 8) << 37) |
+        0x8000000000000000LL;
+    VisGifSpecialTemplate[1] = 0x0000FFA0000000E0LL;
+    VisGifSpecialTemplate[2] = 0x0040000400004000LL;
+
+    mobyTextures = (TextureDef *)((int)header + header->mobyTexDefs);
+    MobyTextureCount = header->mobyTexCount;
+    for (textureIndex = 0; textureIndex < MobyTextureCount; textureIndex++) {
+        MobyTexLocs[textureIndex] = mobyTexData + mobyTextures[textureIndex].offset +
+                                    (FastLog2(mobyTextures[textureIndex].width) << 28);
+    }
+
+    FastMemCopy16(MobyTexDefs, mobyTextures, MobyTextureCount * sizeof(TextureDef));
+    ParseSky((char *)(dataBase + header->sky));
+
+    mobyEntry = (SpaceMobyEntry *)((int)header + header->mobys);
+    MobyClassIndex = 0;
+    for (modelIndex = 0; modelIndex < header->mobyCount; modelIndex++) {
+        ParseMoby(mobyEntry->offset == 0 ? 0 : (char *)(dataBase + mobyEntry->offset),
+                  (short *)((int)header + header->mobyTexDefs), (char *)mobyEntry->textureRefs,
+                  mobyEntry->oClass);
+        mobyEntry++;
+    }
+
+    EffectTextureData = dataBase + header->textureData;
+    ParseEffectTexs((int *)((int)header + header->effectTexDefs), header->effectTexCount);
+    {
+        int particleDataBase = dataBase + header->partTexData;
+        int particleEntries = (int)header + header->partTexDefs;
+
+        ParseParticleTexs((int *)((int)header + header->partTexHeaders), particleDataBase,
+                          (int *)particleEntries, header->partTexCount);
+    }
+
+    textureOffsets = (int *)(dataBase + header->planetTextures);
+    languageIndex = gameLanguage - 1;
+    if (languageIndex < 0)
+        languageIndex = 0;
+    ParseGsRamTextures((PifHeader *)((int)textureOffsets + textureOffsets[Level + 1]),
+                       texturePacket);
+    SpacePlanetTex0 = texturePacket[0];
+    ParseGsRamTextures(
+        (PifHeader *)((int)textureOffsets + textureOffsets[languageIndex * 19 + Level + 0x14]),
+        texturePacket);
+
+    textureCursor = GSloc + 0x2000;
+    allocationCursor = MemSlots.levelBase + archiveSize;
+    GSloc = textureCursor;
+    MemSlots.levelData = allocationCursor;
+    GSbase = textureCursor;
+    SpacePlanetTextTex0 = texturePacket[0];
+
+    FastMemSetZero(PointLights, 0x100);
+    FastMemSetZero(PointLightData, 0x180);
+    FastMemSetZero(DirectionalLights, 0x400);
+    FastMemCopy16(DirectionalLights, &SpaceDefaultDirectionalLight, 0x40);
+
+    MobyInstances = (MobyInstance *)allocationCursor;
+    FastMemSet(allocationCursor, 0, 0x4000);
+    allocationCursor += 0x4000;
+    MobyInstancePermEnd = MobyInstances;
+    MobyInstances->state = 0xFF;
+    mobyVars = (char *)allocationCursor;
+    allocationCursor += 0x2000;
+    PartInstances = (PartInstance *)allocationCursor;
+    PartIndexTop = -1;
+    MobyInstanceEnd = MobyInstances + 63;
+    PartIndexNext = 0;
+    PartActiveCnt = 0;
+    FastMemSetZero(PartAlloc, 0x200);
+
+    ResetDrawGlobals();
+    MobyDrawDist = 0x1F4;
+    PartClipDist = 0x1F4000;
+
+    sceneVariant = (rand() >> 16) & 3;
+    bootSpaceTransitionState.loadingCount = 0;
+    bootSpaceTransitionState.loadingScreen = sceneVariant;
+    bootSpaceTransitionState.trailHead = 0;
+    bootSpaceTransitionState.trailLen = 0;
+    CopyVec4Inline(&SpaceQuadOffset, &SpaceQuadBase);
+
+    if (Level == LEVEL_VELDIN || (Level == LEVEL_NOVALIS && g_SeenPlanets[3] == 0)) {
+        bootSpaceTransitionState.loadingScreen = LEVEL_SCENE_MODE_EARLY_PROGRESSION;
+        bootSpaceTransitionState.loadingCount = 2;
+    }
+
+    FastMemSet(&SceneLoad, 0, 0x1C0);
+    FastMemSet(SceneScratchA, 0, 0x40);
+    FastMemSet(SceneScratchB, 0, 0x40);
+
+    sceneOffsets = header->scenes;
+    workspaceOffset = vu1_bufSize - 0x60000;
+    sceneOffset = &sceneOffsets[bootSpaceTransitionState.loadingScreen];
+    SceneLoad.decodedChunk = MemSlots.vu1_chain[0] + workspaceOffset;
+    SceneLoad.buffer = MemSlots.vu1_chain[1] + workspaceOffset;
+    vu1_bufSize = workspaceOffset;
+    sceneChunk =
+        (SceneChunkEntry *)(dataBase + sceneOffsets[bootSpaceTransitionState.loadingScreen]);
+    /* The archive list is terminated by a zero size and the resident table holds 70 entries. */
+    for (chunkIndex = 0; chunkIndex < 70 && sceneChunk->length != 0; chunkIndex++) {
+        {
+            int chunkOffset = sceneChunk->offset + 0x800;
+            SceneLoad.chunks[chunkIndex] = (unsigned char *)(dataBase + *sceneOffset + chunkOffset);
+        }
+        sceneChunk++;
+    }
+
+    ParseSpaceSceneChunk(0);
+    levelSoundBank = 0xFFFFFFFF;
+    snd_BankLoadFromEE_CB((void *)(dataBase + header->sound), sound_LoadBankCB,
+                          (unsigned int)&levelSoundBank);
+    do {
+        FlushCache(0);
+        sceGsSyncV(0);
+        snd_FlushSoundCommands();
+    } while (levelSoundBank == 0xFFFFFFFF);
+
+    snd_ResolveBankXREFS();
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", DisplayLoadingScreen);
 

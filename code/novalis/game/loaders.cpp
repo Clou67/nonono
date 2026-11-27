@@ -315,7 +315,7 @@ extern int GSmemZbuf __attribute__((section(".sdata")));
 extern int ShipPackLoaded;
 extern int ShipPackReady;
 extern int ShipPackUnk;
-extern int MobySdata15FFC8;     // moby texture count
+extern int MobyTextureCount;     // moby texture count
 extern int MobyTexLocs[];
 extern TextureDef MobyTexDefs[];
 
@@ -371,33 +371,33 @@ char *ParseMobyPack(char *pack, LevelCoreHeader *header)
     packStart = pack;
     pack = destination;
     ShipTexDefA.clut = header->shipGsRam[2] >> 8;
-    texIndex = MobySdata15FFC8;
+    texIndex = MobyTextureCount;
     ShipTexDefA.mip1 = header->shipGsRam[0] >> 8;
     ShipTexDefA.mip2 = header->shipGsRam[1] >> 8;
     CopyVec4Inline((Vec4 *)&MobyTexDefs[texIndex], (Vec4 *)&ShipTexDefA);
     MobyTexLocs[texIndex] = (int)pack - 0x80000000;
     FastMemCopy16(pack, packStart + texturesAOffset + SHIP_TEXTURE_IMAGE, SHIP_TEXTURE_A_SIZE);
     pack += SHIP_TEXTURE_A_SIZE;
-    ShipTexRefs[0] = MobySdata15FFC8;
+    ShipTexRefs[0] = MobyTextureCount;
     if ((unsigned char)MobyClassLookup[SpaceshipOClasses[bootSpaceTransitionState.shipVariant]] == 0xFF)
-        ParseMoby(packStart + mobyA, (short *)(&ShipTexDefA - MobySdata15FFC8), (char *)ShipTexRefs,
+        ParseMoby(packStart + mobyA, (short *)(&ShipTexDefA - MobyTextureCount), (char *)ShipTexRefs,
                   SpaceshipOClasses[bootSpaceTransitionState.shipVariant]);
 
-    nextTexIndex = MobySdata15FFC8 + 1;
+    nextTexIndex = MobyTextureCount + 1;
     ShipTexDefB.clut = header->shipGsRam[3] >> 8;
-    MobySdata15FFC8 = nextTexIndex;
+    MobyTextureCount = nextTexIndex;
     CopyVec4Inline((Vec4 *)&MobyTexDefs[nextTexIndex], (Vec4 *)&ShipTexDefB);
     MobyTexLocs[nextTexIndex] = (int)pack + 0x70000000;
     FastMemCopy16(pack, packStart + texturesBOffset + SHIP_TEXTURE_IMAGE, SHIP_TEXTURE_B_SIZE);
     pack += SHIP_TEXTURE_B_SIZE;
-    ShipTexRefs[0] = MobySdata15FFC8;
+    ShipTexRefs[0] = MobyTextureCount;
     if ((unsigned char)MobyClassLookup[SpaceshipOClassesB[bootSpaceTransitionState.shipVariant]] == 0xFF)
-        ParseMoby(packStart + mobyB, (short *)(&ShipTexDefB - MobySdata15FFC8), (char *)ShipTexRefs,
+        ParseMoby(packStart + mobyB, (short *)(&ShipTexDefB - MobyTextureCount), (char *)ShipTexRefs,
                   SpaceshipOClassesB[bootSpaceTransitionState.shipVariant]);
 
     ShipPackLoaded = 1;
     ShipPackReady = 1;
-    MobySdata15FFC8 = MobySdata15FFC8 + 1;
+    MobyTextureCount = MobyTextureCount + 1;
     ShipPackUnk = 0;
     return pack;
 }
@@ -1412,7 +1412,7 @@ char *ResetLevelData(int reload)
     TfragDrawDist = 512000.0f;
     TieDrawDist = 720.0f;
     ShrubDrawDist = 500.0f;
-    MobySdata15FFF0 = 500;
+    MobyDrawDist = 500;
     PartClipDist = 0x1F4000;
     SetBackgroundColor(VC.backR, VC.backG, VC.backB);
     VU0_loadMicroProgram(LightVU0Program);
@@ -2782,11 +2782,11 @@ extern int MobyRefCurrent;      // the moby reference last loaded, -1 for none
 extern int MobyRefBuffer;       // which of the two reference buffers it went into
 extern unsigned long VisGifSpecialTemplate3[3];
 extern int DrawSdata15F40C;     // the level's texture data
-extern int DrawSdata15F420;     // the level's effect texture data
+extern int EffectTextureData;     // the level's effect texture data
 extern unsigned char occlCharTable[][16];
 extern int TfragTexCnt;
 extern int TfragTexLocs[];
-extern int MobySdata15FFC8;     // moby texture count
+extern int MobyTextureCount;     // moby texture count
 extern int MobyTexLocs[];
 extern char MemoryMapNewline[];
 extern char *OcclOct;
@@ -2878,11 +2878,11 @@ int InitLevelFromWad(int full, int keep)
             TfragTexLocs[tfragTex] = LEVEL_TEXTURE_REF(tfragTexDefs[tfragTex], DrawSdata15F40C);
 
         mobyTexDefs = (TextureDef *)((char *)header + header->mobyTexs);
-        MobySdata15FFC8 = header->mobyTexCnt;
-        for (mobyTex = 0; mobyTex < MobySdata15FFC8; mobyTex++)
+        MobyTextureCount = header->mobyTexCnt;
+        for (mobyTex = 0; mobyTex < MobyTextureCount; mobyTex++)
             MobyTexLocs[mobyTex] = LEVEL_TEXTURE_REF(mobyTexDefs[mobyTex], DrawSdata15F40C);
 
-        FastMemCopy16(MobyTexDefs, mobyTexDefs, MobySdata15FFC8 * 16);
+        FastMemCopy16(MobyTexDefs, mobyTexDefs, MobyTextureCount * 16);
 
         tieTexDefs = (TextureDef *)((char *)header + header->tieTexs);
         TieTexCnt = header->tieTexCnt;
@@ -2946,7 +2946,7 @@ int InitLevelFromWad(int full, int keep)
             ParseShrubClass(base + *(int *)classEntry, (TextureDef *)((char *)header + header->shrubTexs), classEntry + 0x10,
                             (BillboardTexDef *)(classEntry + 0x20), *(int *)(classEntry + 4));
 
-        DrawSdata15F420 = (int)(base + header->fxTexData);
+        EffectTextureData = (int)(base + header->fxTexData);
         ParseEffectTexs((int *)((char *)header + header->fxTexs), header->fxTexCnt);
 
         if (header->effectTable) {
@@ -3063,8 +3063,8 @@ int InitLevelFromWad(int full, int keep)
 
         printf_stub("collision:      %.1fK\n", KILOBYTES(DrawSdata15F40C - (int)CollOutput.grid));
         printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].unk_04 >> 4) - DrawSdata15F40C));
-        printf_stub("particle vram:  %.1fK\n", KILOBYTES(DrawSdata15F420 - (PartTexs[0].unk_04 >> 4)));
-        printf_stub("effects vram:   %.1fK\n", KILOBYTES((char *)MobyClasses[0] - (char *)DrawSdata15F420));
+        printf_stub("particle vram:  %.1fK\n", KILOBYTES(EffectTextureData - (PartTexs[0].unk_04 >> 4)));
+        printf_stub("effects vram:   %.1fK\n", KILOBYTES((char *)MobyClasses[0] - (char *)EffectTextureData));
         printf_stub("mobys:          %.1fK\n", KILOBYTES((char *)TieClasses[0] - (char *)MobyClasses[0]));
         if (header->shrubClassCnt)
             printf_stub("ties:           %.1fK\n", KILOBYTES((char *)ShrubClasses[0] - (char *)TieClasses[0]));

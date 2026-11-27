@@ -26,6 +26,51 @@ enum {
 #define SPACE_PLATE_TEX0_HIGH ((6ULL << 30) | (1ULL << 34)) // TH=6, TCC=RGBA
 #define SPACE_PLATE_TEX0_CLD (4ULL << 61)
 
+// Serialized space WAD header; offsets are relative to the header or its data block.
+struct SpaceWadHeader {
+    int permTexData;    /* 0x00 */
+    int dataOffset;     /* 0x04 */
+    int permTexCount;   /* 0x08 */
+    int permTexDefs;    /* 0x0C */
+    int mobyCount;      /* 0x10 */
+    int mobys;          /* 0x14 */
+    int mobyTexCount;   /* 0x18 */
+    int mobyTexDefs;    /* 0x1C */
+    int partTexCount;   /* 0x20 */
+    int partTexDefs;    /* 0x24 */
+    int effectTexCount; /* 0x28 */
+    int effectTexDefs;  /* 0x2C */
+    int mobyTexData;
+    int partTexData;
+    int textureData;
+    int partTexHeaders;
+    int specialTextureBase;
+    int specialClutBase;
+    int sky; /* 0x48 */
+    int planetTextures;
+    int scenes[5]; /* 0x50 */
+    int sound;     /* 0x64 */
+};
+
+struct SpaceMobyEntry {
+    int offset;
+    int oClass;
+    int unk_08[2];
+    unsigned char textureRefs[0x10];
+};
+
+struct Vec4;
+struct DirectionalLight;
+extern Vec4 SpaceQuadBase;
+extern Vec4 SpaceQuadOffset;
+extern Vec4 SpaceQuadStep;
+extern unsigned long long SpacePlanetTex0;
+extern unsigned long long SpacePlanetTextTex0;
+extern DirectionalLight SpaceDefaultDirectionalLight;
+// Scene workspaces reset before streaming a new cutscene.
+extern unsigned char SceneScratchA[];
+extern unsigned char SceneScratchB[];
+
 extern const char SpaceUnloadBankFormat[];
 
 void UpdateSpace(void);

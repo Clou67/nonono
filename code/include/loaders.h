@@ -124,6 +124,13 @@ void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count);
 void ParseEffectTexs(int *texDefs, int count);
 void ParseSky(char *data);
 
+// Shared level texture tables.
+struct TextureDef;
+extern int MobyTextureCount;
+extern int MobyTexLocs[];
+extern TextureDef MobyTexDefs[];
+extern int EffectTextureData;
+
 // Per-template GS register words used when building class GIF packets (3 words per row).
 extern unsigned long VisGifTemplates[];
 extern unsigned long VisGifSpecialTemplate[3];
@@ -483,7 +490,7 @@ extern unsigned char CheckpointObjState[];
 // Maps a moby record of the gameplay file to its instance, -1 when it did not spawn.
 extern short MobyIndexRemap[];
 extern short *MobyGroupEntries[];
-extern int MobySdata15FFF0;
+extern int MobyDrawDist;
 // One more than the last moby group in use.
 extern int MobySdata15FFF4;
 extern char *mobyVars;

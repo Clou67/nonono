@@ -1,6 +1,8 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+void sound_LoadBankCB(unsigned int bank, unsigned long userData);
+
 void snd_PauseAllSoundsInGroup(int group);
 void snd_ContinueAllSoundsInGroup(int group);
 int snd_FlushSoundCommands(void);
