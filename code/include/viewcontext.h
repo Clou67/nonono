@@ -43,9 +43,9 @@ struct ViewContext {
     float fogAdd;
     float fogNearIntensity;
     float fogFarIntensity;
-    int scis_l;
-    int scis_r;
-    int scis_t;
+    int fogR;                    // 0x230, GS FOGCOL components
+    int fogG;
+    int fogB;
     // The level's background colour, from the gameplay file.
     int backR;
     int backG;

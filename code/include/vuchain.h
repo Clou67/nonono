@@ -49,6 +49,11 @@ extern int _dmacHandle[2];
 extern int Level;
 
 // Level ids.
+#define LEVEL_VELDIN 0
+#define LEVEL_EUDORA 4
+#define LEVEL_UMBRIS 7
+#define LEVEL_BATALIA 8
+#define LEVEL_OLTANIS 14
 #define LEVEL_NOVALIS 1
 #define LEVEL_KERWAN 3
 #define LEVEL_ORXON 0xA

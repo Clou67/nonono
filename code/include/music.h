@@ -13,7 +13,8 @@ struct MusicTransition {
     char unk0[8];
     short read_state;
     unsigned char cancel_read;
-    char unk0B[0x11];
+    unsigned char updatesSuspended;
+    char unk0C[0x10];
     int queuedSpeech;
     char unk20[2];
     signed char requested_track;
@@ -75,5 +76,7 @@ void music_PreseekTrackCB(unsigned int result, unsigned long long data);
 void music_SpeechPreseekCB(unsigned int result, unsigned long long data);
 
 void music_StopCB(unsigned int result, unsigned long long data);
+
+void music_Stop(void);
 
 #endif

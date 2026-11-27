@@ -131,4 +131,7 @@ extern float DrawSdata15F454;
 // The occlusion grid of the level, if it has one.
 extern char *OcclGrid;
 
+void SetupFogColorGsReg(void);
+void ResetGsRegistersPr(void);
+
 #endif

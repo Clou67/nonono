@@ -697,3 +697,12 @@ CollSphere__FP4Vec4iP12MobyInstancef = 0x00212960;
 MB_GetNormalizedMtxElem__FP4Vec4P4Mtx4T0i = 0x002710F0;
 SpawnPart_058__FP4Vec4iiiiiiff = 0x00287E70;
 CollDamageMobyDirect_2__FP12MobyInstanceiiP4Vec4T3f = 0x0026EAA8;
+snd_SetReverbEx__Fiiiii = 0x0012EF68;
+snd_ResetStateAndFlushCommands__Fv = 0x0012EB00;
+snd_StreamSafeCdSync__Fi = 0x0012EE08;
+ReadFileEntryWithRetry__Fi = 0x0012F368;
+SpaceTransition_LoadWad__Fv = 0x002A5868;
+DisplayLoadingScreen__Fi = 0x002A5F10;
+
+LoadSpacePlate__FiiiPUxN23 = 0x002A6180;
+SpacePlate_DrawQuad__FiiiiUxUxffff = 0x002A5FF0;
