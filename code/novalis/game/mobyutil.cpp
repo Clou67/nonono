@@ -174,7 +174,7 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_PushOutOfWa
 
 int MB_PushOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float radius, float stepHeight, int flags);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float stepHeight, int radiusFixed, int flags)
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags)
 {
     float radius = FastIntToFloat(radiusFixed) * (1.0f / 1024.0f);
     return MB_PushOutOfWalls(moby, move, height, radius, stepHeight, flags);
@@ -196,7 +196,132 @@ void MB_InitMoveVars(MoveVars *vars)
     vars->distThresh = 0.1f;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_MoveAndCollide);
+int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement,
+
+                      float speedScale)
+{
+    Vec4 startPosition;
+    Vec4 displacement;
+    Vec4 direction;
+    Vec4 lookaheadPosition;
+    COLLOUTPUT *groundHit;
+    int resultFlags = 0;
+    int collisionFlags;
+    float targetDistance;
+    float accelerationStep;
+    float speedLimit;
+    float probeHeight;
+    float speedIncrement;
+    float stepGroundHeight;
+    float lookaheadGroundHeight;
+    float groundHeight;
+    float slopeAngle;
+    float stepDistance;
+
+    accelerationStep = vars->accel * speedScale;
+    speedLimit = vars->maxSpeed * speedScale;
+    FastSubVec3(&displacement, target, &moby->pos);
+    targetDistance = FastVec3Length(&displacement.x);
+    CopyVec4(&startPosition, &moby->pos);
+    speedIncrement = accelerationStep * targetDistance;
+    if (accelerationStep < speedIncrement)
+        speedIncrement = accelerationStep;
+    vars->realSpeed = vars->realSpeed + speedIncrement;
+    if (targetDistance < vars->realSpeed * 10.0f)
+        vars->realSpeed = vars->realSpeed - vars->deccel * vars->realSpeed;
+    if (speedLimit < vars->realSpeed)
+        vars->realSpeed = speedLimit;
+
+    else if (vars->realSpeed < -speedLimit)
+        vars->realSpeed = -speedLimit;
+
+    if (vars->flags & MOVE_USE_HEADING) {
+        displacement.x = FastAngleSinF(vars->moveHeading) * vars->realSpeed;
+        displacement.y = FastAngleCosF(vars->moveHeading) * vars->realSpeed;
+    }
+
+    else {
+        displacement.x = FastAngleSinF(moby->rotation.z) * vars->realSpeed;
+        displacement.y = FastAngleCosF(moby->rotation.z) * vars->realSpeed;
+    }
+    if (vars->flags & MOVE_NO_GRAVITY) {
+        displacement.z = 0.0f;
+    }
+
+    else {
+        displacement.z = vars->vertVel;
+        vars->vertVel = vars->vertVel - frameTimeSq * 9.0f;
+    }
+
+    probeHeight = moby->pos.z + 0.04f;
+    FastVec3Add(&direction, &moby->pos, &displacement);
+    direction.z = moby->pos.z - vars->zDepth;
+    if (GetGroundZ(&direction, moby, vars->flags & MOVE_GROUND_QUERY, vars->maxStepDown,
+                   vars->maxStepUp)) {
+        groundHit = &CollOutput;
+        slopeAngle = FastArcTan(groundHit->normal.z, FastVec3Length(&groundHit->normal.x));
+        stepGroundHeight = groundHit->ip.z;
+        if (0.5f < slopeAngle && 0.1f < FastVec3Length(&displacement.x)) {
+            {
+                FastVec3Normalize(&lookaheadPosition, &displacement, 0.57f);
+                FastVec3Add(&lookaheadPosition, &lookaheadPosition, &moby->pos);
+                lookaheadPosition.z = moby->pos.z - vars->zDepth;
+                if (GetGroundZ(&lookaheadPosition, moby, vars->flags & MOVE_GROUND_QUERY,
+                               vars->maxStepDown, vars->maxStepUp)) {
+                    lookaheadGroundHeight = groundHit->ip.z;
+                    if (0.5f <=
+                        FastArcTan(groundHit->normal.z, FastVec3Length(&groundHit->normal.x))) {
+                        resultFlags = MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
+                        if ((vars->flags & MOVE_ALLOW_FALLING) &&
+                            lookaheadGroundHeight < probeHeight && stepGroundHeight < probeHeight)
+                            resultFlags = MOVE_FALLING;
+                    }
+                }
+
+                else {
+                    resultFlags = MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
+                    if ((vars->flags & MOVE_ALLOW_FALLING) && stepGroundHeight < probeHeight)
+                        resultFlags = MOVE_FALLING;
+                }
+            }
+        }
+    }
+
+    else {
+        resultFlags =
+            (vars->flags & MOVE_ALLOW_FALLING) ? MOVE_FALLING : MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
+    }
+
+    if (!(resultFlags & MOVE_BLOCKED)) {
+        stepDistance = FastVec3Length(&displacement.x);
+        FastVec3Scale(&direction, &displacement, 1.0f / stepDistance);
+        collisionFlags = MB_PushMobyOutOfWalls(moby, &displacement, vars->kneeHeight,
+                                               vars->collRadius, vars->zDepth, vars->flags);
+        if (collisionFlags & 2)
+            vars->vertVel = transStepScale * -0.01f;
+        if (collisionFlags & 1) {
+            resultFlags |= MOVE_WALL;
+            if (displacement.x * direction.x + displacement.y * direction.y < stepDistance * 0.2f)
+                resultFlags |= MOVE_BLOCKED;
+            groundHeight = MB_CollLineDown(&moby->pos, 0.5f, 0);
+            if (vars->maxStepDown < startPosition.z - groundHeight ||
+                vars->maxStepUp < groundHeight - startPosition.z) {
+                resultFlags |= MOVE_BLOCKED | MOVE_UNSAFE_GROUND;
+                CopyVec4(&moby->pos, &startPosition);
+            }
+        }
+        CopyVec4Inline(movement, &displacement);
+    }
+
+    else {
+        if (!(vars->flags & MOVE_NO_GRAVITY))
+            vars->vertVel = transStepScale * -0.01f;
+    }
+
+    if (targetDistance < vars->distThresh)
+        resultFlags |= MOVE_ARRIVED;
+    return resultFlags;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_0026DE78);
 

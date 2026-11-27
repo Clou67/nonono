@@ -125,6 +125,25 @@ int MB_PathFollowToPos(MobyPath *path, Vec4 *point, Vec4 *nearest, int *segment,
 void MB_DeleteMobyFromDynamicGroup(MobyInstance *moby, short *group);
 void MB_InitMoveVars(MoveVars *vars);
 
+enum MoveFlags {
+    MOVE_NO_GRAVITY = 1,
+    MOVE_USE_HEADING = 4,
+    MOVE_ALLOW_FALLING = 8,
+    MOVE_GROUND_QUERY = 0x20
+};
+
+enum MoveResult {
+    MOVE_WALL = 1,
+    MOVE_BLOCKED = 2,
+    MOVE_ARRIVED = 4,
+    MOVE_FALLING = 8,
+    MOVE_UNSAFE_GROUND = 0x20
+};
+
+int GetGroundZ(Vec4 *position, MobyInstance *ignore, int flags, float down, float up);
+int MB_MoveAndCollide(MobyInstance *moby, MoveVars *vars, Vec4 *target, Vec4 *movement, float speedScale);
+
+
 void MB_UnlockLevel(int level);
 void MB_UnlockItem(int item, char equip);
 
@@ -291,7 +310,7 @@ unsigned int ReorderRGB(unsigned int rgba, int mask);
 
 void MB_SetStateByGroup(int group, int value);
 
-int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, float stepHeight, int radiusFixed, int flags);
+int MB_PushMobyOutOfWalls(MobyInstance *moby, Vec4 *move, float height, int radiusFixed, float stepHeight, int flags);
 
 void MB_RotateMoby(MobyInstance *moby, float xAngle, float yAngle, float zAngle);
 

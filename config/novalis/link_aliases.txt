@@ -732,3 +732,4 @@ FastVec4ScaleLength__FP4Vec4T0f = 0x002214A8;
 M122_SpawnDebris__FP4Vec4T0iii = 0x002C4C20;
 M112_SpawnGlow__FP12MobyInstanceP4Vec4T1fiiiii = 0x002C20E0;
 M639_SpawnExplosionLight__FP22ExplosionLightSettingsP4Vec4P12MobyInstanceT1 = 0x002F3570;
+GetGroundZ__FP4Vec4P12MobyInstanceiff = 0x0026D1D0;
