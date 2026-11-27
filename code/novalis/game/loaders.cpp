@@ -1999,7 +1999,7 @@ char *ResetLevelData(int reload)
         }
 
         for (int index = 0; index < audioState.soundInstanceCnt; index++) {
-            int entry = audioState.soundInstances[index].pVar;
+            int entry = (int)audioState.soundInstances[index].pVar;
 
             if (entry < 0) {
                 audioState.soundInstances[index].pVar = 0;
@@ -2009,7 +2009,7 @@ char *ResetLevelData(int reload)
                 int size = pvarTable[entry].size;
                 char *source = pvarData + pvarTable[entry].offset;
 
-                audioState.soundInstances[index].pVar = (int)mem;
+                audioState.soundInstances[index].pVar = mem;
                 FastMemCopy16(mem, source, size);
                 pvarTable[entry].offset = (int)mem;
                 mem += size;
@@ -2249,7 +2249,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->cuboids;
         int count = *(int *)section;
 
-        CuboidVolumes = (MobyVolume *)mem;
+        CuboidVolumes = (Cuboid *)mem;
         section += 0x10;
         CuboidCnt = count;
         mem += count << 7;
@@ -2267,7 +2267,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->spheres;
         int count = *(int *)section;
 
-        SphereVolumes = (MobyVolume *)mem;
+        SphereVolumes = (Sphere *)mem;
         section += 0x10;
         SphereCnt = count;
         mem += count << 7;
@@ -2285,7 +2285,7 @@ char *ResetLevelData(int reload)
         char *section = (char *)header + header->cylinders;
         int count = *(int *)section;
 
-        CylinderVolumes = (MobyVolume *)mem;
+        CylinderVolumes = (Cylinder *)mem;
         section += 0x10;
         CylinderCnt = count;
         mem += count << 7;

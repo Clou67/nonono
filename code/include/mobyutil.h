@@ -4,6 +4,7 @@
 enum { MOBY_GROUP_INDEX_MASK = 0x7FFF };
 
 #include "moby.h"
+#include "volume.h"
 
 struct MobyPath;
 struct Manipulator;
@@ -200,13 +201,7 @@ struct COLLOUTPUT {
 
 extern COLLOUTPUT CollOutput;
 
-struct MobyVolume {
-    Vec4 axisX;
-    Vec4 axisY;
-    Vec4 axisZ;
-    Vec4 origin;
-    Mtx4 inverseTransform;
-};
+
 
 struct Vec4;
 struct Mtx4;
@@ -397,9 +392,9 @@ void SetupSpaceShipVars(MobyInstance *moby);
 void UpdateMoby_Spaceship(MobyInstance *moby);
 
 // The level's trigger volumes, from the gameplay file.
-extern MobyVolume *CuboidVolumes;
-extern MobyVolume *SphereVolumes;
-extern MobyVolume *CylinderVolumes;
+extern Cuboid *CuboidVolumes;
+extern Sphere *SphereVolumes;
+extern Cylinder *CylinderVolumes;
 extern AnimLayer AnimLayerPool[];
 
 float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int axis);

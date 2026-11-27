@@ -732,3 +732,5 @@ Spawn_Moby122__FP4Vec4T0iii = 0x002C4C20;
 Spawn_Moby112__FP12MobyInstanceP4Vec4T1fiiiii = 0x002C20E0;
 SpawnMoby_639__FP14M639_paramInitP4Vec4P12MobyInstanceT1 = 0x002F3570;
 GetGroundZ__FP4Vec4P12MobyInstanceiff = 0x0026D1D0;
+
+FastVecMtx3Mult__FP4Vec4T0P4Mtx3 = 0x002215E0;

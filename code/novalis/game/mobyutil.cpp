@@ -1651,13 +1651,13 @@ int MB_IsPntInCuboid(Vec4 *point, int index)
     if (index == -1)
         return 0;
 
-    MobyVolume *volume = &CuboidVolumes[index];
+    Cuboid *volume = &CuboidVolumes[index];
     Vec4 offset;
     Vec4 local;
 
-    FastSubVec3(&offset, point, &volume->origin);
+    FastSubVec3(&offset, point, &volume->pos);
     offset.w = 0.0f;
-    FastVecMtx3Mult(&local, &offset, &volume->inverseTransform);
+    FastVecMtx3Mult(&local, &offset, &volume->imatrix);
 
     if (local.x >= -1.0f && local.x <= 1.0f && local.y >= -1.0f && local.y <= 1.0f && local.z >= -1.0f && local.z <= 1.0f)
         return 1;
@@ -1671,13 +1671,13 @@ int MB_IsPntInCylinder(Vec4 *point, int index)
     if (index < 0)
         return 0;
 
-    MobyVolume *volume = &CylinderVolumes[index];
+    Cylinder *volume = &CylinderVolumes[index];
     Vec4 offset;
     Vec4 local;
 
-    FastSubVec3(&offset, point, &volume->origin);
+    FastSubVec3(&offset, point, &volume->pos);
     offset.w = 0.0f;
-    FastVecMtx3Mult(&local, &offset, &volume->inverseTransform);
+    FastVecMtx3Mult(&local, &offset, &volume->imatrix);
 
     if (FastVec3Length(&local.x) < 1.0f && local.z >= -1.0f && local.z <= 1.0f)
         return 1;
@@ -1692,13 +1692,13 @@ int MB_IsPntInSphere(Vec4 *point, int index)
     if (index < 0)
         return 0;
 
-    MobyVolume *volume = &SphereVolumes[index];
+    Sphere *volume = &SphereVolumes[index];
     Vec4 offset;
     Vec4 local;
 
-    FastSubVec3(&offset, point, &volume->origin);
+    FastSubVec3(&offset, point, &volume->pos);
     offset.w = 0.0f;
-    FastVecMtx3Mult(&local, &offset, &volume->inverseTransform);
+    FastVecMtx3Mult(&local, &offset, &volume->imatrix);
 
     if (FastVec3Length2(&local) < 1.0f)
         return 1;

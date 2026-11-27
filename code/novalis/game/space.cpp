@@ -823,25 +823,25 @@ void UpdateSpace(void)
                         &bootSpaceTransitionState.cameraBlendSpeed, 1.0f, cameraBlendStep,
                         cameraBlendStep, frameTime * 0.5f);
             FastVecLerp(&scratch.v0,
-                        &CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].origin,
-                        &CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid].origin,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].pos,
+                        &CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid].pos,
                         bootSpaceTransitionState.cameraBlend);
             FastVecZero(&scratch.v1);
             scratch.v1.y = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
-                                           .inverseTransform.v3.y,
+                                           .rot.y,
                                        CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
-                                           .inverseTransform.v3.y) *
+                                           .rot.y) *
                            bootSpaceTransitionState.cameraBlend;
             scratch.v1.y = FastAddRots(
-                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.y,
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].rot.y,
                 scratch.v1.y);
             scratch.v1.z = FastSubRots(CuboidVolumes[bootSpaceTransitionState.shipCameraEndCuboid]
-                                           .inverseTransform.v3.z,
+                                           .rot.z,
                                        CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid]
-                                           .inverseTransform.v3.z) *
+                                           .rot.z) *
                            bootSpaceTransitionState.cameraBlend;
             scratch.v1.z = FastAddRots(
-                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].inverseTransform.v3.z,
+                CuboidVolumes[bootSpaceTransitionState.shipCameraStartCuboid].rot.z,
                 scratch.v1.z);
             FUN_00316dd0(&scratch.v0);
             FUN_00316e28(&scratch.v1);

@@ -3,6 +3,7 @@
 
 struct Vec4;
 struct Mtx4;
+struct Mtx3;
 struct BSphere;
 
 // Stops in the debugger; used when a save is bigger than its buffer.
@@ -45,6 +46,7 @@ float FastVec3Length2(Vec4 *vector);
 float FastMaxF(float first, float second);
 // Rotates vector by the 3x3 part of matrix.
 void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
+void FastVecMtx3Mult(Vec4 *out, Vec4 *vector, Mtx3 *matrix);
 // DMAs quadwords from the scratchpad at spr_address into main memory.
 void FastFromSpr(void *destination, int spr_address, int quadwords);
 

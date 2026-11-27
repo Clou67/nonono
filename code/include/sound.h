@@ -2,6 +2,7 @@
 #define SOUND_H
 
 #include "moby.h"
+#include "volume.h"
 
 void sound_LoadBankCB(unsigned int bank, unsigned long userData);
 
@@ -50,14 +51,18 @@ struct SoundVoice {
     unsigned char unk_68[8];
 };
 
-// An ambient sound placed in the level (PS3 names).
+// An ambient sound placed in the level (PS3 / DL names).
+struct SoundInstance;
+typedef void (*SoundUpdateFunc)(SoundInstance *sound);
+
 struct SoundInstance {
     short oClass;
     short mClass;
-    void *pUpdate;
+    SoundUpdateFunc pUpdate;
     // An index into the gameplay file's pVar table until the level is loaded.
-    int pVar;
-    char unk_0C[0x84];
+    void *pVar;
+    float range; // 0x0C
+    Cuboid cuboid; // 0x10
 };
 
 struct SoundAudioState {
