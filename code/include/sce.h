@@ -1,6 +1,19 @@
 #ifndef SCE_H
 #define SCE_H
 
+// Saved IPU input/output DMA state (Sony SDK / DL debug layout).
+struct sceIpuDmaEnv {
+    unsigned int d4madr;
+    unsigned int d4tadr;
+    unsigned int d4qwc;
+    unsigned int d4chcr;
+    unsigned int d3madr;
+    unsigned int d3qwc;
+    unsigned int d3chcr;
+    unsigned int ipubp;
+    unsigned int ipuctrl;
+};
+
 // Sony SDK (libdma, libgraph, kernel). These libraries are C, so they keep C linkage.
 
 struct ReadBuf;

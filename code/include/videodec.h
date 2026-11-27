@@ -35,15 +35,7 @@ struct ViBuf {
     int dmaN;
     int readBytes;
     int buffSize;
-    unsigned int d4madr;
-    unsigned int d4tadr;
-    unsigned int d4qwc;
-    unsigned int d4chcr;
-    unsigned int d3madr;
-    unsigned int d3qwc;
-    unsigned int d3chcr;
-    unsigned int ipubp;
-    unsigned int ipuctrl;
+    sceIpuDmaEnv env;
     int sema;
     int isActive;
     long long totalBytes;
@@ -83,25 +75,25 @@ int viBufBeginPut(ViBuf *buffer, unsigned char **first, int *firstSize, unsigned
 
 void videoDecEndPut(VideoDec *decoder, int size);
 
-void viBufEndPut(ViBuf *buffer, int size);
+void viBufEndPut(ViBuf *f, int size);
 
 void videoDecReset(VideoDec *decoder);
 
-int viBufDelete(ViBuf *buffer);
+int viBufDelete(ViBuf *f);
 
 unsigned int videoDecSetState(VideoDec *decoder, unsigned int state);
 
 int videoDecPutTs(VideoDec *decoder, long pts, long dts, unsigned char *position, int size);
 
-int viBufPutTs(ViBuf *buffer, TimeStamp *timestamp);
+int viBufPutTs(ViBuf *f, TimeStamp *timestamp);
 
 int videoDecInputCount(VideoDec *decoder);
 
-int viBufCount(ViBuf *buffer);
+int viBufCount(ViBuf *f);
 
 int mpegNodata(sceMpeg *mpeg, sceMpegCbData *data, void *argument);
 
-int viBufAddDMA(ViBuf *buffer);
+int viBufAddDMA(ViBuf *f);
 
 int mpegRestartVideoDMA(void);
 
@@ -111,29 +103,29 @@ int mpegError(sceMpeg *mpeg, sceMpegCbDataError *data, void *argument);
 
 int mpegStopVideoDMA(void);
 
-int viBufStopDMA(ViBuf *buffer);
+int viBufStopDMA(ViBuf *f);
 
 int mpegTimeStamp(sceMpeg *mpeg, sceMpegCbDataTimeStamp *data, void *argument);
 
-int viBufGetTs(ViBuf *buffer, TimeStamp *timestamp);
+int viBufGetTs(ViBuf *f, TimeStamp *timestamp);
 
 int viBufCreate(ViBuf *buffer, unsigned long long *input, unsigned long long *tags, int sectors, TimeStamp *timestamps, int timestampCount);
 
-int viBufReset(ViBuf *buffer);
+int viBufReset(ViBuf *f);
 
 int decBs0(VideoDec *decoder);
 
-int viBufFlush(ViBuf *buffer);
+int viBufFlush(ViBuf *f);
 
 // Copies the source bytes into the free space of a two-part ring buffer, returning the number of bytes written.
 int cpy2area(unsigned char *first, int firstSize, unsigned char *second, int secondSize,
              unsigned char *source, int sourceSize, unsigned char *unused, int unusedSize);
 
-unsigned int getFIFOindex(ViBuf *buffer, void *position);
+unsigned int getFIFOindex(ViBuf *f, void *addr);
 
 void scTag2(unsigned long *tag, unsigned int address, unsigned int id, unsigned int count);
 
-int viBufModifyPts(ViBuf *buffer, TimeStamp *timestamp);
+int viBufModifyPts(ViBuf *f, TimeStamp *new_ts);
 
 void setD3_CHCR(unsigned int value);
 
