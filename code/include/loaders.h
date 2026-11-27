@@ -324,6 +324,26 @@ struct Vec4;
 
 // Offsets from the start of the gameplay file to its sections (PS3 names). A section starts
 // with its count, padded to 16 bytes, unless noted.
+// Fixed 0x48-byte settings record at GameplayHeader::settings.
+// Archive vectors are word-aligned here, unlike runtime Vec4 fields.
+struct GameplaySettings {
+    int backgroundR;
+    int backgroundG;
+    int backgroundB;
+    int fogR;
+    int fogG;
+    int fogB;
+    float fogNearDist;
+    float fogFarDist;
+    float fogNearIntensity;
+    float fogFarIntensity;
+    float deathHeight;
+    float shipSpawn[4]; // 0x2C
+    int shipSplinePath; // 0x3C
+    int shipCameraStartCuboid;
+    int shipCameraEndCuboid;
+};
+
 struct GameplayHeader {
     int settings;               // 0x00 background, fog and ship settings
     int directionalLights;      // 0x04

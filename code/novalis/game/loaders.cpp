@@ -1385,6 +1385,7 @@ char *ResetLevelData(int reload)
     FastMemSetZero(MobyGridAlloc, 0x60);
 
     {
+        // GameplaySettings is decoded as words here; the float entries keep their stored bits.
         int *settings = (int *)((char *)header + header->settings);
         int *shipSettings;
 
