@@ -171,6 +171,7 @@ void *MB_GetPvarsIfMobyHasThem(MobyInstance *moby);
 void MB_CopyHeroLights(MobyInstance *moby);
 
 int MB_randInt(int limit);
+int MB_randPrimPoints(float density, MobyInstance *moby, int maximum, Vec4 *points, int mask);
 
 int MB_randRange(int low, int high);
 

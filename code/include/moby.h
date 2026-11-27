@@ -27,11 +27,25 @@ enum { COLLPRIM_JOINT = 2, COLLPRIM_PILL = 3, COLLPRIM_CAPSULE = 4 };
 
 struct JointPair { short a; short b; };
 
+enum { COLLPRIM_RANDOM_POINTS = 0x20000, COLLPRIM_LAST = 0x80000000 };
+
+union CollPrimShape {
+    float length;
+    int joint;
+    JointPair ends;
+};
+
 struct CollPrim {
-    unsigned char collType;
-    unsigned char _pad01;
-    short sets;
     union {
+        unsigned int flags;
+        struct {
+            unsigned char collType;
+            unsigned char _pad01;
+            short sets;
+        };
+    };
+    union {
+        CollPrimShape shape;
         float length;
         int joint;
         struct {
@@ -50,6 +64,8 @@ struct MobyCollPrims {
     short primSetB;
     int unk04;
     int count;
+    int unk0C;
+    CollPrim primitives[0]; // 0x10
 };
 
 struct MobySeqFrame {
@@ -341,5 +357,7 @@ void MB_UpdateAnimLayer(MobyInstance *moby, AnimLayer *layer);
 extern Vec4 LightDirection __attribute__((section(".data")));
 void MB_GetLightDirection(MobyInstance *moby, Vec4 *out);
 void MB_UpdateLightAngle(void);
+
+void MobyComputeJointMtxs(MobyInstance *moby, int count, Mtx4 *out);
 
 #endif

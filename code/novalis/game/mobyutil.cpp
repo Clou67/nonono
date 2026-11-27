@@ -467,7 +467,200 @@ float MB_computeLobVelocity(Vec4 *from, Vec4 *to, float speed, float gravity, fl
     return -(from->z - to->z + gravity * (time * time) * 0.5f) / time;
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", MB_randPrimPoints);
+int MB_randPrimPoints(float density, MobyInstance *moby, int maximum, Vec4 *points, int mask)
+{
+    enum HitShape {
+        SHAPE_INLINE_CENTER_SPHERE = 0x0,
+        SHAPE_INLINE_CENTER_SPHERE_ALT = 1,
+        SHAPE_INDEXED_CENTER_SPHERE = 0x2,
+        SHAPE_XY_DISK_WITH_Z_EXTENT = 0x3,
+        SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET = 0x4
+    };
+
+    float weights[20];
+    CollPrim *eligiblePrimitives[20];
+    Vec4 shapeCenter, sampleOffset, segmentDelta, segmentPoint, capsuleOffset;
+    CollPrimShape *shape;
+    CollPrim *primitive;
+    int eligibleCount, primitiveIndex, selectedIndex, pointIndex, pointCount;
+    unsigned int primitiveFlags;
+    unsigned int lastPrimitive;
+    float totalVolume, sampleWeight, radius, sampleExtent, sampleDistance;
+    int primitiveType;
+
+    {
+        CollPrim *primitive;
+        MobyCollPrims *collision = moby->pClass->collision;
+        primitive = (CollPrim *)collision;
+        if (!primitive)
+            return 0;
+        if (collision->primSetB)
+            MobyComputeJointMtxs(moby, collision->primSetB, 0);
+        if (collision->unk04 <= 0)
+            return 0;
+        eligibleCount = 0;
+        primitiveIndex = 0;
+        totalVolume = 0.0f;
+        primitive = collision->primitives;
+        {
+            CollPrimShape *shape;
+            shape = &primitive->shape;
+            do {
+                float radius, sampleExtent;
+                int primitiveType;
+                unsigned int enabled;
+                primitiveFlags = primitive->flags;
+                lastPrimitive = (primitiveFlags & COLLPRIM_LAST) != 0;
+                primitiveType = primitiveFlags & 0xff;
+                bool excludedByMask = ((mask >> primitiveIndex) & 1) == 0;
+                enabled = primitiveFlags & COLLPRIM_RANDOM_POINTS;
+                if (!excludedByMask && enabled) {
+                    eligiblePrimitives[eligibleCount] = primitive;
+                    switch (primitiveType) {
+                    case SHAPE_INLINE_CENTER_SPHERE:
+                    case SHAPE_INLINE_CENTER_SPHERE_ALT:
+                    case SHAPE_INDEXED_CENTER_SPHERE: {
+                        if (primitiveType < SHAPE_INDEXED_CENTER_SPHERE) {
+                            CopyVec4Inline(&shapeCenter, &primitive->offset);
+                            FastScaleVec4(&shapeCenter, &shapeCenter, moby->scale * 0.0009765625f);
+                            radius = shapeCenter.w;
+                        }
+
+                        else {
+                            CopyVec4Inline(&shapeCenter, &SPAD_JOINTS[shape->joint]);
+                            CopyVec4Inline(&sampleOffset, &primitive->offset);
+                            FastVec3Add(&shapeCenter, &shapeCenter, &sampleOffset);
+                            FastVec3Scale(&shapeCenter, &shapeCenter, moby->scale * 0.0009765625f);
+                            radius = moby->scale;
+                            radius = primitive->radius * radius * 0.0009765625f;
+                        }
+                        weights[eligibleCount] = radius * 4.1887903f * radius * radius;
+                        break;
+                    }
+                    case SHAPE_XY_DISK_WITH_Z_EXTENT: {
+                        float radius, sampleExtent;
+                        CopyVec4Inline(&shapeCenter, &primitive->offset);
+                        FastVec3Scale(&shapeCenter, &shapeCenter, moby->scale);
+                        radius = shapeCenter.w * moby->scale;
+                        radius *= 0.0009765625f;
+                        sampleExtent = shape->length * (moby->scale * 0.0009765625f);
+                        weights[eligibleCount] = radius * 4.187743f * radius * radius +
+                                                 radius * 1.5707964f * radius * sampleExtent;
+                        break;
+                    }
+                    case SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET: {
+                        ScaleJointPosition(&shapeCenter, &SPAD_JOINTS[shape->ends.a],
+                                           moby->scale * 0.0009765625f);
+                        ScaleJointPosition(&sampleOffset, &SPAD_JOINTS[shape->ends.b],
+                                           moby->scale * 0.0009765625f);
+                        FastSubVec3(&segmentDelta, &shapeCenter, &sampleOffset);
+                        radius = FastVec3Length2(&segmentDelta);
+                        sampleExtent = primitive->radius * moby->scale * 0.0009765625f;
+                        weights[eligibleCount] = sampleExtent * 1.5707964f * sampleExtent * radius;
+                        break;
+                    }
+                    }
+                    totalVolume += weights[eligibleCount];
+                    eligibleCount++;
+                }
+                primitiveIndex++;
+                shape = (CollPrimShape *)((unsigned char *)shape + sizeof(CollPrim));
+                primitive++;
+            } while (!lastPrimitive);
+        }
+    }
+
+    pointCount = (int)(density * totalVolume + 0.5f);
+    if (maximum < pointCount)
+        pointCount = maximum;
+
+    for (pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+        sampleDistance = MB_randRangeFloat(0.0f, totalVolume);
+        for (selectedIndex = 0; selectedIndex < eligibleCount; selectedIndex++) {
+            if (sampleDistance < weights[selectedIndex])
+                break;
+            sampleDistance -= weights[selectedIndex];
+        }
+        primitive = eligiblePrimitives[selectedIndex];
+        switch (primitiveType = primitive->collType) {
+        case SHAPE_INLINE_CENTER_SPHERE:
+        case SHAPE_INLINE_CENTER_SPHERE_ALT:
+        case SHAPE_INDEXED_CENTER_SPHERE: {
+            float radius, sampleExtent;
+            if (primitiveType < SHAPE_INDEXED_CENTER_SPHERE) {
+                CopyVec4Inline(&shapeCenter, &primitive->offset);
+                FastVec3Scale(&shapeCenter, &shapeCenter, moby->scale);
+                sampleExtent = shapeCenter.w * moby->scale;
+            }
+
+            else {
+                CopyVec4Inline(&shapeCenter, &SPAD_JOINTS[primitive->joint]);
+                CopyVec4Inline(&sampleOffset, &primitive->offset);
+                FastVec3Add(&shapeCenter, &shapeCenter, &sampleOffset);
+                FastVec3Scale(&shapeCenter, &shapeCenter, moby->scale);
+                sampleExtent = primitive->radius * moby->scale;
+            }
+            sampleExtent *= 0.0009765625f;
+            FastVecDivScalar(&shapeCenter, &shapeCenter, 1024.0f);
+            for (;;) {
+                sampleOffset.x = MB_randRangeFloat(-sampleExtent, sampleExtent);
+                sampleOffset.y = MB_randRangeFloat(-sampleExtent, sampleExtent);
+                sampleOffset.z = MB_randRangeFloat(-sampleExtent, sampleExtent);
+                if (FastVec3Length2(&sampleOffset) <= sampleExtent) {
+                    FastVec3Add(&sampleOffset, &sampleOffset, &shapeCenter);
+                    FastVecMtx3Mult(&sampleOffset, &sampleOffset, &moby->transform);
+                    FastVec3Add(&points[pointIndex], &sampleOffset, &moby->pos);
+                    break;
+                }
+            }
+            break;
+        }
+        case SHAPE_XY_DISK_WITH_Z_EXTENT: {
+            float radius, sampleExtent, sampleWeight, sampleDistance, angle;
+            CopyVec4Inline(&shapeCenter, &primitive->offset);
+            FastVec3Scale(&shapeCenter, &shapeCenter, moby->scale);
+            radius = shapeCenter.w * moby->scale;
+            sampleExtent = primitive->length * moby->scale;
+            FastVecDivScalar(&shapeCenter, &shapeCenter, 1024.0f);
+            radius *= 0.0009765625f;
+            sampleExtent *= 0.0009765625f;
+            sampleWeight = MB_randRangeFloat(0.0f, radius * radius);
+            sampleWeight = FastFSqrt(sampleWeight);
+            sampleDistance = MB_randRangeFloat(0.0f, sampleExtent);
+            angle = MB_randRot();
+            sampleOffset.x = FastAngleSinF(angle) * sampleWeight;
+            sampleOffset.y = FastAngleCosF(angle) * sampleWeight;
+            sampleOffset.z = sampleDistance;
+            FastVec3Add(&sampleOffset, &sampleOffset, &moby->pos);
+            FastVec3Add(&points[pointIndex], &shapeCenter, &sampleOffset);
+            break;
+        }
+        case SHAPE_ENDPOINT_SEGMENT_WITH_BALL_OFFSET: {
+            float sampleExtent, sampleWeight;
+            shape = &primitive->shape;
+            ScaleJointPosition(&shapeCenter, &SPAD_JOINTS[shape->ends.a], moby->scale);
+            ScaleJointPosition(&sampleOffset, &SPAD_JOINTS[shape->ends.b], moby->scale);
+            FastSubVec3(&segmentDelta, &sampleOffset, &shapeCenter);
+            sampleWeight = MB_randRangeFloat(0.0f, 1.0f);
+            FastVec3Scale(&segmentDelta, &segmentDelta, sampleWeight);
+            FastVec3Add(&segmentPoint, &segmentDelta, &shapeCenter);
+            FastVecDivScalar(&segmentPoint, &segmentPoint, 1024.0f);
+            sampleExtent = primitive->radius * moby->scale;
+            sampleExtent = sampleExtent * 0.0009765625f;
+            do {
+                capsuleOffset.x = MB_randRangeFloat(-sampleExtent, sampleExtent);
+                capsuleOffset.y = MB_randRangeFloat(-sampleExtent, sampleExtent);
+                capsuleOffset.z = MB_randRangeFloat(-sampleExtent, sampleExtent);
+            } while (!(FastVec3Length2(&capsuleOffset) <= sampleExtent));
+            FastVec3Add(&capsuleOffset, &capsuleOffset, &segmentPoint);
+            FastVecMtx3Mult(&capsuleOffset, &capsuleOffset, &moby->transform);
+            FastVec3Add(&points[pointIndex], &capsuleOffset, &moby->pos);
+            break;
+        }
+        }
+    }
+    return pointCount;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/mobyutil", func_00270330);
 

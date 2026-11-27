@@ -720,3 +720,5 @@ SpawnPart_015__FP4Vec4T0iifiiii = 0x00280BD0;
 SpawnPart_045__FP4Vec4iiff = 0x00286780;
 MB_SplineIntersect__FiP4Vec4N21 = 0x00276820;
 SpawnBoltByValue__FP12MobyInstanceP4Vec4T1iii = 0x002BCDB8;
+FastVecDivScalar__FP4Vec4T0f = 0x00221288;
+ScaleJointPosition__FP4Vec4T0f = 0x001251E8;

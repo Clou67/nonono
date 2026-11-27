@@ -50,6 +50,9 @@ void FastFromSpr(void *destination, int spr_address, int quadwords);
 
 void FastSubVec3(Vec4 *out, Vec4 *first, Vec4 *second);
 void FastVecZero(Vec4 *vector);
+void FastVecDivScalar(Vec4 *out, Vec4 *vector, float divisor);
+// Scales a joint position from the scratchpad into a working vector.
+void ScaleJointPosition(Vec4 *out, Vec4 *joint, float scale);
 void FastVec3Normalize(Vec4 *out, Vec4 *vector, float length);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 

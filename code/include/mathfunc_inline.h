@@ -37,4 +37,9 @@ static inline void ZeroVec4Inline(Vec4 *vector)
     __asm__ volatile("sq $0, 0(%0)" : : "r"(vector));
 }
 
+
+#ifndef SPAD_JOINTS
+#define SPAD_JOINTS ((Vec4 *)0x70000000)
+#endif
+
 #endif
