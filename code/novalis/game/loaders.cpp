@@ -312,9 +312,9 @@ extern int SpaceshipOClassesB[];
 // off $gp.
 extern int GSmemZbuf __attribute__((section(".sdata")));
 #define GSmemAfterZbuf ((&GSmemZbuf)[1])
-extern int ShipPackLoaded;
-extern int ShipPackReady;
-extern int ShipPackUnk;
+extern int SpaceEnvRefresh;
+extern int SpaceEnvWasActive;
+extern int SpaceEnvTimer;
 extern int MobyTextureCount;     // moby texture count
 extern int MobyTexLocs[];
 extern TextureDef MobyTexDefs[];
@@ -395,10 +395,10 @@ char *ParseMobyPack(char *pack, LevelCoreHeader *header)
         ParseMoby(packStart + mobyB, (short *)(&ShipTexDefB - MobyTextureCount), (char *)ShipTexRefs,
                   SpaceshipOClassesB[bootSpaceTransitionState.shipVariant]);
 
-    ShipPackLoaded = 1;
-    ShipPackReady = 1;
+    SpaceEnvRefresh = 1;
+    SpaceEnvWasActive = 1;
     MobyTextureCount = MobyTextureCount + 1;
-    ShipPackUnk = 0;
+    SpaceEnvTimer = 0;
     return pack;
 }
 

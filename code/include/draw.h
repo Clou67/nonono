@@ -1,6 +1,16 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#include "moby.h"
+
+struct GeometryQuad {
+    Vec4 positions[4];
+    unsigned int colors[4];
+    float textureCoordinates[4][2];
+    unsigned long long state[4];
+};
+void FastDrawQuadReal(GeometryQuad *quad, int flags, int mode);
+
 struct MobyInstance;
 typedef void (*DrawMobyCallback)(MobyInstance *moby);
 

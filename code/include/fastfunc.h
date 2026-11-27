@@ -33,6 +33,7 @@ float FastAbsF(float value);
 float FastFSqrt(float value);
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec4 *second);
 float FastVec3Length(float *vec);
+float FastVec3Dot(Vec4 *first, Vec4 *second);
 void FastMemCopy32(void *destination, void *source, int size);
 // Writes the scaled xyz of in to out.
 void FastVec3Scale(Vec4 *out, Vec4 *in, float scale);

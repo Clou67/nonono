@@ -1,4 +1,5 @@
 #include "libc.h"
+#include "font.h"
 #include "camera.h"
 #include "common.h"
 #include "draw.h"
@@ -34,6 +35,16 @@ extern float g_SceneFlash;
 extern float frameTime;
 extern float frameTimeSq __attribute__((section(".sdata")));
 
+int SpaceshipPreplaced __attribute__((section(".sdata"))) = 0;
+int SpaceshipOClasses[3] = {531, 532, 533};
+int SpaceshipOClassesB[3] = {535, 536, 537};
+int SpaceEnvRefresh __attribute__((section(".sdata"))) = 1;
+int SpaceEnvWasActive __attribute__((section(".sdata"))) = 1;
+int SpaceEnvTimer __attribute__((section(".sdata"))) = 0;
+int SpaceTransitionSequenceFrames[3] = {240, 240, 240};
+int SpaceVariantEffectQuadCounts[3] = {8, 2, 2};
+float SpaceWarpTrailWidths[3] = {0.8f, 0.8f, 0.8f};
+
 // Loading-screen quad placement and its motion per frame.
 Vec4 SpaceQuadBase __attribute__((section(".sdata"))) = {-370.0f, -280.0f, 280.0f, 0.0f};
 Vec4 SpaceQuadOffset __attribute__((section(".sdata"))) = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -41,6 +52,14 @@ Vec4 SpaceQuadStep __attribute__((section(".sdata"))) = {0.3f, 0.5f, 0.0f, 0.0f}
 
 // Frame each take-off cutscene skips to, per ship variant.
 int ShipTakeoffSkipFrames[3] = {558, 558, 558};
+
+int SpaceEnvColors[4] = {0x50807060, 0x30807060, 0x30807060, 0x302080FF};
+int SpaceEnvVertexCounts[4] = {102, 39, 49, 42};
+int SpaceEnvQuadCounts[4] = {74, 24, 48, 30};
+Vec4 *SpaceEnvNormals[4] = {SpaceEnvNormals0, SpaceEnvNormals1, SpaceEnvNormals2, SpaceEnvNormals3};
+Vec4 *SpaceEnvPositions[4] = {SpaceEnvPositions0, SpaceEnvPositions1, SpaceEnvPositions2, SpaceEnvPositions3};
+IndexedQuad *SpaceEnvQuads[4] = {SpaceEnvQuads0, SpaceEnvQuads1, SpaceEnvQuads2, SpaceEnvQuads3};
+
 
 void ResetGameCounters(void);
 void UpdateMobyChain(void);
@@ -1399,4 +1418,126 @@ void DoSpaceTransition(void)
     DMAC_VIF1_Disable();
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/space", Space_DrawTransitionOverlay);
+void Space_DrawTransitionOverlay(MobyInstance *moby)
+{
+    enum { SPACE_ENV_REFRESH_PENDING = 1, SPACE_ENV_REFRESH_CONSUMED = 2 };
+    GeometryQuad quad;
+    Mtx4 objectTransform;
+    Vec4 normal;
+    Vec4 reflection;
+    Vec4 viewDirection;
+    IndexedQuad *indexedQuads;
+    Vec4 *positions;
+    Vec4 *normals;
+    int quadCount;
+    int vertexCount;
+    int classIndex;
+    int color;
+    int mappingEnabled;
+    float transitionFraction;
+    float sphereDenominator;
+    float coordinate;
+    int elementIndex;
+    int cornerIndex;
+
+    classIndex = (short)moby->oClass - 0x212;
+    positions = SpaceEnvPositions[classIndex];
+    normals = SpaceEnvNormals[classIndex];
+    indexedQuads = SpaceEnvQuads[classIndex];
+    quadCount = SpaceEnvQuadCounts[classIndex];
+    vertexCount = SpaceEnvVertexCounts[classIndex];
+
+    if (gameMode == GAME_MODE_SPACE && bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_LOADING)
+        quad.state[1] = FontSet(1);
+
+    else
+        quad.state[1] = FontSet(0x15);
+
+    mappingEnabled = 0;
+    color = SpaceEnvColors[classIndex];
+    quad.state[2] = 0xFF9000000260;
+    quad.state[3] = 0x8000000044;
+    quad.state[0] = 0;
+    quad.colors[3] = color;
+    quad.colors[2] = color;
+    quad.colors[1] = color;
+    quad.colors[0] = color;
+
+    MB_GetBoneTransformation(moby, 0, &objectTransform);
+
+    if (gameMode != GAME_MODE_NORMAL || (FastAbsF(GameCamera.position.x - moby->pos.x) < 16.0f &&
+                                         FastAbsF(GameCamera.position.y - moby->pos.y) < 16.0f)) {
+        mappingEnabled = 1;
+    }
+
+    if (gameMode == GAME_MODE_SPACE && bootSpaceTransitionState.cutscene == SPACE_CUTSCENE_LOADING)
+        mappingEnabled = 0;
+
+    if (mappingEnabled != 0 || SpaceEnvRefresh == SPACE_ENV_REFRESH_PENDING) {
+        SpaceEnvWasActive = 1;
+        FastDecTimer(SpaceEnvTimer);
+        transitionFraction =
+            FastIntToFloat(SpaceEnvTimer) / FastIntToFloat(FastScaleRoundInt(0x3C));
+        for (elementIndex = 0; elementIndex < vertexCount; elementIndex++) {
+            FastTransformVec4(&SpaceEnvTransformedPositions[elementIndex], &positions[elementIndex],
+                              &objectTransform);
+            FastSubVec3(&viewDirection, &SpaceEnvTransformedPositions[elementIndex],
+                        &GameCamera.position);
+            FastVec3Normalize(&viewDirection, &viewDirection, 1.0f);
+            FastTransformVec4(&normal, &normals[elementIndex], &objectTransform);
+            FastVec3Normalize(&normal, &normal, 0.1f);
+            FastVec3Scale(&reflection, &normal, FastVec3Dot(&normal, &viewDirection) * 2.0f);
+            FastSubVec3(&reflection, &viewDirection, &reflection);
+            FastVec3Normalize(&reflection, &reflection, 1.0f);
+            reflection.z += 1.0f;
+            sphereDenominator = FastFSqrt(reflection.z * 2.0f) * 2.0f;
+            if (SpaceEnvRefresh == SPACE_ENV_REFRESH_PENDING || SpaceEnvTimer == 0) {
+                SpaceEnvUVs[elementIndex][0] = reflection.x / sphereDenominator + 0.5f;
+                SpaceEnvUVs[elementIndex][1] = reflection.y / sphereDenominator + 0.5f;
+            }
+            else {
+                coordinate = reflection.x / sphereDenominator + 0.5f;
+                SpaceEnvUVs[elementIndex][0] =
+                    coordinate +
+                    (SpaceEnvSavedUVs[elementIndex][0] - coordinate) * transitionFraction;
+                coordinate = reflection.y / sphereDenominator + 0.5f;
+                SpaceEnvUVs[elementIndex][1] =
+                    coordinate +
+                    (SpaceEnvSavedUVs[elementIndex][1] - coordinate) * transitionFraction;
+            }
+        }
+        if (SpaceEnvRefresh == SPACE_ENV_REFRESH_PENDING)
+            SpaceEnvRefresh = SPACE_ENV_REFRESH_CONSUMED;
+    }
+
+    else {
+        if (SpaceEnvWasActive == 1) {
+            SpaceEnvWasActive = 0;
+            for (elementIndex = 0; elementIndex < vertexCount; elementIndex++) {
+                SpaceEnvSavedUVs[elementIndex][0] = SpaceEnvUVs[elementIndex][0];
+                SpaceEnvSavedUVs[elementIndex][1] = SpaceEnvUVs[elementIndex][1];
+                FastTransformVec4(&SpaceEnvTransformedPositions[elementIndex],
+                                  &positions[elementIndex], &objectTransform);
+            }
+        }
+        else {
+            for (elementIndex = 0; elementIndex < vertexCount; elementIndex++) {
+                FastTransformVec4(&SpaceEnvTransformedPositions[elementIndex],
+                                  &positions[elementIndex], &objectTransform);
+            }
+        }
+        SpaceEnvTimer = FastScaleRoundInt(0x3C);
+    }
+
+    for (elementIndex = 0; elementIndex < quadCount; elementIndex++) {
+        for (cornerIndex = 0; cornerIndex < 4; cornerIndex++) {
+            int vertexIndex = indexedQuads[elementIndex].corners[cornerIndex].vertexIndex;
+
+            CopyVec4Inline(&quad.positions[cornerIndex],
+                           &SpaceEnvTransformedPositions[vertexIndex]);
+            quad.textureCoordinates[cornerIndex][0] = SpaceEnvUVs[vertexIndex][0];
+            quad.textureCoordinates[cornerIndex][1] = SpaceEnvUVs[vertexIndex][1];
+        }
+        FastDrawQuadReal(&quad, 0, 0);
+    }
+}

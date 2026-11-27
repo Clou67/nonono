@@ -59,7 +59,43 @@ struct SpaceMobyEntry {
     unsigned char textureRefs[0x10];
 };
 
+struct QuadCornerIndex {
+    short vertexIndex;
+    short normalIndex;
+};
+struct IndexedQuad {
+    QuadCornerIndex corners[4];
+};
+
 struct Vec4;
+extern Vec4 SpaceEnvNormals0[];
+extern Vec4 SpaceEnvNormals1[];
+extern Vec4 SpaceEnvNormals2[];
+extern Vec4 SpaceEnvNormals3[];
+extern Vec4 SpaceEnvPositions0[];
+extern Vec4 SpaceEnvPositions1[];
+extern Vec4 SpaceEnvPositions2[];
+extern Vec4 SpaceEnvPositions3[];
+extern IndexedQuad SpaceEnvQuads0[];
+extern IndexedQuad SpaceEnvQuads1[];
+extern IndexedQuad SpaceEnvQuads2[];
+extern IndexedQuad SpaceEnvQuads3[];
+extern Vec4 SpaceEnvTransformedPositions[];
+extern float SpaceEnvUVs[][2];
+extern float SpaceEnvSavedUVs[][2];
+extern int SpaceEnvRefresh;
+extern int SpaceEnvWasActive;
+extern int SpaceEnvTimer;
+extern int SpaceTransitionSequenceFrames[3];
+extern int SpaceVariantEffectQuadCounts[3];
+extern float SpaceWarpTrailWidths[3];
+extern int SpaceEnvColors[4];
+extern int SpaceEnvVertexCounts[4];
+extern int SpaceEnvQuadCounts[4];
+extern Vec4 *SpaceEnvNormals[4];
+extern Vec4 *SpaceEnvPositions[4];
+extern IndexedQuad *SpaceEnvQuads[4];
+
 struct DirectionalLight;
 extern Vec4 SpaceQuadBase;
 extern Vec4 SpaceQuadOffset;

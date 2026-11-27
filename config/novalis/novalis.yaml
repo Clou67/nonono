@@ -88,8 +88,8 @@ segments:
     - [0x2590, lit4]
     - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c
     - [0x2620, lit4]
-    - [0x26a0, .sdata, game/space]  # Loading quad vectors, ShipTakeoffSkipFrames
-    - [0x26e0, lit4]
+    - [0x2640, .sdata, game/space]  # Space scene state, variant tables, mesh tables
+    - [0x2740, lit4]
     - [0x3030, .sdata, game/tfragfunc]  # tfrag texs, tfrag draw labels
     - [0x3050, lit4]
     - [0x30a0, .sdata, game/tiefunc]  # tie texs, tie draw labels
