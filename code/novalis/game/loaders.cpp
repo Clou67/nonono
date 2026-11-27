@@ -200,8 +200,7 @@ int ParseGsRamTextures(PifHeader *pif, unsigned long long *gsRegisters)
 
 TEXT_PADDING(0x27BD0060, 0x00000000);
 
-// Copies the level's particle texture data into PartTexData, points each particle class's
-// texture slot into it, and builds the GS addresses of each particle texture.
+// Relocates the per-class texture-selection records and packs the GS palette/texture descriptors.
 void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
 {
     int classCount = header[0];
@@ -211,22 +210,22 @@ void ParseParticleTexs(int *header, int gsBase, int *texDefs, int count)
 
     for (int index = 0; index < classCount; index++, texOffset++) {
         if (*texOffset == 0)
-            PartTextures[index] = PartTexData;
+            PartClassTexs[index] = PartClassData;
 
         else
-            PartTextures[index] = (unsigned char *)(*texOffset - (dataOffset - (int)PartTexData));
+            PartClassTexs[index] = (unsigned char *)(*texOffset - (dataOffset - (int)PartClassData));
     }
 
-    FastMemCopy32(PartTexData, (char *)header + dataOffset, dataSize);
+    FastMemCopy32(PartClassData, (char *)header + dataOffset, dataSize);
 
     for (PartTexCnt = 0; PartTexCnt < count; PartTexCnt++) {
-        int texBlock = gsBase + *texDefs++;
-        int texWidth = *texDefs++;
-        int clutBlock = gsBase + *texDefs++;
-        int clutSize = *texDefs++;
+        int paletteAddress = gsBase + *texDefs++;
+        int paletteDescriptor = *texDefs++;
+        int textureAddress = gsBase + *texDefs++;
+        int textureDimension = *texDefs++;
 
-        PartTexs[PartTexCnt].unk_00 = (texBlock << 4) + texWidth;
-        PartTexs[PartTexCnt].unk_04 = (clutBlock << 4) + FastLog2(clutSize);
+        PartTexs[PartTexCnt].pal = (paletteAddress << 4) + paletteDescriptor;
+        PartTexs[PartTexCnt].tex = (textureAddress << 4) + FastLog2(textureDimension);
     }
 }
 
@@ -3062,8 +3061,8 @@ int InitLevelFromWad(int full, int keep)
             printf_stub("sky:            %.1fK\n", KILOBYTES(CollOutput.grid - (char *)Sky));
 
         printf_stub("collision:      %.1fK\n", KILOBYTES(DrawSdata15F40C - (int)CollOutput.grid));
-        printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].unk_04 >> 4) - DrawSdata15F40C));
-        printf_stub("particle vram:  %.1fK\n", KILOBYTES(EffectTextureData - (PartTexs[0].unk_04 >> 4)));
+        printf_stub("shared vram:    %.1fK\n", KILOBYTES((PartTexs[0].tex >> 4) - DrawSdata15F40C));
+        printf_stub("particle vram:  %.1fK\n", KILOBYTES(EffectTextureData - (PartTexs[0].tex >> 4)));
         printf_stub("effects vram:   %.1fK\n", KILOBYTES((char *)MobyClasses[0] - (char *)EffectTextureData));
         printf_stub("mobys:          %.1fK\n", KILOBYTES((char *)TieClasses[0] - (char *)MobyClasses[0]));
         if (header->shrubClassCnt)

@@ -780,7 +780,7 @@ void UpdatePart_040(PartInstance *particle)
         particle->pos.z = particle->pos.z + MB_randRangeFloat(minPositionSpread, positionSpread);
     }
 
-    textureFrames = PartTextures[PART_TEXTURE_SPLITTING];
+    textureFrames = PartClassTexs[PART_TEXTURE_SPLITTING];
     particle->tex = textureFrames[(particle->timer + motion->posttimer + ((unsigned char)particle->tex - textureFrames[0])) &
                                   7];
     FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
@@ -948,8 +948,8 @@ void UpdatePart_042(PartInstance *particle)
         particle->pos.z += MB_randRangeFloat(minPositionSpread, positionSpread);
     }
 
-    particle->tex = PartTextures[PART_TEXTURE_SPLITTING]
-                                [(particle->timer + motion->posttimer + ((unsigned char)particle->tex - PartTextures[PART_TEXTURE_SPLITTING][0])) &
+    particle->tex = PartClassTexs[PART_TEXTURE_SPLITTING]
+                                [(particle->timer + motion->posttimer + ((unsigned char)particle->tex - PartClassTexs[PART_TEXTURE_SPLITTING][0])) &
                                  7];
     FastVec3Add(&nextPosition, &particle->pos, &motion->vel);
     hitCollision = 0;
@@ -1067,7 +1067,7 @@ PartInstance *SpawnPart_047(Vec4 *position, Vec4 *velocity, float scale)
 
         part->gs_alpha = 0x48;
         part->type = 0;
-        part->tex = *PartTextures[0x2F];
+        part->tex = *PartClassTexs[0x2F];
         part->scale = scale;
 
         CopyVec4Inline(&((Part000 *)part->update)->vel, velocity);
@@ -1161,7 +1161,7 @@ PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
         part->draw_dist = FastFloatToInt(4.0f) + 0x20;
         part->gs_alpha = 0x48;
         part->type = 0;
-        part->tex = *PartTextures[0x38];
+        part->tex = *PartClassTexs[0x38];
         part->scale = scale;
 
         CopyVec4Inline(&((Part000 *)part->update)->vel, velocity);
@@ -1258,7 +1258,7 @@ void UpdatePart_058(PartInstance *particle)
         else
             particle->scale -= transStepScale * 0.08f * 210000.0f;
 
-        particle->tex = PartTextures[PART_TEXTURE_TWEEN_EMITTER][rand() & 7];
+        particle->tex = PartClassTexs[PART_TEXTURE_TWEEN_EMITTER][rand() & 7];
 
         if ((particle - (PartInstance *)PartInstances) & 1)
             particle->rot++;

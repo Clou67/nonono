@@ -1223,15 +1223,15 @@ struct PartInstance {
     int update[8];
 };
 // Texture slot of each particle class, indexed by the iClass passed to CreatePart.
-extern unsigned char *PartTextures[];
+extern unsigned char *PartClassTexs[];
 
-// The level's particle texture data, and the GS address words built for each particle texture.
+// Per-class texture-selection records and the packed palette/texture descriptors (DL names).
 struct PartTex {
-    int unk_00;
-    int unk_04;
+    int pal;
+    int tex;
 };
 
-extern unsigned char PartTexData[];
+extern unsigned char PartClassData[];
 extern int PartTexCnt;
 extern PartTex PartTexs[];
 
