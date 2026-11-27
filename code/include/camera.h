@@ -185,9 +185,9 @@ void Camera_ClearPolar(float *polar);
 
 void Camera_DeactivateCurrent(void);
 
-void Camera_runSetupToNewCam(UpdateCam *camera);
+void Camera_runSetupToNewCam(UpdateCam *pCam);
 
-void Camera_Exit(UpdateCam *camera);
+void Camera_Exit(UpdateCam *pCam);
 
 void Camera_CopyLastPolarToQuat(void);
 

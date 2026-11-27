@@ -77,24 +77,24 @@ void camera_HandleCollWithHero(UpdateCam *camera)
     }
 }
 
-void Camera_runSetupToNewCam(UpdateCam *camera)
+void Camera_runSetupToNewCam(UpdateCam *pCam)
 {
-    void (*callback)(UpdateCam *) = cameraupdate_vtbl[camera->funcIdx].activate;
+    void (*callback)(UpdateCam *) = cameraupdate_vtbl[pCam->funcIdx].activate;
 
     if (callback)
-        callback(camera);
+        callback(pCam);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_switchtoNewCam);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", Camera_ActivationCheckPriority);
 
-void Camera_Exit(UpdateCam *camera)
+void Camera_Exit(UpdateCam *pCam)
 {
-    void (*callback)(UpdateCam *) = cameraupdate_vtbl[camera->funcIdx].exit;
+    void (*callback)(UpdateCam *) = cameraupdate_vtbl[pCam->funcIdx].exit;
 
     if (callback)
-        callback(camera);
+        callback(pCam);
 }
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/camera", UpdateAllCameras);
