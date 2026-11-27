@@ -39,8 +39,6 @@ void UpdateNumSpawnableMobys(void)
 
 extern unsigned char *mobyVars;
 
-extern void *MobyClassUpdate[];
-
 void InitMobyInstance(MobyInstance *moby, int oClass);
 
 MobyInstance *CreateMoby(int oClass)
@@ -83,7 +81,7 @@ void InitMobyInstance(MobyInstance *moby, int oClass)
 
     moby->alpha = 0x80;
     moby->mClass = classIndex;
-    moby->damage = 0xFF;
+    moby->hitSlot = 0xFF;
     moby->group = 0xFF;
     moby->unk71 = 0xFF;
     moby->lodTransition = 0xFF;

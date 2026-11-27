@@ -330,7 +330,7 @@ void MB_SetGroupField(int group, int value)
         short *entry = MobyGroupEntries[group];
         do {
             int mobyIndex = *entry & MOBY_GROUP_INDEX_MASK;
-            MobyInstances[mobyIndex].setByGroup = value;
+            MobyInstances[mobyIndex].command = value;
         } while (*entry++ >= 0);
     }
 }

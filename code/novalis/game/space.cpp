@@ -617,7 +617,7 @@ void UpdateSpace(void)
                                 colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
 
                         if (FastScaleRoundInt(0x1A4) < SceneLoad.sceneFrame) {
-                            bootSpaceTransitionState.spaceship->setByGroup =
+                            bootSpaceTransitionState.spaceship->command =
                                 (int)(((float)SceneLoad.sceneFrame - FastScaleBySpeed(420.0f)) *
                                       (transStepScale * 1.2f));
                             bootSpaceTransitionState.spaceship->uid = 0;
@@ -665,7 +665,7 @@ void UpdateSpace(void)
                         playbackObject->glowRgba =
                             colorIntensity | (colorIntensity << 8) | (colorIntensity << 16);
 
-                    playbackObject->setByGroup = 0x32;
+                    playbackObject->command = 0x32;
                     playbackObject->uid = 10;
                     RegisterMobyDraw(Space_DrawShipEngineGlow, playbackObject);
                 }
@@ -674,7 +674,7 @@ void UpdateSpace(void)
                     int colorIntensity;
 
                     if (SceneLoad.sceneFrame < FastScaleRoundInt(300)) {
-                        bootSpaceTransitionState.spaceship->setByGroup =
+                        bootSpaceTransitionState.spaceship->command =
                             (int)((FastScaleBySpeed(300.0f) - (float)SceneLoad.sceneFrame) *
                                   (transStepScale * 1.5f));
                         bootSpaceTransitionState.spaceship->uid = 0;
@@ -901,7 +901,7 @@ void UpdateSpace(void)
                     screenFade = 0.0625f;
 
                 if (bootSpaceTransitionState.shipVariant < 2) {
-                    bootSpaceTransitionState.spaceship->setByGroup = 0x32;
+                    bootSpaceTransitionState.spaceship->command = 0x32;
                     bootSpaceTransitionState.spaceship->uid = 10;
                     RegisterMobyDraw(Space_DrawShipEngineGlow, bootSpaceTransitionState.spaceship);
                 }

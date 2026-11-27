@@ -1897,8 +1897,8 @@ char *ResetLevelData(int reload)
                 moby->unkB1 = mapSlot;
                 moby->uid = uid;
                 moby->levelFlagIdx = levelFlagIdx;
-                *(short *)&moby->unkB4[0] = boltsAdjusted;
-                *(short *)&moby->unkB4[2] = boltsBase;
+                moby->bolts = boltsAdjusted;
+                moby->baseBolts = boltsBase;
                 if (moby->pClass != 0)
                     moby->scale = moby->pClass->scale * *(float *)record;
 
@@ -2380,7 +2380,7 @@ char *ResetLevelData(int reload)
             moby->pos.y = shipSpawn[1];
             moby->pos.z = shipSpawn[2];
             spawnRotation = shipSpawn[3];
-            moby->pUpdate = (void *)UpdateMoby_Spaceship;
+            moby->pUpdate = UpdateMoby_Spaceship;
             moby->drawDistance = 0xFF;
             moby->rotation.z = spawnRotation;
             moby->updateDistance = 16;

@@ -141,6 +141,7 @@ struct SoundDef;
 // The animation pointer table follows the 0x48-byte RaC1 class header.
 struct MobyInstance;
 typedef int (*MobyClassCallback)(MobyInstance *moby);
+typedef void (*MobyUpdateFunc)(MobyInstance *moby);
 
 struct MobyClassCallbacks {
     int unk_00;
@@ -233,10 +234,10 @@ struct MobyInstance {
     unsigned char mClass;
     unsigned char alpha;
     MobyClass *pClass;
-    void *pChain;
+    MobyInstance *pChain;
     float scale;
     unsigned char updateDistance;
-    unsigned char enabled;
+    unsigned char drawn; // 0x31: visibility from the draw pass, not an enable switch
     short drawDistance;
     unsigned short modeBits;
     unsigned short occlIndex;
@@ -263,7 +264,7 @@ struct MobyInstance {
     unsigned char unk71;
     unsigned char lodTransition;
     unsigned char metal;
-    void *pUpdate;
+    MobyUpdateFunc pUpdate;
     void *pVar;
     unsigned char soundDesired;
     unsigned char soundChannel;
@@ -278,7 +279,7 @@ struct MobyInstance {
         unsigned short *collision;
         MobyCollPrims *pCollPrims;
     };
-    float *collisionMesh;
+    unsigned int collisionDisable; // 0x98: one disable bit per collision primitive
     int collQueryStamp;
     union {
         unsigned int collCount;
@@ -289,7 +290,7 @@ struct MobyInstance {
             unsigned char gridMaxY;
         };
     };
-    unsigned char damage;
+    unsigned char hitSlot; // 0xA4: collision hit-message slot, 0xFF for none
     unsigned char previousAnimationId;
     unsigned short oClass;
     int handle;
@@ -297,9 +298,10 @@ struct MobyInstance {
     unsigned char levelFlagIdx;
     unsigned char unkB1;
     unsigned short uid;
-    char unkB4[4];
-    MobyInstance *unkB8;
-    unsigned char setByGroup;
+    short bolts; // 0xB4: adjusted bolt drop
+    short baseBolts; // 0xB6: unadjusted bolt drop
+    MobyInstance *pParent; // 0xB8: spawner
+    unsigned char command; // 0xBC: command supplied by group and scripted events
     unsigned char shadowIndex;
     char unkBE[2];
     Mtx4 transform;
@@ -313,9 +315,11 @@ void SetLevelFlag(int flag);
 extern int StashedMobyClassDists[];
 
 // Loaded moby classes by mClass, the next free mClass and each mClass's oClass.
-extern MobyClass *MobyClasses[];
+enum { MOBY_CLASS_CAPACITY = 0xE0 };
+extern MobyClass *MobyClasses[MOBY_CLASS_CAPACITY];
+extern MobyUpdateFunc MobyClassUpdate[MOBY_CLASS_CAPACITY];
 extern int MobyClassIndex;
-extern short MobyOClasses[];
+extern short MobyOClasses[MOBY_CLASS_CAPACITY];
 
 void SetupMobyFunctions(int oClass);
 

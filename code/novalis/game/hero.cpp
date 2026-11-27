@@ -944,7 +944,7 @@ void Hero_DoBehavior(void)
                 CopyVec4Inline(&itemMoby->pos, &Hero.position);
                 CopyVec4Inline(&itemMoby->rotation, &Hero.rotation);
                 itemMoby->drawDistance = 0x40;
-                Hero.sinkEffectMoby->enabled = 1;
+                Hero.sinkEffectMoby->drawn = 1;
                 Hero.sinkEffectMoby->updateDistance = 0;
                 Hero.sinkEffectMoby->alpha = 0;
                 Hero.sinkEffectMoby->modeBits |= 0x800;
@@ -2862,7 +2862,7 @@ int Hero_InitBodyState(int state, int animMode)
         hero->itemUseLocked = 0;
 
         if (hero->type == HERO_TYPE_RATCHET) {
-            moby->collisionMesh = 0;
+            moby->collisionDisable = 0;
             hero->tiltDisabled = 0;
             hero->itemSelectBlocked = 0;
             hero->onHoverboard = 0;
