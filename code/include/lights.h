@@ -98,12 +98,12 @@ extern float PerfLoad;
 void STUB_RET_2525f0(void);
 // Packed colour 0xBBGGRR, 0x80 = 1.0.
 int CreatePointLightRGB(Vec4 &pos, float radius, float backlight, int rgb);
-int CreatePointLight(Vec4 &pos, float radius, float backlight, float red, float green, float blue);
-void DeletePointLight(int light);
+int CreatePointLight(Vec4 &pos, float radius, float backlight, float r, float g, float b);
+void DeletePointLight(int index);
 void UpdatePointLights(void);
 // Builds the light's lists of the ties, tfrags and shrubs it touches.
 void AttachPointLight(int light);
 void RefreshPointLight(int light);
-void DetachPointLight(int light);
+void DetachPointLight(int index);
 
 #endif
