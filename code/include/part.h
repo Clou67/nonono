@@ -1411,4 +1411,6 @@ void UpdatePart_018(PartInstance *particle);
 extern int PartGrayscaleFadeFrames;
 void UpdatePart_009(PartInstance *particle);
 
+void UpdatePart_045(PartInstance *particle);
+
 #endif
