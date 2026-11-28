@@ -506,6 +506,12 @@ struct Part055 {
     float start_width;
 };
 
+// RaC1 stores the second point before the DL attachment record.
+struct Part055TwoPoint {
+    Vec4 end;
+    Part055 attachment;
+};
+
 struct Part057 {
     Vec4 vel;
     float rot;
@@ -1414,5 +1420,7 @@ void UpdatePart_009(PartInstance *particle);
 void UpdatePart_045(PartInstance *particle);
 
 void UpdatePart_010(PartInstance *particle);
+
+void UpdatePart_055(PartInstance *particle);
 
 #endif

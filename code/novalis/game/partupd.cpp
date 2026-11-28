@@ -1893,7 +1893,33 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_054)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_055);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_055);
+void UpdatePart_055(PartInstance *particle)
+{
+    Part055 *attachment = &((Part055TwoPoint *)particle->update)->attachment;
+    Vec4 positionDelta;
+    float savedWidth, width, lengthJitter, targetLength;
+
+    if (attachment->pParent == 0 || (short)attachment->pParent->oClass != attachment->parent_oClass || attachment->pParent->state == 0xFE || attachment->pParent->state == 0xFD) {
+        DeletePart(particle);
+        return;
+    }
+
+    width = attachment->start_width * MB_randRangeFloat(0.5f, 1.0f);
+    savedWidth = ((Part055TwoPoint *)particle->update)->end.w;
+    CopyVec4Inline(&positionDelta, &particle->pos);
+    MB_GetBonePos(attachment->pParent, attachment->joint, &particle->pos);
+    FastSubVec3(&positionDelta, &positionDelta, &particle->pos);
+    lengthJitter = MB_randRangeFloat(-0.021f, 0.021f);
+    if (FastVec3Length2(&positionDelta) < 0.0625f)
+        targetLength = lengthJitter + 0.0625f;
+
+    else
+        targetLength = FastVec3Length2(&positionDelta) + lengthJitter;
+    FastVec3Normalize(&positionDelta, &positionDelta, targetLength);
+    FastVec3Add(&((Part055TwoPoint *)particle->update)->end, &particle->pos, &positionDelta);
+    particle->pos.w = width;
+    ((Part055TwoPoint *)particle->update)->end.w = savedWidth;
+}
 
 PartInstance *SpawnPart_056(Vec4 *position, Vec4 *velocity, float scale)
 {
