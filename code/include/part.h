@@ -1379,4 +1379,6 @@ extern float PartGridMinimumGround;
 extern float PartGridClearance;
 void UpdatePart_073(PartInstance *particle);
 
+void UpdatePart_074(PartInstance *particle);
+
 #endif

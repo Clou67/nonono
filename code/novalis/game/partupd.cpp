@@ -2344,7 +2344,52 @@ void UpdatePart_073(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_074);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_074);
+void UpdatePart_074(PartInstance *particle)
+{
+    Part074 *motion = (Part074 *)particle->update;
+    Part074_fixed *appearance = motion->fixed;
+    Vec4 velocity;
+    Vec4 offset;
+    Vec4 transformedOffset;
+    MobyInstance *parent;
+    float decay;
+    float scale;
+    int elapsed;
+
+    elapsed = appearance->lifeSpan - particle->timer;
+    scale = FastIntToFloat(appearance->maxScale * elapsed / appearance->lifeSpan + appearance->startScale);
+    decay = transStepScale * -0.01999998f + 1.0f;
+    particle->scale = scale * 1000.0f;
+    velocity.x = motion->vel.x;
+    velocity.y = motion->vel.y;
+    velocity.z = motion->vel.z;
+    FastVec3Scale(&velocity, &velocity, decay);
+    motion->vel.x = velocity.x;
+    motion->vel.y = velocity.y;
+    motion->vel.z = velocity.z;
+    parent = motion->pParent;
+    if (parent != 0 && parent->state != 0xFE && parent->state != 0xFD) {
+        offset.x = motion->ofs.x;
+        offset.y = motion->ofs.y;
+        offset.z = motion->ofs.z;
+        FastVec3Add(&offset, &offset, &velocity);
+        motion->ofs.x = offset.x;
+        motion->ofs.y = offset.y;
+        motion->ofs.z = offset.z;
+        FastVecMtx3Mult(&transformedOffset, &offset, &motion->pParent->transform);
+        FastVec3Add(&particle->pos, &motion->pParent->pos, &transformedOffset);
+    }
+
+    else {
+        DeletePart(particle);
+        return;
+    }
+
+    particle->rot++;
+    particle->rgba = TweenColor(appearance->endColor, appearance->beginColor, (float)particle->timer / FastIntToFloat(appearance->lifeSpan));
+    if (FastDecTimer(particle->timer))
+        DeletePart(particle);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0028AAE0);
 
