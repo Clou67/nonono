@@ -1447,7 +1447,49 @@ void UpdatePart_052(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_053);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_053);
+static inline void CopyPartVelocity(Vec4 *destination, Vec3 *source)
+{
+    destination->x = source->x;
+    destination->y = source->y;
+    destination->z = source->z;
+    destination->w = 0.0f;
+}
+
+void UpdatePart_053(PartInstance *particle)
+{
+    Part053 *motion = (Part053 *)particle->update;
+    float fraction;
+    Vec4 velocity;
+    int alpha;
+
+    particle->rot += (unsigned char)motion->rotSpeed;
+    if (motion->initTime - particle->timer < 6) {
+        int initialAlpha;
+        int halfAlpha;
+        fraction = (float)(motion->initTime - particle->timer) / 5.0f;
+        particle->scale = motion->finalScale + ((motion->initScale + motion->finalScale) * 0.5f - motion->finalScale) * fraction;
+        halfAlpha = (unsigned char)motion->initAlpha >> 1;
+        initialAlpha = (unsigned char)motion->initAlpha;
+        alpha = FastFloatToInt((float)initialAlpha + (float)(halfAlpha - initialAlpha) * fraction);
+    }
+
+    else {
+        fraction = (float)particle->timer / FastIntToFloat(motion->initTime - 6);
+        particle->scale = motion->initScale + ((motion->initScale + motion->finalScale) * 0.5f - motion->initScale) * fraction;
+        alpha = FastFloatToInt((float)((unsigned char)motion->initAlpha >> 1) * fraction + 0.0f);
+    }
+
+    particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
+    CopyPartVelocity(&velocity, &motion->vel);
+    FastVec3Add(&particle->pos, &particle->pos, &velocity);
+    motion->vel.z -= motion->gravity;
+
+    if (particle->pos.x < 2.0f || particle->pos.x > 1021.0f || particle->pos.y < 2.0f || particle->pos.y > 1021.0f || particle->pos.z < 2.0f || particle->pos.z > 1021.0f)
+        DeletePart(particle);
+
+    else if (FastDecTimer(particle->timer))
+        DeletePart(particle);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_002876F8);
 
@@ -2074,13 +2116,7 @@ void UpdatePart_077(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_078);
 
-static inline void CopyPartVelocity(Vec4 *destination, Vec3 *source)
-{
-    destination->x = source->x;
-    destination->y = source->y;
-    destination->z = source->z;
-    destination->w = 0.0f;
-}
+
 
 extern const unsigned int PartLiteralReservedZero __attribute__((section(".sdata"))) = 0;
 extern const unsigned int PartLiteralSeventySix __attribute__((section(".sdata"))) = 76;
