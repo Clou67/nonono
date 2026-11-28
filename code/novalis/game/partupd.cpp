@@ -735,7 +735,44 @@ void UpdatePart_027(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_028);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_028);
+void UpdatePart_028(PartInstance *particle)
+{
+    Part028 *motion = (Part028 *)particle->update;
+    float direction = motion->asign;
+    float alphaBeforeReversal;
+    float timeScale;
+
+    if (0.0f < direction)
+        motion->alpha += transStepScale * 0.007f * direction;
+
+    else if (0.03f < motion->alpha)
+        motion->alpha = motion->alpha + transStepScale * 0.007f * direction;
+
+    else {
+        timeScale = transStepScale;
+        motion->alpha = motion->alpha + timeScale * 0.007f * direction * 0.2f;
+        particle->scale += timeScale * 5460.0f;
+    }
+
+    if (motion->alpha <= 0.0244f || FastDecTimer(particle->timer) != 0) {
+        DeletePart(particle);
+        return;
+    }
+
+    alphaBeforeReversal = motion->alpha;
+    if (0.12f <= alphaBeforeReversal) {
+        motion->asign = -motion->asign;
+        motion->alpha = alphaBeforeReversal + transStepScale * 0.007f * motion->asign;
+    }
+
+    particle->scale += transStepScale * 5460.0f;
+    particle->rgba = (particle->rgba & 0xFFFFFF) | (FastFloatToInt(motion->alpha * 255.0f) << 24);
+    motion->rot += transStepScale * 0.002f;
+    if (1.0f < motion->rot)
+        motion->rot -= 1.0f;
+    particle->rot = (int)(motion->rot * 255.0f);
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283400);
 
