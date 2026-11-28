@@ -1324,4 +1324,6 @@ void UpdatePart_034(PartInstance *particle);
 enum { PART_TEXTURE_ATTACHMENT_PULSE = 29, PART_ATTACHMENT_FRAME_MASK = 0xF };
 void UpdatePart_029(PartInstance *particle);
 
+void UpdatePart_065(PartInstance *particle);
+
 #endif

@@ -1515,7 +1515,58 @@ void UpdatePart_064(PartInstance *particle)
     DeletePart(particle);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_065);
+void UpdatePart_065(PartInstance *particle)
+{
+    Vec4 nextPosition;
+    Part065 *motion;
+    Vec4 *position;
+
+    if (particle == 0)
+        return;
+
+    motion = (Part065 *)particle->update;
+    position = &particle->pos;
+    motion->alpha += transStepScale * 0.0f;
+    particle->scale += transStepScale * -100.0f;
+    FastVec3Add(&nextPosition, position, &motion->vel);
+    if (motion->vel.x != 0.0f || motion->vel.y != 0.0f || motion->vel.z != 0.0f) {
+        if (CollLine(&particle->pos, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, (MobyInstance *)particle, 0)) {
+            CopyVec4(&particle->pos, &MemSlots.collisionPoint);
+            FastVecZero(&motion->vel);
+            particle->scale += particle->scale;
+        }
+
+        else {
+            CopyVec4(&particle->pos, &nextPosition);
+            if (motion->vel.w != 0.0f)
+                motion->vel.z += motion->vel.w;
+
+            else
+                motion->vel.z += transStepScaleSq * -0.0063f;
+        }
+    }
+
+    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer) || particle->scale < 0.0f || nextPosition.x < 0.01f || nextPosition.y < 0.01f || nextPosition.z < 0.01f) {
+        DeletePart(particle);
+        return;
+    }
+
+    motion->r += transStepScale * -0.01f;
+    if (motion->r < 0.0f)
+        motion->r = 0.0f;
+    motion->g += transStepScale * -0.03001f;
+    if (motion->g < 0.0f)
+        motion->g = 0.0f;
+    motion->b += transStepScale * -0.05f;
+    if (motion->b < 0.0f)
+        motion->b = 0.0f;
+    motion->alpha += transStepScale * 0.0f;
+    if (motion->alpha < 0.0f)
+        motion->alpha = 0.0f;
+
+    particle->rgba = Float_To_RGBA(motion->r, motion->g, motion->b, motion->alpha);
+    particle->rot--;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_066);
 
