@@ -1361,4 +1361,8 @@ void UpdatePart_028(PartInstance *particle);
 
 void UpdatePart_053(PartInstance *particle);
 
+enum PartBallisticMode { PART_BALLISTIC_NO_CONTACT = 0, PART_BALLISTIC_LINE_CONTACT = 1, PART_BALLISTIC_WATER_CONTACT = 3 };
+PartInstance *SpawnPart_066(Vec4 *position, int color, float scale, float height);
+void UpdatePart_035(PartInstance *particle);
+
 #endif

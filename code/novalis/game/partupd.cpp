@@ -1025,7 +1025,65 @@ void UpdatePart_034(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_035);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_035);
+void UpdatePart_035(PartInstance *particle)
+{
+    Part035 *motion = (Part035 *)particle->update;
+    int mode = motion->type;
+    Vec4 nextPosition;
+    Vec4 *position;
+
+    if (mode == PART_BALLISTIC_NO_CONTACT)
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+
+    else if (mode == PART_BALLISTIC_LINE_CONTACT) {
+        position = &particle->pos;
+        FastVec3Add(&nextPosition, position, &motion->vel);
+        if (CollLine(position, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, 0, 0)) {
+            if (CollHotspot() == 0)
+                SpawnPart_045(&CollOutput.ip, 0, -1, 0.2f, 5250.0f);
+            DeletePart(particle);
+            return;
+        }
+        CopyVec4Inline(position, &nextPosition);
+    }
+
+    else if (mode == PART_BALLISTIC_WATER_CONTACT) {
+        float waterHeight;
+        position = &particle->pos;
+        FastVec3Add(position, position, &motion->vel);
+        waterHeight = Hero.waterHeight;
+        if (particle->pos.z < waterHeight) {
+            particle->pos.z = waterHeight;
+            SpawnPart_045(position, 0, -1, 0.2f, 5250.0f);
+            DeletePart(particle);
+            return;
+        }
+    }
+
+    else {
+        position = &particle->pos;
+        FastVec3Add(&nextPosition, position, &motion->vel);
+        if (CollLine(position, &nextPosition, PART_COLOR_DECAY_COLLISION_FLAGS, 0, 0)) {
+            if (CollHotspot() != 0) {
+                COLLOUTPUT *collision = &CollOutput;
+                collision->ip.z += 0.05f;
+                SpawnPart_066(&collision->ip, -1, 0.25f, 3150.0f);
+            }
+            DeletePart(particle);
+            return;
+        }
+        CopyVec4Inline(position, &nextPosition);
+    }
+
+    motion->vel.z -= motion->gravity;
+    particle->rot += 2;
+    motion->timer--;
+    if (motion->timer <= 0 || particle->pos.z < motion->spawn_height) {
+        particle->rgba += 0xF0000000;
+        if (particle->rgba < 0)
+            DeletePart(particle);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_002848F0);
 

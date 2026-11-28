@@ -736,3 +736,5 @@ GetGroundZ__FP4Vec4P12MobyInstanceiff = 0x0026D1D0;
 FastVecMtx3Mult__FP4Vec4T0P4Mtx3 = 0x002215E0;
 
 SpawnPart_067__FP12MobyInstanceP4Vec4iffiiT1 = 0x00289850;
+
+SpawnPart_066__FP4Vec4iff = 0x00289648;
