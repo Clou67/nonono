@@ -2,6 +2,7 @@
 #define FASTFUNC_H
 
 struct Vec4;
+struct Vec3;
 struct Mtx4;
 struct Mtx3;
 struct BSphere;
@@ -65,5 +66,7 @@ void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
 void FastEulerToMtx1(Mtx4 *matrix, Vec4 *rotation);
 
 void FastVec3Cross(Vec4 *out, Vec4 *first, Vec4 *second);
+
+void FastVec3Add(Vec4 *out, Vec4 *first, Vec3 *second);
 
 #endif

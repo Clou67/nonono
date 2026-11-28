@@ -743,3 +743,5 @@ SpawnPart_021__FP4Vec4T0iifii = 0x00281C10;
 
 MB_SampleByteGrid__FP4Vec4 = 0x00278020;
 MB_SpawnGridParticles__FP4Vec4 = 0x002780B0;
+
+FastVec3Add__FP4Vec4T0P4Vec3 = 0x00221188;

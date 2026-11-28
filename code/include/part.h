@@ -1381,4 +1381,6 @@ void UpdatePart_073(PartInstance *particle);
 
 void UpdatePart_074(PartInstance *particle);
 
+void UpdatePart_060(PartInstance *particle);
+
 #endif

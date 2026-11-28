@@ -1867,7 +1867,36 @@ void UpdatePart_059(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_060);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_060);
+void UpdatePart_060(PartInstance *particle)
+{
+    enum { PART_MOVING_HERO_RELATIVE = 1 };
+    Part060 *motion = (Part060 *)particle->update;
+    float remaining;
+    unsigned int color;
+
+    if (motion->type == PART_MOVING_HERO_RELATIVE) {
+        HeroState *hero = &Hero;
+        particle->pos.x = hero->position.x + motion->ofs.x;
+        particle->pos.y = hero->position.y + motion->ofs.y;
+        particle->pos.z = hero->position.z + motion->ofs.z;
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+        motion->ofs.x = particle->pos.x - hero->position.x;
+        motion->ofs.y = particle->pos.y - hero->position.y;
+        motion->ofs.z = particle->pos.z - hero->position.z;
+    }
+
+    else
+        FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+
+    if (particle->pos.x < 2.0f || 1021.0f < particle->pos.x || particle->pos.y < 2.0f || 1021.0f < particle->pos.y || particle->pos.z < 2.0f || 1021.0f < particle->pos.z || FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    color = particle->rgba & 0xFFFFFF;
+    remaining = FastIntToFloat(particle->timer - 1);
+    particle->rgba = FastTweenColor(color, particle->rgba, remaining / FastIntToFloat(particle->timer));
+}
 
 void UpdatePart_061(PartInstance *particle)
 {
