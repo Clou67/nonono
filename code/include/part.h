@@ -1370,4 +1370,6 @@ void UpdatePart_015(PartInstance *particle);
 PartInstance *SpawnPart_021(Vec4 *position, Vec4 *velocity, int beginRGBA, int endRGBA, float maxScale, int lifetime, int master);
 void UpdatePart_021(PartInstance *particle);
 
+void UpdatePart_043(PartInstance *particle);
+
 #endif

@@ -1489,7 +1489,51 @@ void UpdatePart_042(PartInstance *particle)
     particle->rot = (int)(motion->rot * 256.0f);
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_043);
+void UpdatePart_043(PartInstance *particle)
+{
+    Part043 *motion = (Part043 *)particle->update;
+    short elapsed;
+    float fadeRatio, initialAlpha;
+    unsigned char red, green, blue, alpha;
+
+    elapsed = ++particle->timer;
+    if (motion->lifetime < elapsed) {
+        DeletePart(particle);
+        return;
+    }
+
+    fadeRatio = FastIntToFloat(elapsed);
+    fadeRatio = fadeRatio / FastIntToFloat(motion->lifetime);
+    fadeRatio = 1.0f - fadeRatio;
+    red = FastFloatToInt(FastIntToFloat((unsigned char)motion->r) + fadeRatio * -0.001f);
+    green = FastFloatToInt(FastIntToFloat((unsigned char)motion->g) + fadeRatio * -0.0011f);
+    blue = FastFloatToInt(FastIntToFloat((unsigned char)motion->b) + fadeRatio * -0.00111f);
+    if (particle->timer < FastScaleRoundInt(30)) {
+        fadeRatio = FastIntToFloat(particle->timer);
+        fadeRatio = fadeRatio / FastIntToFloat(FastScaleRoundInt(30));
+        initialAlpha = FastIntToFloat((unsigned char)motion->a);
+        alpha = FastFloatToInt(initialAlpha * fadeRatio);
+    }
+
+    else {
+        fadeRatio = FastIntToFloat(particle->timer - FastScaleRoundInt(30));
+        fadeRatio = fadeRatio / FastIntToFloat(motion->lifetime - FastScaleRoundInt(30));
+        initialAlpha = FastIntToFloat((unsigned char)motion->a);
+        fadeRatio = 1.0f - fadeRatio;
+        alpha = FastFloatToInt(initialAlpha * fadeRatio);
+    }
+    {
+        unsigned int packedColor = alpha << 24;
+        packedColor |= blue << 16;
+        packedColor |= green << 8;
+        packedColor |= red;
+        particle->rgba = packedColor;
+    }
+
+    particle->rot++;
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+    motion->vel.z += transStepScaleSq * 0.0005f;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_044);
 
