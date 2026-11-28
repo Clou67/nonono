@@ -404,4 +404,6 @@ float MB_GetNormalizedMtxElem(Vec4 *origin, Mtx4 *matrix, Vec4 *position, int ax
 void MB_compressVector(Vec4 *vector, unsigned int *packed);
 void MB_decompressVector(Vec4 *vector, unsigned int *packed);
 
+float OrganicDelt(float *value, float *speed, float target, float gain, float damping, float limit);
+
 #endif

@@ -1332,4 +1332,27 @@ void UpdatePart_061(PartInstance *particle);
 enum PartPulsePhase { PART_PULSE_FADE_IN = 0, PART_PULSE_FADE_OUT = 1, PART_PULSE_CUSTOM_FADE_OUT = 2, PART_PULSE_CUSTOM_FADE_IN = 3 };
 void UpdatePart_023(PartInstance *particle);
 
+extern int PartSpinInitialColorSource;
+extern int PartSpinInitialColorTarget;
+extern int PartSpinFinalColorSource;
+extern int PartSpinFinalColorTarget;
+extern float PartSpinInitialScale;
+extern float PartSpinFinalScale;
+extern int PartSpinMinLifetime;
+extern int PartSpinMaxLifetime;
+extern int PartSpinAlternateInitialColorSource;
+extern int PartSpinAlternateInitialColorTarget;
+extern int PartSpinAlternateFinalColorSource;
+extern int PartSpinAlternateFinalColorTarget;
+extern float PartSpinAlternateInitialScale;
+extern float PartSpinAlternateFinalScale;
+extern int PartSpinAlternateMinLifetime;
+extern int PartSpinAlternateMaxLifetime;
+extern float PartSpinDeceleration;
+extern float PartSpinVerticalSpeed;
+extern const unsigned int PartSpinRetainedLiteralPool[14];
+extern unsigned char PartSpinSizeBoost[];
+enum PartSpinFlags { PART_SPIN_ALTERNATE_SCALE = 1, PART_SPIN_SIZE_BOOST = 4 };
+void UpdatePart_012(PartInstance *particle);
+
 #endif

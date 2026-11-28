@@ -292,7 +292,64 @@ void UpdatePart_011(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_012);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_012);
+int PartSpinInitialColorSource = 0x20202080;
+int PartSpinInitialColorTarget = 0x20208080;
+int PartSpinFinalColorSource = 0x1820c0c0;
+int PartSpinFinalColorTarget = 0x182080c0;
+float PartSpinInitialScale = 0.25f;
+float PartSpinFinalScale = 1.25f;
+int PartSpinMinLifetime = 0x14;
+int PartSpinMaxLifetime = 0x1e;
+int PartSpinAlternateInitialColorSource = 0x8002040;
+int PartSpinAlternateInitialColorTarget = 0x8004040;
+int PartSpinAlternateFinalColorSource = 0x10004040;
+int PartSpinAlternateFinalColorTarget = 0x10002040;
+float PartSpinAlternateInitialScale = 1.0f;
+float PartSpinAlternateFinalScale = 3.0f;
+int PartSpinAlternateMinLifetime = 0x19;
+int PartSpinAlternateMaxLifetime = 0x23;
+float PartSpinDeceleration = 48.0f;
+float PartSpinVerticalSpeed = 1.0f;
+// Unreferenced retail literal-pool words retained between the tuning values.
+extern const unsigned int PartSpinRetainedLiteralPool[14] __attribute__((section(".sdata"))) = {0x80000000, 0x3f6e147b, 0x3f6dd2f2, 0x5a, 0x4808b800, 0x20ffff20, 0x0, 0x1, 0x3e800000, 0x3e800000, 0x3f000000, 0x3f000000, 0x3f400000, 0xa};
+
+void UpdatePart_012(PartInstance *particle)
+{
+    Part012 *motion = (Part012 *)particle->update;
+    float negativeSpeed;
+    float endpointScale = 1.0f;
+    float ratio;
+
+    particle->rot += (unsigned char)motion->rotSpeed;
+    if ((unsigned char)motion->flags & PART_SPIN_SIZE_BOOST)
+        endpointScale = FastIntToFloat(PartSpinSizeBoost[0]) * 0.5f + endpointScale;
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+    negativeSpeed = -FastVec3Length2(&motion->vel);
+    OrganicDelt(&motion->dist, &negativeSpeed, 0.0f, 0.0f, PartSpinDeceleration * frameTimeSq, negativeSpeed);
+    FastVec3Normalize(&motion->vel, &motion->vel, -negativeSpeed);
+    particle->pos.z += PartSpinVerticalSpeed * frameTime;
+    ratio = FastIntToFloat(particle->timer) / FastIntToFloat((unsigned char)motion->lifetime);
+    if ((unsigned char)motion->flags & PART_SPIN_ALTERNATE_SCALE) {
+        float finalScale = PartSpinAlternateFinalScale * endpointScale;
+        particle->scale = ((PartSpinAlternateInitialScale - finalScale) * ratio + finalScale) * 210000.0f;
+    }
+
+    else {
+        float finalScale = PartSpinFinalScale * endpointScale;
+        particle->scale = ((PartSpinInitialScale - finalScale) * ratio + finalScale) * 210000.0f;
+    }
+    particle->rgba = FastTweenColor(motion->finalRGBA, motion->initRGBA, ratio);
+    if (particle->timer < FastScaleRoundInt(15)) {
+        float remaining = FastIntToFloat(particle->timer);
+        float fadeRatio = remaining / FastIntToFloat(FastScaleRoundInt(10));
+        particle->rgba = FastTweenColor(particle->rgba & 0xFFFFFF, particle->rgba, fadeRatio);
+    }
+    if (particle->pos.x < 2.0f || particle->pos.x > 1021.0f || particle->pos.y < 2.0f || particle->pos.y > 1021.0f || particle->pos.z < 2.0f || particle->pos.z > 1021.0f || FastDecTimer(particle->timer) != 0)
+        DeletePart(particle);
+
+    else if (motion->dist < 0.01f)
+        particle->timer--;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_013);
 

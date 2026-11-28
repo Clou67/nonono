@@ -708,3 +708,5 @@ AdaptiveBoltFrames = 0x0015EE28; // size:0x4
 AdaptiveBoltCount = 0x0015EE2C; // size:0x4
 
 ParticleProximityAxis = 0x0013F5E0; // size:0x10
+
+PartSpinSizeBoost = 0x0013E530; // size:0x1
