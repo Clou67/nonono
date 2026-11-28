@@ -1320,7 +1320,7 @@ void UpdatePart_036(PartInstance *particle)
 {
     Vec4 offset;
     Part036 *motion;
-    float sine;
+    float cosine;
 
     FastSubVec3(&offset, &GameCamera.position, &((Part036 *)particle->update)->pos);
     motion = (Part036 *)particle->update;
@@ -1332,8 +1332,8 @@ void UpdatePart_036(PartInstance *particle)
 
     FastVec3Add(&particle->pos, &motion->pos, &offset);
     motion->ang = FastAddRots(motion->ang, motion->pos.w);
-    sine = FastAngleSinF(motion->ang);
-    if (FastDecTimer(particle->timer) && (sine < motion->thresh || sine < -0.9f))
+    cosine = FastAngleCosF(motion->ang);
+    if (FastDecTimer(particle->timer) && (cosine < motion->thresh || cosine < -0.9f))
         goto kill;
     if (*motion->pLightOn == 0) {
     kill:
@@ -1342,8 +1342,8 @@ void UpdatePart_036(PartInstance *particle)
         return;
     }
 
-    if (motion->thresh < sine)
-        particle->rgba = TweenColor(0, motion->rgba, (sine - motion->thresh) / (1.0f - motion->thresh));
+    if (motion->thresh < cosine)
+        particle->rgba = TweenColor(0, motion->rgba, (cosine - motion->thresh) / (1.0f - motion->thresh));
 
     else
         particle->rgba = 0;
