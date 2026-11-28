@@ -62,5 +62,6 @@ int FastBsphereCheck(Vec4 *sphere, float radius);
 void FastVec3NormalizeFrom(Vec4 *out, Vec4 *vector, Vec4 *normal);
 
 void FastTransformVec4(Vec4 *out, Vec4 *vector, Mtx4 *matrix);
+void FastEulerToMtx1(Mtx4 *matrix, Vec4 *rotation);
 
 #endif

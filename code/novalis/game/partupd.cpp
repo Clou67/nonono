@@ -1428,7 +1428,77 @@ void UpdatePart_066(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_067);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_067);
+void UpdatePart_067(PartInstance *particle)
+{
+    Part067 *motion = (Part067 *)particle->update;
+    Vec4 positionOffset;
+    Vec4 secondaryOffset;
+    Vec4 angles;
+    Mtx4 secondaryRotation;
+    PartInstance *spawnedParticle;
+    float orbitRadius;
+    float wobbleRadius;
+    float initialAngle;
+
+    if (motion->type == PART_ORBIT_TRAIL_FADE) {
+        if (DecAlpha(&particle->rgba, motion->alphaSub))
+            goto kill;
+        if (motion->pParent == 0)
+            return;
+        positionOffset.x = motion->vel.x;
+        positionOffset.y = motion->vel.y;
+        positionOffset.z = motion->vel.z;
+        FastVec3Scale(&positionOffset, &positionOffset, FastIntToFloat(motion->aliveTime));
+        FastVec3Add(&particle->pos, &motion->pParent->pos, &positionOffset);
+        return;
+    }
+    if (FastDecTimer(particle->timer))
+        goto kill;
+    if (particle->timer < FastScaleRoundInt(PART_ORBIT_FADE_FRAMES)) {
+        if (DecAlpha(&particle->rgba, PART_ORBIT_ALPHA_STEP)) {
+        kill:
+            DeletePart(particle);
+            return;
+        }
+    }
+    if (motion->type == PART_ORBIT_EMITTER) {
+        initialAngle = 0.0f;
+        SpawnPart_067(0, &particle->pos, FastScaleRoundInt(PART_ORBIT_FADE_FRAMES), initialAngle, initialAngle, PART_ORBIT_TRAIL_FADE, (signed char)((unsigned int)particle->rgba >> 24), 0);
+    }
+
+    else {
+        positionOffset.x = motion->vel.x;
+        positionOffset.y = motion->vel.y;
+        positionOffset.z = motion->vel.z;
+        initialAngle = 0.0f;
+        spawnedParticle = SpawnPart_067(motion->pParent, &particle->pos, FastScaleRoundInt(PART_ORBIT_FADE_FRAMES), initialAngle, initialAngle, PART_ORBIT_TRAIL_FADE, (signed char)((unsigned int)particle->rgba >> 24), &positionOffset);
+        if (spawnedParticle)
+            ((Part067 *)spawnedParticle->update)->aliveTime = motion->aliveTime;
+    }
+    if (motion->type != PART_ORBIT_EMITTER)
+        return;
+    CopyVec4Inline(&particle->pos, &motion->pParent->pos);
+    orbitRadius = 2.25f;
+    positionOffset.x = FastAngleSinF(motion->tOuter) * orbitRadius;
+    wobbleRadius = 0.28f;
+    positionOffset.y = FastAngleCosF(motion->tOuter) * orbitRadius;
+    positionOffset.z = positionOffset.x;
+    positionOffset.x = 0.0f;
+    secondaryOffset.x = FastAngleSinF(motion->tInner) * wobbleRadius;
+    secondaryOffset.y = FastAngleCosF(motion->tInner) * wobbleRadius;
+    secondaryOffset.z = secondaryOffset.x;
+    secondaryOffset.x = 0.0f;
+    FastVecZero(&angles);
+    angles.y = motion->tOuter;
+    FastEulerToMtx1(&secondaryRotation, &angles);
+    FastTransformVec4(&secondaryOffset, &secondaryOffset, &secondaryRotation);
+    FastVec3Add(&positionOffset, &positionOffset, &secondaryOffset);
+    FastVecMtx3Mult(&positionOffset, &positionOffset, &motion->pParent->transform);
+    FastVec3Add(&particle->pos, &particle->pos, &positionOffset);
+    motion->tOuter = FastAddRots(motion->tOuter, frameTime * 0.9599310755729675f);
+    motion->tInner = FastAddRots(motion->tInner, frameTime * 4.363323211669922f);
+}
+
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00289CB8);
 

@@ -571,6 +571,9 @@ struct Part066 {
     float expandSpeed;
 };
 
+enum PartOrbitMode { PART_ORBIT_TRAIL_FADE = 0, PART_ORBIT_EMITTER = 1 };
+enum { PART_ORBIT_FADE_FRAMES = 10, PART_ORBIT_ALPHA_STEP = 0x10 };
+
 struct Part067 {
     Vec3 vel;
     MobyInstance *pParent;
@@ -1294,5 +1297,8 @@ void UpdatePart_020(PartInstance *particle);
 extern PartInstance *PartInstances;
 PartInstance *SpawnPart_058(Vec4 *position, int phase, int tweenFrames, int emitFrames, int emitCount, int lifetime, MobyInstance *pParent, float damageScale, float speedScale);
 void UpdatePart_058(PartInstance *particle);
+
+PartInstance *SpawnPart_067(MobyInstance *parent, Vec4 *position, int lifetime, float orbit, float wobble, int type, int color, Vec4 *offset);
+void UpdatePart_067(PartInstance *particle);
 
 #endif
