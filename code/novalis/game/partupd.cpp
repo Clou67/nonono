@@ -1036,7 +1036,52 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_031)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_032);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_032);
+void UpdatePart_032(PartInstance *particle)
+{
+    Part032 *motion;
+    MobyInstance *parent;
+
+    if (particle == 0)
+        return;
+
+    motion = (Part032 *)particle->update;
+    parent = motion->parent;
+    if (parent == 0 || (parent->state & 0xF0) == 0xF0)
+        goto kill;
+
+    CopyVec4Inline(&particle->pos, &parent->pos);
+    motion->alpha += motion->dalpha;
+    if (motion->alpha < 0.0f) {
+    kill:
+        DeletePart(particle);
+        return;
+    }
+    if (0.6f < motion->alpha) {
+        motion->dalpha = -motion->dalpha;
+        motion->alpha += motion->dalpha;
+    }
+
+    motion->r += transStepScale * -0.0174f;
+    if (motion->r < 0.0f)
+        motion->r = 0.0f;
+    motion->g += transStepScale * -0.01446f;
+    if (motion->g < 0.0f)
+        motion->g = 0.0f;
+    motion->b += transStepScale * -0.0015f;
+    if (motion->b < 0.0f)
+        motion->b = 0.0f;
+    {
+        int packedColor = Float_To_RGBA(motion->r, motion->g, motion->b, motion->alpha);
+        float phaseIncrement = transStepScale * 0.0011f;
+        particle->rgba = packedColor;
+        motion->rot += phaseIncrement;
+    }
+    if (1.0f < motion->rot)
+        motion->rot -= 1.0f;
+
+    particle->rot = FastFloatToInt(motion->rot * 255.0f);
+    particle->scale = motion->parent->scale * 100000.0f * 30.0f + 50000.0f;
+}
 
 int FastDecTimer(short &timer);
 void DeletePart(PartInstance *part);
