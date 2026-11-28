@@ -579,7 +579,72 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_028)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283400);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_029);
+void UpdatePart_029(PartInstance *particle)
+{
+    Part029Attachment *motion;
+    float alphaThreshold;
+    Vec4 attachmentPosition;
+    Vec4 cameraOffset;
+
+    if (particle == 0)
+        return;
+
+    motion = (Part029Attachment *)particle->update;
+    if (FastDecTimer(particle->timer) || motion->parent == 0 || (signed char)motion->parent->state < 0)
+        goto kill;
+
+    motion->textureFrame = (motion->textureFrame + 1) & PART_ATTACHMENT_FRAME_MASK;
+    if (particle->scale < 159600.0f) {
+        particle->scale += transStepScale * 3989.99976f;
+        if (159600.0f < particle->scale)
+            particle->scale = 159600.0f;
+    }
+
+    else if (159600.0f < particle->scale) {
+        particle->scale -= transStepScale * 15959.999f;
+        if (particle->scale < 159600.0f)
+            particle->scale = 159600.0f;
+    }
+
+    motion->rot += transStepScale * 0.001f;
+    particle->rot = FastFloatToInt(motion->rot * 255.0f);
+    particle->tex = PartClassTexs[PART_TEXTURE_ATTACHMENT_PULSE][motion->textureFrame];
+    if (particle->scale <= 159600.0f || 0.0f < motion->alphaStep)
+        motion->alpha += motion->alphaStep;
+    {
+        float alpha;
+        if (particle->scale <= 159600.0f) {
+            alpha = motion->alpha;
+            alphaThreshold = 0.3f;
+        }
+
+        else {
+            alpha = motion->alpha;
+            alphaThreshold = 0.15f;
+        }
+        if (!(alphaThreshold < alpha)) {
+            if (alpha < 0.0f) {
+            kill:
+                DeletePart(particle);
+                return;
+            }
+        }
+
+        else {
+            motion->alphaStep = -motion->alphaStep;
+            motion->alpha = alpha + motion->alphaStep;
+        }
+    }
+
+    particle->rgba = (particle->rgba & 0xFFFFFF) + (FastFloatToInt(motion->alpha * 256.0f) << 24);
+    motion->cameraOffset += (1.0f - motion->cameraOffset) * (transStepScale * 0.175f);
+    if (motion->bone != -1) {
+        MB_GetBonePos(motion->parent, motion->bone, &attachmentPosition);
+        FastSubVec3(&cameraOffset, &GameCamera.position, &attachmentPosition);
+        FastVec3Normalize(&cameraOffset, &cameraOffset, motion->cameraOffset);
+        FastVec3Add(&particle->pos, &attachmentPosition, &cameraOffset);
+    }
+}
 
 void UpdatePart_030(PartInstance *particle)
 {

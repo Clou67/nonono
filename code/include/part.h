@@ -258,6 +258,17 @@ struct Part028 {
     Vec4 vel;
 };
 
+// RaC1 attachment data; DL uses a different Part029 layout.
+struct Part029Attachment {
+    MobyInstance *parent;
+    float alpha;
+    float rot;
+    short textureFrame;
+    short bone;
+    float alphaStep;
+    float cameraOffset;
+};
+
 struct Part029_Style {
     float fWidth;
     float fLengthScale;
@@ -1309,5 +1320,8 @@ void UpdatePart_078(PartInstance *particle);
 
 enum { PART_WATER_FADE_FRAMES = 14 };
 void UpdatePart_034(PartInstance *particle);
+
+enum { PART_TEXTURE_ATTACHMENT_PULSE = 29, PART_ATTACHMENT_FRAME_MASK = 0xF };
+void UpdatePart_029(PartInstance *particle);
 
 #endif
