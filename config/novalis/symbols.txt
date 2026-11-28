@@ -1162,7 +1162,7 @@ UpdatePart_006 = 0x0027EB08; // type:func size:0x6F4
 UpdatePart_007__FP12PartInstance = 0x0027F200; // type:func size:0xB0
 SpawnPart_008 = 0x0027F2B0; // type:func size:0xEC
 UpdatePart_008 = 0x0027F3A0; // type:func size:0x12C
-UpdatePart_009 = 0x0027F4D8; // type:func size:0x188
+UpdatePart_009__FP12PartInstance = 0x0027F4D8; // type:func size:0x188
 SpawnPart_010 = 0x0027F660; // type:func size:0x124
 UpdatePart_010 = 0x0027F788; // type:func size:0x170
 SpawnPart_011 = 0x0027F8F8; // type:func size:0x284
@@ -2566,3 +2566,5 @@ PartSpinLiteral10 = 0x00160218; // size:0x4
 PartSpinLiteral11 = 0x0016021C; // size:0x4
 PartSpinLiteral12 = 0x00160220; // size:0x4
 PartSpinLiteral13 = 0x00160224; // size:0x4
+
+PartGrayscaleFadeFrames = 0x001601A4; // size:0x4

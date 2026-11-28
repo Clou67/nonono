@@ -230,7 +230,32 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_008)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027F4D0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_009);
+int PartGrayscaleFadeFrames = 600;
+void UpdatePart_009(PartInstance *particle)
+{
+    Part009 *motion = (Part009 *)particle->update;
+    int alpha;
+
+    if (FastDecTimer(motion->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    motion->curRot = FastAddRots(motion->curRot, motion->rotRange);
+    particle->rot = FastFloatToInt(motion->curRot * 128.0f / 3.1415927f) - 0x80;
+    if (FastScaleRoundInt(PartGrayscaleFadeFrames) * 3 / 4 < motion->timer) {
+        int fadeDuration = FastScaleRoundInt(PartGrayscaleFadeFrames);
+        alpha = motion->alpha * (fadeDuration - motion->timer) / (FastScaleRoundInt(PartGrayscaleFadeFrames) / 4);
+    }
+
+    else if (motion->timer < FastScaleRoundInt(PartGrayscaleFadeFrames) / 4)
+        alpha = motion->alpha * motion->timer / (FastScaleRoundInt(PartGrayscaleFadeFrames) / 4);
+
+    else
+        alpha = motion->alpha;
+
+    particle->rgba = (alpha << 24) + ((unsigned char)particle->gs_alpha == 0x48 ? 0x4F4F4F : 0x7F7F7F);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_010);
 
