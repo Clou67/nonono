@@ -1365,4 +1365,6 @@ enum PartBallisticMode { PART_BALLISTIC_NO_CONTACT = 0, PART_BALLISTIC_LINE_CONT
 PartInstance *SpawnPart_066(Vec4 *position, int color, float scale, float height);
 void UpdatePart_035(PartInstance *particle);
 
+void UpdatePart_015(PartInstance *particle);
+
 #endif
