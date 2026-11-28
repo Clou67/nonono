@@ -69,4 +69,8 @@ void FastVec3Cross(Vec4 *out, Vec4 *first, Vec4 *second);
 
 void FastVec3Add(Vec4 *out, Vec4 *first, Vec3 *second);
 
+// Alternate assembly entry points update the second argument; the first is unused.
+void FastVecScaleSelf(Vec4 *unused, Vec4 *vector, float scale);
+void FastVecAddSelf(Vec4 *unused, Vec4 *vector, Vec4 *add);
+
 #endif

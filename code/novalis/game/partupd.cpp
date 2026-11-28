@@ -1618,7 +1618,49 @@ void UpdatePart_043(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_044);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_044);
+void UpdatePart_044(PartInstance *particle)
+{
+    Vec4 velocity;
+    Vec4 platformCarry[1];
+    Vec4 gravityDelta[1];
+    Part044 *motion;
+    Vec4 *position;
+    float initialAlpha;
+    int color;
+
+    if (FastDecTimer(particle->timer))
+        DeletePart(particle);
+
+    else {
+        motion = (Part044 *)particle->update;
+        position = &particle->pos;
+        initialAlpha = FastIntToFloat(motion->alpha);
+        color = FastFloatToInt(initialAlpha * ((float)particle->timer / FastIntToFloat(motion->frames)));
+        color = (color << 24) | (motion->b << 16);
+        color |= motion->g << 8;
+        color |= motion->r;
+        particle->rgba = color;
+
+        velocity.x = motion->vel.x;
+        velocity.y = motion->vel.y;
+        velocity.z = motion->vel.z;
+        velocity.w = 0.0f;
+        FastVec3Add(position, position, &velocity);
+
+        CopyVec4(platformCarry, &Hero.frameMove);
+        FastVecScaleSelf(gravityDelta, platformCarry, particle->pos.w);
+        FastVecAddSelf(gravityDelta, position, platformCarry);
+        FastVec3Scale(gravityDelta, &Hero.gravityDir, motion->gravity);
+        FastVec3Add(&velocity, &velocity, gravityDelta);
+        FastVec3Scale(&velocity, &velocity, motion->damp);
+        motion->vel.x = velocity.x;
+        motion->vel.y = velocity.y;
+        motion->vel.z = velocity.z;
+
+        particle->rot += (unsigned char)motion->rotSpeed;
+        particle->scale += motion->scaleSpeed;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_045);
 

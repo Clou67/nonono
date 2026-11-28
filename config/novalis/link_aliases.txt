@@ -745,3 +745,6 @@ MB_SampleByteGrid__FP4Vec4 = 0x00278020;
 MB_SpawnGridParticles__FP4Vec4 = 0x002780B0;
 
 FastVec3Add__FP4Vec4T0P4Vec3 = 0x00221188;
+
+FastVecScaleSelf__FP4Vec4T0f = 0x00221228;
+FastVecAddSelf__FP4Vec4N20 = 0x002211A0;
