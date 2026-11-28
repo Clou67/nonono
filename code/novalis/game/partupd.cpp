@@ -458,7 +458,63 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_022);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_023);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_023);
+void UpdatePart_023(PartInstance *particle)
+{
+    Part023 *motion = (Part023 *)particle->update;
+    float alphaFade;
+    int phaseDuration;
+    int alpha;
+
+    particle->rot += (unsigned char)motion->rotDir;
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+    particle->scale *= (motion->scale - 1.0f) * transStepScale + 1.0f;
+    if (motion->state == PART_PULSE_FADE_IN) {
+        if (FastDecTimer(particle->timer)) {
+            motion->state = PART_PULSE_FADE_OUT;
+            particle->timer = FastScaleRoundInt(20);
+            particle->rgba = motion->rgb | 0x7F000000;
+        }
+
+        else {
+            phaseDuration = FastScaleRoundInt(10);
+            alpha = FastFloatToInt((float)(phaseDuration - particle->timer) * (96.0f / (float)FastScaleRoundInt(10)));
+            particle->rgba = ((alpha + 0x20) << 24) | motion->rgb;
+        }
+    }
+
+    else if (motion->state == PART_PULSE_CUSTOM_FADE_OUT) {
+        if (FastDecTimer(particle->timer))
+            goto kill;
+        alphaFade = FastIntToFloat(motion->initTimer);
+        alpha = FastFloatToInt((float)motion->initAlpha * ((float)particle->timer / alphaFade) + 0.0f);
+        particle->rgba = (alpha << 24) | (motion->rgb & 0xFFFFFF);
+    }
+
+    else if (motion->state == PART_PULSE_CUSTOM_FADE_IN) {
+        FastDecTimer(particle->timer);
+        alphaFade = FastIntToFloat(motion->initTimer - particle->timer);
+        alphaFade = alphaFade / FastIntToFloat(FastScaleRoundInt(30));
+        if (1.0f < alphaFade)
+            alphaFade = 1.0f;
+        alpha = FastFloatToInt((float)motion->initAlpha * alphaFade + 0.0f);
+        particle->rgba = (alpha << 24) | (motion->rgb & 0xFFFFFF);
+        if (motion->initTimer - particle->timer >= FastScaleRoundInt(30)) {
+            phaseDuration = FastScaleRoundInt(30);
+            motion->state = PART_PULSE_CUSTOM_FADE_OUT;
+            motion->initTimer -= phaseDuration;
+        }
+    }
+
+    else {
+        if (FastDecTimer(particle->timer)) {
+        kill:
+            DeletePart(particle);
+            return;
+        }
+        alpha = FastFloatToInt((float)particle->timer * (127.0f / (float)FastScaleRoundInt(20)));
+        particle->rgba = (alpha << 24) | motion->rgb;
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_024);
 

@@ -1329,4 +1329,7 @@ void UpdatePart_065(PartInstance *particle);
 enum { PART_TEXTURE_JOINT_PULSE = 61 };
 void UpdatePart_061(PartInstance *particle);
 
+enum PartPulsePhase { PART_PULSE_FADE_IN = 0, PART_PULSE_FADE_OUT = 1, PART_PULSE_CUSTOM_FADE_OUT = 2, PART_PULSE_CUSTOM_FADE_IN = 3 };
+void UpdatePart_023(PartInstance *particle);
+
 #endif
