@@ -259,7 +259,30 @@ void UpdatePart_009(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_010);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_010);
+void UpdatePart_010(PartInstance *particle)
+{
+    Part010 *motion = (Part010 *)particle->update;
+    int blue, alpha;
+    float timeScale;
+
+    motion->alpha += transStepScale * -0.04f;
+    if (motion->alpha <= 0.0f || FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    timeScale = transStepScale;
+    particle->scale += timeScale * 12000.0f;
+    if (motion->b < 0.225f)
+        motion->b += timeScale * 0.0484f;
+    blue = FastFloatToInt(motion->b * 255.0f) & 0xFF;
+    alpha = FastFloatToInt(motion->alpha * 255.0f);
+    particle->rgba = *(unsigned short *)&particle->rgba | (blue << 16) | (alpha << 24);
+
+    FastVec3Add(&particle->pos, &particle->pos, &motion->vel);
+    FastVec3Scale(&motion->vel, &motion->vel, transStepScale * -0.100000024f + 1.0f);
+    particle->rot--;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_011);
 
