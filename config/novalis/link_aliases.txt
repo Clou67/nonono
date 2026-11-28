@@ -738,3 +738,5 @@ FastVecMtx3Mult__FP4Vec4T0P4Mtx3 = 0x002215E0;
 SpawnPart_067__FP12MobyInstanceP4Vec4iffiiT1 = 0x00289850;
 
 SpawnPart_066__FP4Vec4iff = 0x00289648;
+
+SpawnPart_021__FP4Vec4T0iifii = 0x00281C10;

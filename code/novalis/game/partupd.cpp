@@ -595,7 +595,46 @@ void UpdatePart_020(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_021);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_021);
+void UpdatePart_021(PartInstance *particle)
+{
+    Vec4 updatedPosition, spawnVelocity, randomDirection;
+    Part021 *motion = (Part021 *)particle->update;
+    Vec4 *position;
+    float lifetimeSize, lifetimeOrSpeed;
+
+    if (FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    position = &particle->pos;
+    lifetimeSize = FastIntToFloat(particle->timer);
+    lifetimeOrSpeed = FastIntToFloat(motion->lifeSpan);
+    lifetimeSize *= motion->maxScale;
+    lifetimeSize /= lifetimeOrSpeed;
+    particle->scale = lifetimeSize;
+    lifetimeSize = FastIntToFloat(particle->timer);
+    particle->rgba = TweenColor(motion->endRGBA, motion->beginRGBA, lifetimeSize / FastIntToFloat(motion->lifeSpan));
+    FastVec3Add(position, position, &motion->vel);
+    motion->vel.z -= transStepScaleSq * 0.001f;
+    CopyVec4Inline(&updatedPosition, position);
+
+    if (motion->master && (worldUpdateTime & 1)) {
+        ClearVec4(&randomDirection);
+        randomDirection.x = MB_randRangeFloat(-1.0f, 1.0f);
+        randomDirection.y = MB_randRangeFloat(-1.0f, 1.0f);
+        randomDirection.z = MB_randRangeFloat(-1.0f, 1.0f);
+        CopyVec4(&spawnVelocity, &randomDirection);
+        lifetimeOrSpeed = FastVec3Length2(&motion->vel);
+        FastVec3Normalize(&spawnVelocity, &spawnVelocity, lifetimeOrSpeed * MB_randRangeFloat(0.21f, 0.25f));
+        FastVec3Add(&spawnVelocity, &spawnVelocity, &motion->vel);
+        FastVec3Scale(&spawnVelocity, &spawnVelocity, MB_randRangeFloat(0.75f, 0.95f));
+        SpawnPart_021(position, &spawnVelocity, particle->rgba, motion->endRGBA, particle->scale, FastScaleRoundInt(MB_randRange(15, 20)), 0);
+    }
+
+    else
+        FastVec3Scale(&motion->vel, &motion->vel, 0.96f);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_022);
 
