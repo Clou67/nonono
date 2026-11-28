@@ -1264,7 +1264,7 @@ UpdatePart_070__FP12PartInstance = 0x0028A078; // type:func size:0x60
 UpdatePart_071__FP12PartInstance = 0x0028A0E0; // type:func size:0x310
 SpawnPart_072 = 0x0028A3F0; // type:func size:0x188
 UpdatePart_072__FP12PartInstance = 0x0028A578; // type:func size:0x3C
-UpdatePart_073 = 0x0028A5B8; // type:func size:0x1EC
+UpdatePart_073__FP12PartInstance = 0x0028A5B8; // type:func size:0x1EC
 SpawnPart_074 = 0x0028A7A8; // type:func size:0x160
 UpdatePart_074 = 0x0028A908; // type:func size:0x1D8
 UpdatePart_075 = 0x0028AAE8; // type:func size:0x120
@@ -2548,3 +2548,7 @@ PartSpinAlternateMaxLifetime = 0x001601E4; // size:0x4
 PartSpinDeceleration = 0x001601E8; // size:0x4
 PartSpinVerticalSpeed = 0x001601EC; // size:0x4
 PartSpinRetainedLiteralPool = 0x001601F0; // size:0x38
+
+PartGridDrift = 0x00160250; // size:0x10
+PartGridClearance = 0x00160258; // size:0x4
+PartGridMinimumGround = 0x00160260; // size:0x4

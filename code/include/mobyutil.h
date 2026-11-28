@@ -406,4 +406,7 @@ void MB_decompressVector(Vec4 *vector, unsigned int *packed);
 
 float OrganicDelt(float *value, float *speed, float target, float gain, float damping, float limit);
 
+float MB_SampleByteGrid(Vec4 *position);
+void MB_SpawnGridParticles(Vec4 *position);
+
 #endif

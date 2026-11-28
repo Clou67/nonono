@@ -2287,7 +2287,60 @@ void UpdatePart_072(PartInstance *part)
     }
 }
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_073);
+void UpdatePart_073(PartInstance *particle)
+{
+    Vec4 velocity;
+    Vec4 groundProbe;
+    Vec4 groundRecheck;
+    Vec4 *motion = &((Part000 *)particle->update)->vel;
+    float groundHeight;
+    int gridX;
+    int gridY;
+    Vec4 *position;
+
+    groundHeight = motion->w;
+    if (particle->pos.x < 0.0f || particle->pos.y < 0.0f || 512.0f < particle->pos.x || 512.0f < particle->pos.y) {
+        DeletePart(particle);
+        return;
+    }
+    if (particle->pos.z < groundHeight) {
+        CopyVec4(&velocity, &particle->pos);
+        MB_SpawnGridParticles(&velocity);
+        DeletePart(particle);
+        return;
+    }
+
+    CopyVec4(&velocity, motion);
+    gridX = particle->pos.x;
+    gridY = particle->pos.y;
+    velocity.w = 0.0f;
+    FastVec3Add(&particle->pos, &particle->pos, &velocity);
+    FastVec3Add(&particle->pos, &particle->pos, &PartGridDrift);
+    if (gridX != (int)particle->pos.x || gridY != (int)particle->pos.y) {
+        CopyVec4(&groundProbe, &particle->pos);
+        groundHeight = MB_SampleByteGrid(&groundProbe);
+        if (groundHeight < PartGridMinimumGround)
+            groundHeight = PartGridMinimumGround;
+
+        else {
+            CopyVec4(&groundRecheck, &particle->pos);
+            groundHeight = MB_SampleByteGrid(&groundRecheck);
+        }
+        if (particle->pos.z < groundHeight) {
+            CopyVec4(&groundProbe, &particle->pos);
+            MB_SpawnGridParticles(&groundProbe);
+            DeletePart(particle);
+            return;
+        }
+    }
+
+    velocity.x = 0.0f;
+    velocity.y = 0.0f;
+    velocity.w = 0.0f;
+    velocity.z = -(frameTimeSq * 0.5f);
+    FastVec3Add(motion, &velocity, motion);
+    motion->w = groundHeight + PartGridClearance;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_074);
 

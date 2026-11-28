@@ -1374,4 +1374,9 @@ void UpdatePart_043(PartInstance *particle);
 
 void UpdatePart_032(PartInstance *particle);
 
+extern Vec4 PartGridDrift __attribute__((section(".data")));
+extern float PartGridMinimumGround;
+extern float PartGridClearance;
+void UpdatePart_073(PartInstance *particle);
+
 #endif

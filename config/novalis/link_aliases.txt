@@ -740,3 +740,6 @@ SpawnPart_067__FP12MobyInstanceP4Vec4iffiiT1 = 0x00289850;
 SpawnPart_066__FP4Vec4iff = 0x00289648;
 
 SpawnPart_021__FP4Vec4T0iifii = 0x00281C10;
+
+MB_SampleByteGrid__FP4Vec4 = 0x00278020;
+MB_SpawnGridParticles__FP4Vec4 = 0x002780B0;
