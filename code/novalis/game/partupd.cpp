@@ -1316,7 +1316,38 @@ void UpdatePart_035(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_002848F0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_036);
+void UpdatePart_036(PartInstance *particle)
+{
+    Vec4 offset;
+    Part036 *motion;
+    float sine;
+
+    FastSubVec3(&offset, &GameCamera.position, &((Part036 *)particle->update)->pos);
+    motion = (Part036 *)particle->update;
+    if (1.0f < FastVec3Length2(&offset))
+        FastVec3Normalize(&offset, &offset, 0.25f);
+
+    else
+        FastVec3Scale(&offset, &offset, 0.25f);
+
+    FastVec3Add(&particle->pos, &motion->pos, &offset);
+    motion->ang = FastAddRots(motion->ang, motion->pos.w);
+    sine = FastAngleSinF(motion->ang);
+    if (FastDecTimer(particle->timer) && (sine < motion->thresh || sine < -0.9f))
+        goto kill;
+    if (*motion->pLightOn == 0) {
+    kill:
+        *motion->pLightOn = 0;
+        DeletePart(particle);
+        return;
+    }
+
+    if (motion->thresh < sine)
+        particle->rgba = TweenColor(0, motion->rgba, (sine - motion->thresh) / (1.0f - motion->thresh));
+
+    else
+        particle->rgba = 0;
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00284A58);
 
