@@ -1326,4 +1326,7 @@ void UpdatePart_029(PartInstance *particle);
 
 void UpdatePart_065(PartInstance *particle);
 
+enum { PART_TEXTURE_JOINT_PULSE = 61 };
+void UpdatePart_061(PartInstance *particle);
+
 #endif

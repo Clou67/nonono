@@ -1405,7 +1405,68 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_060);
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_060);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_061);
+void UpdatePart_061(PartInstance *particle)
+{
+    Part061 *motion;
+    float alphaThreshold;
+    Vec4 attachmentPosition;
+    Vec4 cameraOffset;
+
+    if (particle == 0)
+        return;
+
+    motion = (Part061 *)particle->update;
+    if (FastDecTimer(particle->timer) || motion->parent == 0 || (signed char)motion->parent->state < 0)
+        goto kill;
+
+    motion->frame = (motion->frame + 1) & PART_ATTACHMENT_FRAME_MASK;
+    if (particle->scale < 159600.0f) {
+        particle->scale += transStepScale * 3989.99976f;
+        if (159600.0f < particle->scale)
+            particle->scale = 159600.0f;
+    }
+
+    else if (159600.0f < particle->scale) {
+        particle->scale -= transStepScale * 15959.999f;
+        if (particle->scale < 159600.0f)
+            particle->scale = 159600.0f;
+    }
+    motion->rot += transStepScale * 0.001f;
+    particle->rot = FastFloatToInt(motion->rot * 255.0f);
+    particle->tex = PartClassTexs[PART_TEXTURE_JOINT_PULSE][motion->frame];
+    if (particle->scale <= 159600.0f || 0.0f < motion->dalpha)
+        motion->alpha += motion->dalpha;
+    {
+        float alpha;
+        if (particle->scale <= 159600.0f) {
+            alpha = motion->alpha;
+            alphaThreshold = 0.3f;
+        }
+
+        else {
+            alpha = motion->alpha;
+            alphaThreshold = 0.15f;
+        }
+        if (!(alphaThreshold < alpha)) {
+            if (alpha < 0.0f) {
+            kill:
+                DeletePart(particle);
+                return;
+            }
+        }
+
+        else {
+            motion->dalpha = -motion->dalpha;
+            motion->alpha = alpha + motion->dalpha;
+        }
+    }
+    particle->rgba = (particle->rgba & 0xFFFFFF) + (FastFloatToInt(motion->alpha * 256.0f) << 24);
+    motion->dist += (1.0f - motion->dist) * (transStepScale * 0.175f);
+    MB_GetBonePos(motion->parent, motion->joint, &attachmentPosition);
+    FastSubVec3(&cameraOffset, &GameCamera.position, &attachmentPosition);
+    FastVec3Normalize(&cameraOffset, &cameraOffset, motion->dist);
+    FastVec3Add(&particle->pos, &attachmentPosition, &cameraOffset);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_062);
 
