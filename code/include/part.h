@@ -1355,4 +1355,6 @@ extern unsigned char PartSpinSizeBoost[];
 enum PartSpinFlags { PART_SPIN_ALTERNATE_SCALE = 1, PART_SPIN_SIZE_BOOST = 4 };
 void UpdatePart_012(PartInstance *particle);
 
+void UpdatePart_002(PartInstance *particle);
+
 #endif

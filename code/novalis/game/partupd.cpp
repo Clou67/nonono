@@ -27,7 +27,54 @@ INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_001)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_002);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_002);
+void UpdatePart_002(PartInstance *particle)
+{
+    Part002 *motion = (Part002 *)particle->update;
+    Vec4 positionStep;
+    Vec4 initialMotion;
+    Vec4 finalMotion;
+    float ratio;
+
+    if (worldUpdateTime & 1)
+        particle->rot++;
+    if (motion->shootTimer != 0) {
+        *T0_COUNT = 0;
+        MB_decompressVector(&positionStep, (unsigned int *)&motion->vel1);
+        FastVec3Add(&particle->pos, &particle->pos, &positionStep);
+        ratio = FastIntToFloat(particle->timer) / FastIntToFloat(motion->shootTimer);
+        particle->rgba = FastTweenColor(motion->rgba1 & 0xFFFFFF, motion->rgba1, 1.0f - ratio);
+        particle->scale = (float)(motion->initScale * 1000);
+        if (FastDecTimer(particle->timer)) {
+            motion->shootTimer = 0;
+            particle->timer = motion->slowTimer;
+        }
+    }
+
+    else if (motion->slowTimer != 0) {
+        MB_decompressVector(&initialMotion, (unsigned int *)&motion->vel1);
+        MB_decompressVector(&finalMotion, (unsigned int *)&motion->vel2);
+        ratio = FastIntToFloat(particle->timer) / FastIntToFloat(motion->slowTimer);
+        FastVecLerp(&positionStep, &finalMotion, &initialMotion, ratio);
+        FastVec3Add(&particle->pos, &particle->pos, &positionStep);
+        particle->scale = ((float)(motion->initScale - motion->finalScale) * ratio + (float)motion->finalScale) * 1000.0f;
+        particle->rgba = FastTweenColor(motion->rgba2, motion->rgba1, ratio);
+        if (FastDecTimer(particle->timer)) {
+            motion->slowTimer = 0;
+            particle->timer = motion->fadeTimer;
+        }
+    }
+
+    else {
+        int packedRgb;
+        MB_decompressVector(&positionStep, (unsigned int *)&motion->vel2);
+        FastVec3Add(&particle->pos, &particle->pos, &positionStep);
+        packedRgb = motion->rgba2 & 0xFFFFFF;
+        particle->rgba = FastTweenColor(packedRgb, motion->rgba2, FastIntToFloat(particle->timer) / FastIntToFloat(motion->fadeTimer));
+        particle->scale = (float)(motion->finalScale * 1000);
+        if (FastDecTimer(particle->timer))
+            DeletePart(particle);
+    }
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_0027E0D0);
 
