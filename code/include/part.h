@@ -1301,4 +1301,10 @@ void UpdatePart_058(PartInstance *particle);
 PartInstance *SpawnPart_067(MobyInstance *parent, Vec4 *position, int lifetime, float orbit, float wobble, int type, int color, Vec4 *offset);
 void UpdatePart_067(PartInstance *particle);
 
+extern Vec4 ParticleProximityAxis __attribute__((section(".data")));
+extern float PartProximityCorrectionLength;
+extern const unsigned int PartLiteralReservedZero;
+extern const unsigned int PartLiteralSeventySix;
+void UpdatePart_078(PartInstance *particle);
+
 #endif

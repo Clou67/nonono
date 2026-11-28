@@ -706,3 +706,5 @@ rand = 0x001160D8;
 
 AdaptiveBoltFrames = 0x0015EE28; // size:0x4
 AdaptiveBoltCount = 0x0015EE2C; // size:0x4
+
+ParticleProximityAxis = 0x0013F5E0; // size:0x10

@@ -1271,7 +1271,7 @@ UpdatePart_075 = 0x0028AAE8; // type:func size:0x120
 UpdatePart_076__FP12PartInstance = 0x0028AC08; // type:func size:0x44
 UpdatePart_077__FP12PartInstance = 0x0028AC58; // type:func size:0xAC
 SpawnPart_078 = 0x0028AD08; // type:func size:0x190
-UpdatePart_078 = 0x0028AE98; // type:func size:0x2C8
+UpdatePart_078__FP12PartInstance = 0x0028AE98; // type:func size:0x2C8
 UpdatePart_079 = 0x0028B160; // type:func size:0x144
 UpdatePart_080 = 0x0028B2A8; // type:func size:0x15C
 InitFollower__FP12PathFollower = 0x0028B410; // type:func size:0xF8
@@ -2524,3 +2524,7 @@ ExplosionStartColors = 0x0020A090; // size:0x18
 ExplosionEndColors = 0x0020A0A8; // size:0x18
 DefaultExplosionFlash = 0x001B06D0; // size:0x50
 AlternateExplosionFlash = 0x001B0720; // size:0x50
+
+PartLiteralReservedZero = 0x00160244; // size:0x4
+PartLiteralSeventySix = 0x00160248; // size:0x4
+PartProximityCorrectionLength = 0x0016024C; // size:0x4

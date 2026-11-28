@@ -83,7 +83,7 @@ segments:
     - [0x2230, .sdata, game/npc]  # BoltHudHandle, separators, price format
     - [0x2260, lit4]
     - [0x2328, .sdata, game/partupd]  # Floor burst limit, retained literal words, alpha fade step
-    - [0x2344, lit4]
+    - [0x2350, lit4]
     - [0x2570, .sdata, game/shrubfunc]  # shrub texs, shrub draw labels
     - [0x2590, lit4]
     - [0x25c8, .sdata, game/skyfunc]  # scratchpad DMA buffers and index, unused packet data, sky texture label; trailing zero fill includes Sky at 0x16051c

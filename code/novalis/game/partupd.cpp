@@ -1650,7 +1650,73 @@ void UpdatePart_077(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_078);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_078);
+static inline void CopyPartVelocity(Vec4 *destination, Vec3 *source)
+{
+    destination->x = source->x;
+    destination->y = source->y;
+    destination->z = source->z;
+    destination->w = 0.0f;
+}
+
+extern const unsigned int PartLiteralReservedZero __attribute__((section(".sdata"))) = 0;
+extern const unsigned int PartLiteralSeventySix __attribute__((section(".sdata"))) = 76;
+float PartProximityCorrectionLength = 0.2f;
+
+void UpdatePart_078(PartInstance *particle)
+{
+    Part078 *motion = (Part078 *)particle->update;
+    Vec4 *position;
+    float fraction;
+    Vec4 velocity;
+    Vec4 targetDelta;
+    Vec4 correction;
+    Vec3 *particleVelocity;
+    int alpha;
+
+    particle->rot += (unsigned char)motion->rotSpeed;
+    if (motion->initTime - particle->timer < 6) {
+        int initialAlpha;
+        int halfAlpha;
+        fraction = (float)(motion->initTime - particle->timer) / 5.0f;
+        particle->scale = motion->finalScale + ((motion->initScale + motion->finalScale) * 0.5f - motion->finalScale) * fraction;
+        halfAlpha = (unsigned char)motion->initAlpha >> 1;
+        initialAlpha = (unsigned char)motion->initAlpha;
+        alpha = FastFloatToInt((float)initialAlpha + (float)(halfAlpha - initialAlpha) * fraction);
+    }
+
+    else {
+        fraction = (float)particle->timer / FastIntToFloat(motion->initTime - 6);
+        particle->scale = motion->initScale + ((motion->initScale + motion->finalScale) * 0.5f - motion->initScale) * fraction;
+        alpha = FastFloatToInt((float)((unsigned char)motion->initAlpha >> 1) * fraction + 0.0f);
+    }
+
+    position = &particle->pos;
+    particle->rgba = (alpha << 24) | (particle->rgba & 0xFFFFFF);
+    CopyPartVelocity(&velocity, &motion->vel);
+    FastVec3Add(position, position, &velocity);
+
+    if (motion->pTarget != 0) {
+        FastSubVec3(&targetDelta, &motion->pTarget->pos, position);
+        if (targetDelta.x <= 2.0f && targetDelta.y <= 2.0f) {
+            FastVec3Cross(&correction, &targetDelta, &ParticleProximityAxis);
+            FastVec3Normalize(&correction, &correction, PartProximityCorrectionLength);
+            FastVec3Add(position, position, &correction);
+            if (targetDelta.x <= 0.5f && targetDelta.y <= 0.5f)
+                FastVec3Normalize(&velocity, &targetDelta, 0.03f);
+
+            else
+                FastVec3Normalize(&velocity, &targetDelta, FastVec3Length2(&velocity));
+            particleVelocity = &motion->vel;
+            particleVelocity->x = velocity.x;
+            particleVelocity->y = velocity.y;
+            velocity.z += 0.02f;
+            particleVelocity->z = velocity.z;
+        }
+    }
+
+    if (FastDecTimer(particle->timer))
+        DeletePart(particle);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_079);
 
