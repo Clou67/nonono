@@ -1307,4 +1307,7 @@ extern const unsigned int PartLiteralReservedZero;
 extern const unsigned int PartLiteralSeventySix;
 void UpdatePart_078(PartInstance *particle);
 
+enum { PART_WATER_FADE_FRAMES = 14 };
+void UpdatePart_034(PartInstance *particle);
+
 #endif

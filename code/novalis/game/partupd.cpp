@@ -709,7 +709,57 @@ void UpdatePart_033(PartInstance *part)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_034);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_034);
+void UpdatePart_034(PartInstance *particle)
+{
+    Part034 *motion = (Part034 *)particle->update;
+    Vec4 velocity;
+    float length;
+    float cameraAngle;
+    float wave;
+
+    if (FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    if (particle->pos.z > motion->waterHeight) {
+        motion->velz = 0.0f;
+        if (particle->timer > FastScaleRoundInt(PART_WATER_FADE_FRAMES) - 2)
+            particle->timer = FastScaleRoundInt(PART_WATER_FADE_FRAMES) - 2;
+    }
+    if (motion->waterHeight < particle->pos.z + frameTime * 1.3f * 40.0f) {
+        if (MB_randInt(20) == 0) {
+            if (particle->timer > FastScaleRoundInt(PART_WATER_FADE_FRAMES) - 2)
+                particle->timer = FastScaleRoundInt(PART_WATER_FADE_FRAMES) - 2;
+        }
+    }
+    if (particle->timer < FastScaleRoundInt(PART_WATER_FADE_FRAMES)) {
+        int alpha = (unsigned int)particle->rgba >> 24;
+        particle->rgba = ((alpha * (int)particle->timer / FastScaleRoundInt(PART_WATER_FADE_FRAMES)) << 24) | (particle->rgba & 0xFFFFFF);
+    }
+
+    particle->scale += transStepScale * 840.00006103515625f;
+    if (motion->idealScale < particle->scale)
+        particle->scale = motion->idealScale;
+
+    velocity.x = motion->velx;
+    velocity.y = motion->vely;
+    velocity.z = motion->velz;
+    length = FastVec3Length(&velocity.x);
+    FastVec3RSqrtScale(&velocity, &velocity, transStepScale * -0.029999971389770508f * length + length);
+    FastVec3Add(&particle->pos, &particle->pos, &velocity);
+    Delt(velocity.z, frameTime * 1.3f, frameTimeSq * 5.0f);
+    motion->velx = velocity.x;
+    motion->vely = velocity.y;
+    motion->velz = velocity.z;
+    motion->t = FastAddRots(motion->t, motion->dt);
+    cameraAngle = FastAddRots(GameCamera.rot.z, 1.5707963705062866f);
+    wave = FastAngleCosF(motion->t) * motion->waveSpeed;
+    velocity.x = FastAngleSinF(cameraAngle) * wave;
+    velocity.y = FastAngleCosF(cameraAngle) * wave;
+    velocity.z = 0.0f;
+    FastVec3Add(&particle->pos, &particle->pos, &velocity);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_035);
 
