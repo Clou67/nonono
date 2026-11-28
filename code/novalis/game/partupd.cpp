@@ -358,7 +358,20 @@ int PartSpinAlternateMaxLifetime = 0x23;
 float PartSpinDeceleration = 48.0f;
 float PartSpinVerticalSpeed = 1.0f;
 // Unreferenced retail literal-pool words retained between the tuning values.
-extern const unsigned int PartSpinRetainedLiteralPool[14] __attribute__((section(".sdata"))) = {0x80000000, 0x3f6e147b, 0x3f6dd2f2, 0x5a, 0x4808b800, 0x20ffff20, 0x0, 0x1, 0x3e800000, 0x3e800000, 0x3f000000, 0x3f000000, 0x3f400000, 0xa};
+extern const unsigned int PartSpinLiteral00 __attribute__((section(".sdata"))) = 0x80000000;
+float PartBeamFirstOffsetScale = 0.93f;
+float PartBeamSecondOffsetScale = 0.929f;
+extern const unsigned int PartSpinLiteral03 __attribute__((section(".sdata"))) = 0x0000005A;
+extern const unsigned int PartSpinLiteral04 __attribute__((section(".sdata"))) = 0x4808B800;
+extern const unsigned int PartSpinLiteral05 __attribute__((section(".sdata"))) = 0x20FFFF20;
+extern const unsigned int PartSpinLiteral06 __attribute__((section(".sdata"))) = 0x00000000;
+extern const unsigned int PartSpinLiteral07 __attribute__((section(".sdata"))) = 0x00000001;
+extern const unsigned int PartSpinLiteral08 __attribute__((section(".sdata"))) = 0x3E800000;
+extern const unsigned int PartSpinLiteral09 __attribute__((section(".sdata"))) = 0x3E800000;
+extern const unsigned int PartSpinLiteral10 __attribute__((section(".sdata"))) = 0x3F000000;
+extern const unsigned int PartSpinLiteral11 __attribute__((section(".sdata"))) = 0x3F000000;
+extern const unsigned int PartSpinLiteral12 __attribute__((section(".sdata"))) = 0x3F400000;
+extern const unsigned int PartSpinLiteral13 __attribute__((section(".sdata"))) = 0x0000000A;
 
 void UpdatePart_012(PartInstance *particle)
 {
@@ -1032,7 +1045,30 @@ void UpdatePart_030(PartInstance *particle)
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", func_00283BE0);
 
-INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", UpdatePart_031);
+void UpdatePart_031(PartInstance *particle)
+{
+    Vec4 offset[1];
+    Vec4 position;
+    MobyInstance *target = ((Part031TwoPoint *)particle->update)->attachment.target;
+    if (target == 0 || target->state == 0xFE || target->state == 0xFD || FastDecTimer(particle->timer)) {
+        DeletePart(particle);
+        return;
+    }
+
+    FastSubVec3(&position, &((Part031TwoPoint *)particle->update)->attachment.target->pos, &particle->pos);
+    CopyVec4(offset, &position);
+    FastVec3Scale(offset, offset, (PartBeamFirstOffsetScale - 1.0f) * transStepScale + 1.0f);
+    FastVec3Add(&position, offset, &((Part031TwoPoint *)particle->update)->attachment.target->pos);
+    CopyVec4(&particle->pos, &position);
+    FastSubVec3(&position, &((Part031TwoPoint *)particle->update)->attachment.target->pos, &((Part031TwoPoint *)particle->update)->end);
+    CopyVec4(offset, &position);
+    FastVec3Scale(offset, offset, (PartBeamSecondOffsetScale - 1.0f) * transStepScale + 1.0f);
+    FastVec3Add(&position, offset, &((Part031TwoPoint *)particle->update)->attachment.target->pos);
+    CopyVec4(&((Part031TwoPoint *)particle->update)->end, &position);
+
+    if (FastVec3Dist(&particle->pos, &((Part031TwoPoint *)particle->update)->end) < 0.1f || FastVec3Dist(&particle->pos, &((Part031TwoPoint *)particle->update)->attachment.target->pos) < 1.0f)
+        DeletePart(particle);
+}
 
 INCLUDE_ASM("code/_generated/novalis/nonmatchings/game/partupd", SpawnPart_032);
 

@@ -289,6 +289,12 @@ struct Part031 {
     MobyInstance *target;
 };
 
+// RaC1 stores the second point before the DL attachment record.
+struct Part031TwoPoint {
+    Vec4 end;
+    Part031 attachment;
+};
+
 struct Part032 {
     MobyInstance *parent;
     float alpha;
@@ -1350,7 +1356,20 @@ extern int PartSpinAlternateMinLifetime;
 extern int PartSpinAlternateMaxLifetime;
 extern float PartSpinDeceleration;
 extern float PartSpinVerticalSpeed;
-extern const unsigned int PartSpinRetainedLiteralPool[14];
+extern const unsigned int PartSpinLiteral00;
+extern float PartBeamFirstOffsetScale;
+extern float PartBeamSecondOffsetScale;
+extern const unsigned int PartSpinLiteral03;
+extern const unsigned int PartSpinLiteral04;
+extern const unsigned int PartSpinLiteral05;
+extern const unsigned int PartSpinLiteral06;
+extern const unsigned int PartSpinLiteral07;
+extern const unsigned int PartSpinLiteral08;
+extern const unsigned int PartSpinLiteral09;
+extern const unsigned int PartSpinLiteral10;
+extern const unsigned int PartSpinLiteral11;
+extern const unsigned int PartSpinLiteral12;
+extern const unsigned int PartSpinLiteral13;
 extern unsigned char PartSpinSizeBoost[];
 enum PartSpinFlags { PART_SPIN_ALTERNATE_SCALE = 1, PART_SPIN_SIZE_BOOST = 4 };
 void UpdatePart_012(PartInstance *particle);
@@ -1382,5 +1401,7 @@ void UpdatePart_073(PartInstance *particle);
 void UpdatePart_074(PartInstance *particle);
 
 void UpdatePart_060(PartInstance *particle);
+
+void UpdatePart_031(PartInstance *particle);
 
 #endif
